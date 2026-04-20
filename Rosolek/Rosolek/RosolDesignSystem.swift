@@ -7,7 +7,7 @@ enum AppTheme {
     static let surfaceSoft = Color(hex: "FCFCFA")
 
     static let textPrimary = Color(hex: "111111")
-    static let textSecondary = Color(hex: "8E8E93")
+    static let textSecondary = Color(hex: "6E6E73")
     static let textTertiary = Color(hex: "C7C7CC")
 
     static let accent = Color(hex: "F4D83F")

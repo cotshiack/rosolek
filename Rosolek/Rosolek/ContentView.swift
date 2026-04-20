@@ -215,12 +215,7 @@ private struct HomeView: View {
                 }
                 .buttonStyle(.plain)
             } else {
-                NavigationLink {
-                    HistoryView()
-                } label: {
-                    EmptyHistoryCompactCard(compact: compact)
-                }
-                .buttonStyle(.plain)
+                EmptyHistoryCompactCard(compact: compact)
             }
         }
     }
@@ -399,7 +394,7 @@ private struct RecentRatingBadge: View {
     var body: some View {
         Text(text)
             .font(.system(size: 12, weight: .bold))
-            .foregroundStyle(AppTheme.textPrimary)
+            .foregroundStyle(hasRating ? AppTheme.textPrimary : AppTheme.textSecondary)
             .padding(.horizontal, 10)
             .frame(height: 30)
             .background(hasRating ? AppTheme.accent : AppTheme.surfaceMuted)
@@ -419,17 +414,37 @@ private struct EmptyHistoryCompactCard: View {
             background: AppTheme.surface,
             border: AppTheme.border
         ) {
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Brak ostatniego gotowania")
-                    .font(.system(size: compact ? 18 : 19, weight: .bold))
-                    .foregroundStyle(AppTheme.textPrimary)
+            VStack(alignment: .leading, spacing: 12) {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Brak ostatniego gotowania")
+                        .font(.system(size: compact ? 18 : 19, weight: .bold))
+                        .foregroundStyle(AppTheme.textPrimary)
 
-                Text("Po pierwszym gotowaniu zobaczysz tu ostatni batch i szybki podgląd jego wyniku.")
-                    .font(.system(size: 13, weight: .medium))
-                    .foregroundStyle(AppTheme.textSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
+                    Text("Tu pojawi się Twój ostatni rosół po pierwszym gotowaniu.")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundStyle(AppTheme.textSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+
+                NavigationLink {
+                    BrothStyleSelectionView()
+                } label: {
+                    HStack(spacing: 6) {
+                        Text("Zacznij pierwsze gotowanie")
+                            .font(.system(size: 13, weight: .semibold))
+                        Image(systemName: "arrow.right")
+                            .font(.system(size: 11, weight: .semibold))
+                    }
+                    .foregroundStyle(AppTheme.textPrimary)
+                    .padding(.horizontal, 12)
+                    .frame(height: 34)
+                    .background(AppTheme.accentSoft)
+                    .overlay(Capsule().stroke(AppTheme.accent.opacity(0.4), lineWidth: 1))
+                    .clipShape(Capsule())
+                }
+                .buttonStyle(.plain)
             }
-            .frame(maxWidth: .infinity, minHeight: compact ? 92 : 98, alignment: .leading)
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
         .appSoftShadow()
     }

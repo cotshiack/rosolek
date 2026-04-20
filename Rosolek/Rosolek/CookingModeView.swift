@@ -1577,7 +1577,7 @@ private struct ChecklistRow: View {
 
     var body: some View {
         Button {
-            withAnimation(.easeInOut(duration: 0.18)) {
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
                 isOn.toggle()
             }
         } label: {
@@ -1595,6 +1595,7 @@ private struct ChecklistRow: View {
                         Image(systemName: "checkmark")
                             .font(.system(size: 14, weight: .bold))
                             .foregroundStyle(AppTheme.textPrimary)
+                            .transition(.scale(scale: 0.4).combined(with: .opacity))
                     }
                 }
 
@@ -1834,10 +1835,10 @@ private struct StageStatusCapsule: View {
             .foregroundStyle(AppTheme.textPrimary)
             .padding(.horizontal, 14)
             .frame(height: 46)
-            .background(AppTheme.surfaceSoft)
+            .background(AppTheme.surface)
             .overlay(
                 Capsule()
-                    .stroke(AppTheme.border, lineWidth: 1)
+                    .stroke(AppTheme.borderStrong, lineWidth: 1)
             )
             .clipShape(Capsule())
             .lineLimit(1)

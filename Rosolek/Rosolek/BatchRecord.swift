@@ -272,7 +272,7 @@ extension BatchRecord {
         if let overallRating {
             return "\(overallRating)/10"
         }
-        return "Bez oceny"
+        return "—"
     }
 
     var createdAtDisplayText: String {

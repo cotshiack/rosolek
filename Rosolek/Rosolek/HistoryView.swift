@@ -211,7 +211,7 @@ private struct HistoryRatingBadge: View {
     var body: some View {
         Text(text)
             .font(.system(size: 12, weight: .bold))
-            .foregroundStyle(AppTheme.textPrimary)
+            .foregroundStyle(hasRating ? AppTheme.textPrimary : AppTheme.textSecondary)
             .padding(.horizontal, 10)
             .frame(height: 30)
             .background(hasRating ? AppTheme.accent : AppTheme.surfaceMuted)
