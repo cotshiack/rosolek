@@ -393,4 +393,31 @@ extension BatchRecord {
 
         return "custom"
     }
+
+    func calculationResult(potSizeLiters: Int) -> BrothCalculationResult {
+        if let snapshot = selectedIngredientsSnapshot, !snapshot.isEmpty {
+            let selections = snapshot.map { snap in
+                BrothIngredientSelection(
+                    ingredientID: snap.ingredientID,
+                    ingredientName: snap.ingredientName,
+                    category: IngredientCategory(rawValue: snap.categoryRawValue) ?? .poultry,
+                    grams: snap.grams
+                )
+            }
+            return BrothCalculator.calculate(
+                profile: brothProfile,
+                meatItems: selections,
+                potSizeLiters: Double(potSizeLiters),
+                clarityMode: clarityMode,
+                useVinegar: useVinegar
+            )
+        }
+
+        return BrothCalculator.calculate(
+            style: BrothStyle(rawValue: styleRawValue) ?? .light,
+            totalWeightGrams: totalWeightGrams,
+            selectedIDs: selectedIngredientIDs ?? [],
+            potSizeLiters: potSizeLiters
+        )
+    }
 }

@@ -63,76 +63,6 @@ struct BrothResultView: View {
         )
     }
 
-    init(
-        selectedStyle: BrothStyle,
-        totalWeight: Int,
-        selectedIngredientCount: Int,
-        selectedIDs: [String]
-    ) {
-        let normalizedCurrentIDs = Set(selectedIDs.map {
-            $0.folding(options: .diacriticInsensitive, locale: .current).lowercased()
-        })
-
-        let draftSelections = CustomBrothDraftBridge.selections
-        let normalizedDraftIDs = Set(draftSelections.map {
-            $0.ingredientID.folding(options: .diacriticInsensitive, locale: .current).lowercased()
-        })
-
-        let draftWeight = draftSelections.reduce(0) { $0 + $1.grams }
-        let draftMatchesCurrentInput =
-            CustomBrothDraftBridge.selectedStyle == selectedStyle &&
-            !draftSelections.isEmpty &&
-            normalizedDraftIDs == normalizedCurrentIDs &&
-            draftWeight == totalWeight
-
-        if draftMatchesCurrentInput {
-            let profile: BrothProfile = selectedStyle == .light ? .cleaner : .richer
-            self.init(
-                mode: .custom(profile),
-                totalWeight: totalWeight,
-                selectedIngredientCount: selectedIngredientCount,
-                selectedIDs: selectedIDs,
-                initialSelections: draftSelections
-            )
-            return
-        }
-
-        let normalizedIDs = Set(selectedIDs.map {
-            $0.folding(options: .diacriticInsensitive, locale: .current).lowercased()
-        })
-
-        if selectedStyle == .light && normalizedIDs == ["kura"] {
-            self.init(
-                mode: .preset(.poultryReady),
-                totalWeight: totalWeight,
-                selectedIngredientCount: selectedIngredientCount,
-                selectedIDs: selectedIDs,
-                initialSelections: []
-            )
-            return
-        }
-
-        if selectedStyle == .intense && normalizedIDs == ["kura", "szponder"] {
-            self.init(
-                mode: .preset(.poultryBeefReady),
-                totalWeight: totalWeight,
-                selectedIngredientCount: selectedIngredientCount,
-                selectedIDs: selectedIDs,
-                initialSelections: []
-            )
-            return
-        }
-
-        let profile: BrothProfile = selectedStyle == .light ? .cleaner : .richer
-        self.init(
-            mode: .custom(profile),
-            totalWeight: totalWeight,
-            selectedIngredientCount: selectedIngredientCount,
-            selectedIDs: selectedIDs,
-            initialSelections: draftSelections
-        )
-    }
-
     private var result: BrothCalculationResult {
         switch mode {
         case .preset(let preset):
@@ -157,17 +87,6 @@ struct BrothResultView: View {
     private var resolvedSelections: [BrothIngredientSelection] {
         if !initialSelections.isEmpty {
             return sortedSelections(initialSelections)
-        }
-
-        let draftSelections = CustomBrothDraftBridge.selections
-        let draftIDs = Set(draftSelections.map { normalize($0.id) })
-        let currentIDs = Set(selectedIDs.map(normalize))
-        let draftWeight = draftSelections.reduce(0) { $0 + $1.grams }
-
-        if !draftSelections.isEmpty,
-           draftIDs == currentIDs,
-           draftWeight == totalWeight {
-            return sortedSelections(draftSelections)
         }
 
         return sortedSelections(syntheticSelections())
@@ -337,7 +256,6 @@ struct BrothResultView: View {
                 CookingModeView(
                     batch: savedBatch,
                     result: result,
-                    selectedStyle: compatibilityStyle,
                     totalWeightGrams: totalWeight,
                     selectedIngredientCount: selectedIngredientCount,
                     hasThermometer: hasThermometer

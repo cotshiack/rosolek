@@ -489,3 +489,16 @@ struct AppBatchSummaryCard<Trailing: View>: View {
         .appSoftShadow()
     }
 }
+
+enum UserPreferencesConstants {
+    static let standardPotSizes = [5, 7, 10, 12]
+
+    static func isValidCustomPotSize(_ text: String) -> Bool {
+        guard let value = Int(text.filter(\.isNumber)), value > 0 else { return false }
+        return true
+    }
+
+    static func filteredPotSizeInput(_ text: String) -> String {
+        text.filter(\.isNumber)
+    }
+}

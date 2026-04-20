@@ -177,6 +177,12 @@ struct LastBatchDetailView: View {
                             if let clarity {
                                 AppInfoRow(title: "Klarowność", value: clarity)
                             }
+
+                            if strength == nil && fat == nil && clarity == nil {
+                                Text("Brak szczegółowej oceny")
+                                    .font(.system(size: 14, weight: .medium))
+                                    .foregroundStyle(AppTheme.textSecondary)
+                            }
                         }
                     }
                     .appSoftShadow()
@@ -208,26 +214,43 @@ struct LastBatchDetailView: View {
             if let replayIngredientIDs = batch.selectedIngredientIDs, !replayIngredientIDs.isEmpty {
                 NavigationLink {
                     BrothResultView(
-                        selectedStyle: batch.styleRawValue == BrothStyle.intense.rawValue ? .intense : .light,
+                        mode: .custom(batch.brothProfile),
                         totalWeight: batch.totalWeightGrams,
                         selectedIngredientCount: replayIngredientIDs.count,
-                        selectedIDs: replayIngredientIDs
+                        selectedIDs: replayIngredientIDs,
+                        initialSelections: batch.selectedIngredientsSnapshot?.map {
+                            BrothIngredientSelection(
+                                ingredientID: $0.ingredientID,
+                                ingredientName: $0.ingredientName,
+                                category: IngredientCategory(rawValue: $0.categoryRawValue) ?? .poultry,
+                                grams: $0.grams
+                            )
+                        } ?? []
                     )
                 } label: {
                     AppPrimaryButtonLabel(title: "Ugotuj ponownie")
                 }
             } else {
-                VStack(alignment: .leading, spacing: 10) {
-                    Text("Ten starszy batch nie ma pełnego zapisu składników.")
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundStyle(AppTheme.textSecondary)
+                AppCard {
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("Brak pełnego zapisu składników")
+                            .font(.system(size: 15, weight: .bold))
+                            .foregroundStyle(AppTheme.textPrimary)
 
-                    NavigationLink {
-                        BrothStyleSelectionView()
-                    } label: {
-                        AppSecondaryButtonLabel(title: "Przejdź do kalkulatora")
+                        Text("Ten batch był zapisany w starszej wersji aplikacji, która nie przechowywała listy składników. Możesz jednak zacząć nowe gotowanie z tym samym profilem (\(batch.profileTitle)).")
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundStyle(AppTheme.textSecondary)
+                            .fixedSize(horizontal: false, vertical: true)
+
+                        NavigationLink {
+                            BrothStyleSelectionView()
+                        } label: {
+                            AppSecondaryButtonLabel(title: "Zacznij nowe gotowanie")
+                        }
+                        .padding(.top, 4)
                     }
                 }
+                .appSoftShadow()
             }
         }
     }
@@ -282,7 +305,7 @@ private struct DetailRatingBadge: View {
     var body: some View {
         Text(text)
             .font(.system(size: 12, weight: .bold))
-            .foregroundStyle(AppTheme.textPrimary)
+            .foregroundStyle(hasRating ? AppTheme.textPrimary : AppTheme.textSecondary)
             .padding(.horizontal, 10)
             .frame(height: 30)
             .background(hasRating ? AppTheme.accent : AppTheme.surfaceMuted)

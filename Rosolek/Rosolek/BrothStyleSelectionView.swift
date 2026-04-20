@@ -1,7 +1,7 @@
 import SwiftUI
 
-// Tymczasowy typ zgodności dla starszych ekranów.
-// Usuniemy go później, gdy cały flow przejdzie w 100% na BrothProfile / BrothMode.
+// Legacy persistence type — used only for BatchRecord.styleRawValue storage and migration.
+// Do not use in UI code. Use BrothProfile (.cleaner / .richer) instead.
 enum BrothStyle: String, CaseIterable, Identifiable {
     case light
     case intense

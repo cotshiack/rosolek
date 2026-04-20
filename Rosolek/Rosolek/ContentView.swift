@@ -41,6 +41,8 @@ private struct HomeView: View {
     @AppStorage("hasThermometer") private var hasThermometer = true
     @AppStorage("returnToHomeTrigger") private var returnToHomeTrigger = 0
 
+    @State private var activeCookingSession: CookingSession?
+
     private var latestBatch: BatchRecord? {
         batchStore.batches.first
     }
@@ -75,6 +77,9 @@ private struct HomeView: View {
                 ScrollView(showsIndicators: false) {
                     VStack(alignment: .leading, spacing: compact ? 22 : 26) {
                         topBar
+                        if activeCookingSession != nil {
+                            activeCookingBanner
+                        }
                         greetingSection(compact: compact)
                         presetCardsSection(compact: compact)
                         calculatorSection(compact: compact)
@@ -91,6 +96,7 @@ private struct HomeView: View {
         .toolbar(.hidden, for: .navigationBar)
         .onAppear {
             returnToHomeTrigger = 0
+            activeCookingSession = CookingSession.load()
         }
     }
 
@@ -117,6 +123,59 @@ private struct HomeView: View {
         }
     }
 
+    @ViewBuilder
+    private var activeCookingBanner: some View {
+        if let session = activeCookingSession,
+           let batch = batchStore.batch(for: session.batchID) {
+            let result = batch.calculationResult(potSizeLiters: potSizeLiters)
+
+            NavigationLink {
+                CookingModeView(
+                    batch: batch,
+                    result: result,
+                    totalWeightGrams: batch.totalWeightGrams,
+                    selectedIngredientCount: batch.selectedIngredientCount,
+                    hasThermometer: batch.hasThermometer
+                )
+            } label: {
+                HStack(spacing: 12) {
+                    ZStack {
+                        Circle()
+                            .fill(AppTheme.accent)
+                            .frame(width: 38, height: 38)
+                        Image(systemName: "flame.fill")
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundStyle(AppTheme.textPrimary)
+                    }
+
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Aktywne gotowanie")
+                            .font(.system(size: 14, weight: .bold))
+                            .foregroundStyle(AppTheme.textPrimary)
+                        Text("Dotknij, aby wrócić do sesji")
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundStyle(AppTheme.textSecondary)
+                    }
+
+                    Spacer(minLength: 8)
+
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(AppTheme.textSecondary)
+                }
+                .padding(.horizontal, 14)
+                .padding(.vertical, 12)
+                .background(AppTheme.accentSoft)
+                .overlay(
+                    RoundedRectangle(cornerRadius: AppRadius.card, style: .continuous)
+                        .stroke(AppTheme.accent.opacity(0.5), lineWidth: 1)
+                )
+                .clipShape(RoundedRectangle(cornerRadius: AppRadius.card, style: .continuous))
+            }
+            .buttonStyle(.plain)
+        }
+    }
+
     private func greetingSection(compact: Bool) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Cześć, \(displayName)")
@@ -133,12 +192,7 @@ private struct HomeView: View {
     private func presetCardsSection(compact: Bool) -> some View {
         HStack(alignment: .top, spacing: 14) {
             NavigationLink {
-                BrothResultView(
-                    selectedStyle: poultryPresetRecipe.compatibilityStyle,
-                    totalWeight: poultryPresetRecipe.totalWeightGrams,
-                    selectedIngredientCount: poultryPresetRecipe.selectedIngredientIDs.count,
-                    selectedIDs: poultryPresetRecipe.selectedIngredientIDs
-                )
+                BrothResultView(preset: .poultryReady, potSizeLiters: potSizeLiters)
             } label: {
                 HomePresetCard(
                     title: poultryPresetRecipe.title,
@@ -155,12 +209,7 @@ private struct HomeView: View {
             .frame(maxWidth: .infinity)
 
             NavigationLink {
-                BrothResultView(
-                    selectedStyle: poultryBeefPresetRecipe.compatibilityStyle,
-                    totalWeight: poultryBeefPresetRecipe.totalWeightGrams,
-                    selectedIngredientCount: poultryBeefPresetRecipe.selectedIngredientIDs.count,
-                    selectedIDs: poultryBeefPresetRecipe.selectedIngredientIDs
-                )
+                BrothResultView(preset: .poultryBeefReady, potSizeLiters: potSizeLiters)
             } label: {
                 HomePresetCard(
                     title: poultryBeefPresetRecipe.title,
@@ -897,10 +946,6 @@ private struct HomePresetRecipe {
         }
     }
 
-    var compatibilityStyle: BrothStyle {
-        preset.legacyStyle
-    }
-
     var selectedIngredientIDs: [String] {
         preset.defaultSelectedIDs
     }
@@ -956,7 +1001,7 @@ private struct OnboardingFlowView: View {
 
     @FocusState private var focusedField: OnboardingField?
 
-    private let standardPotSizes = [5, 7, 10, 12]
+    private let standardPotSizes = UserPreferencesConstants.standardPotSizes
 
     private var welcomeBackgroundColor: Color {
         Color(red: 0.914, green: 0.827, blue: 0.220)
@@ -1021,13 +1066,11 @@ private struct OnboardingFlowView: View {
             }
         }
         .onChange(of: customPotSize) { _, newValue in
-            let filtered = newValue.filter(\.isNumber)
-
+            let filtered = UserPreferencesConstants.filteredPotSizeInput(newValue)
             if filtered != newValue {
                 customPotSize = filtered
                 return
             }
-
             if isCustomPotSelected, let value = Int(filtered), value > 0 {
                 selectedPotSize = value
             }

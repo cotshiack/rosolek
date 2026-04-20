@@ -131,12 +131,12 @@ private struct LiveIngredientReminderRowData: Hashable {
 struct CookingModeView: View {
     let batch: BatchRecord
     let result: BrothCalculationResult
-    let selectedStyle: BrothStyle
     let totalWeightGrams: Int
     let selectedIngredientCount: Int
     let hasThermometer: Bool
 
     @EnvironmentObject private var batchStore: BatchStore
+    @Environment(\.scenePhase) private var scenePhase
 
     @State private var processElapsedSeconds = 0
     @State private var phaseIndex = 0
@@ -655,6 +655,7 @@ struct CookingModeView: View {
             Button("Zakończ gotowanie", role: .destructive) {
                 finalStepCompleted = true
                 isStageRunning = false
+                CookingSession.clear()
                 playFinishSignal()
                 UINotificationFeedbackGenerator().notificationOccurred(.success)
             }
@@ -665,9 +666,18 @@ struct CookingModeView: View {
             UIApplication.shared.isIdleTimerDisabled = true
             prepThermometerReady = !hasThermometer
             prepVinegarReady = !batchUsesVinegar
+            restoreSessionIfNeeded()
         }
         .onDisappear {
             UIApplication.shared.isIdleTimerDisabled = false
+            saveSession(backgrounded: false)
+        }
+        .onChange(of: scenePhase) { _, newPhase in
+            if newPhase == .background {
+                saveSession(backgrounded: true)
+            } else if newPhase == .active {
+                resumeFromBackground()
+            }
         }
         .onReceive(timer) { _ in
             handleTick()
@@ -1320,6 +1330,73 @@ struct CookingModeView: View {
         if normalized.contains("ocet") { return .vinegar }
 
         return .generic
+    }
+
+    private func saveSession(backgrounded: Bool) {
+        guard sessionStarted, !isFinished else {
+            CookingSession.clear()
+            return
+        }
+        var session = CookingSession(
+            batchID: batch.id,
+            phaseIndex: phaseIndex,
+            phaseElapsedSeconds: phaseElapsedSeconds,
+            processElapsedSeconds: processElapsedSeconds,
+            isStageRunning: isStageRunning,
+            prepMeatReady: prepMeatReady,
+            prepWaterReady: prepWaterReady,
+            prepPotReady: prepPotReady,
+            prepThermometerReady: prepThermometerReady,
+            prepVinegarReady: prepVinegarReady,
+            backgroundedAt: backgrounded ? Date() : nil
+        )
+        session.save()
+    }
+
+    private func restoreSessionIfNeeded() {
+        guard let session = CookingSession.load(),
+              session.batchID == batch.id,
+              !isFinished
+        else { return }
+
+        phaseIndex = session.phaseIndex
+        phaseElapsedSeconds = session.phaseElapsedSeconds
+        processElapsedSeconds = session.processElapsedSeconds
+        isStageRunning = session.isStageRunning
+        sessionStarted = session.phaseIndex > 0
+        prepMeatReady = session.prepMeatReady
+        prepWaterReady = session.prepWaterReady
+        prepPotReady = session.prepPotReady
+        prepThermometerReady = session.prepThermometerReady
+        prepVinegarReady = session.prepVinegarReady
+
+        if let backgroundedAt = session.backgroundedAt, session.isStageRunning {
+            let elapsed = Int(Date().timeIntervalSince(backgroundedAt))
+            if elapsed > 0 {
+                processElapsedSeconds += elapsed
+                if currentPhaseHasTimer {
+                    phaseElapsedSeconds = min(phaseElapsedSeconds + elapsed, currentPhaseTotalSeconds)
+                }
+            }
+        }
+    }
+
+    private func resumeFromBackground() {
+        guard sessionStarted, !isFinished else { return }
+        guard let session = CookingSession.load(),
+              session.batchID == batch.id,
+              let backgroundedAt = session.backgroundedAt,
+              session.isStageRunning
+        else { return }
+
+        let elapsed = Int(Date().timeIntervalSince(backgroundedAt))
+        guard elapsed > 0 else { return }
+
+        processElapsedSeconds += elapsed
+        if currentPhaseHasTimer {
+            phaseElapsedSeconds = min(phaseElapsedSeconds + elapsed, currentPhaseTotalSeconds)
+        }
+        saveSession(backgrounded: false)
     }
 }
 
