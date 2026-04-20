@@ -14,6 +14,7 @@ struct BrothResultView: View {
 
     @State private var savedBatch: BatchRecord?
     @State private var navigateToCooking = false
+    @State private var isStartingCooking = false
     @State private var clarityMode: BrothClarityMode = .normal
     @State private var useVinegar = false
 
@@ -318,10 +319,10 @@ struct BrothResultView: View {
             } label: {
                 AppPrimaryButtonLabel(
                     title: "Przejdź do gotowania",
-                    disabled: hasBlockingFailure
+                    disabled: hasBlockingFailure || isStartingCooking
                 )
             }
-            .disabled(hasBlockingFailure)
+            .disabled(hasBlockingFailure || isStartingCooking)
             .padding(.horizontal, AppSpacing.screen)
             .padding(.top, 8)
             .padding(.bottom, 8)
@@ -977,7 +978,8 @@ extension BrothResultView {
     }
 
     private func startCooking() {
-        guard !hasBlockingFailure else { return }
+        guard !hasBlockingFailure, !isStartingCooking else { return }
+        isStartingCooking = true
 
         let ingredientSnapshots = resolvedSelections.map { selection in
             BatchIngredientSnapshot(

@@ -73,7 +73,7 @@ struct LastBatchDetailView: View {
 
                     Button("Anuluj", role: .cancel) {}
                 } message: {
-                    Text("Tej operacji nie da się cofnąć.")
+                    Text("Usuniesz „\(batch.displayTitle)". Tej operacji nie da się cofnąć.")
                 }
             } else {
                 missingBatchState

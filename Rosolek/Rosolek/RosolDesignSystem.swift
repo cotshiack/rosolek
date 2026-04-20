@@ -162,7 +162,7 @@ struct AppIconCircleButton: View {
         Image(systemName: systemName)
             .font(.system(size: 15, weight: .semibold))
             .foregroundStyle(AppTheme.textPrimary)
-            .frame(width: 42, height: 42)
+            .frame(width: 44, height: 44)
             .background(AppTheme.surface)
             .overlay(
                 Circle()

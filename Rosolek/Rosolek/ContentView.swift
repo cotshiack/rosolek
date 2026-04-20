@@ -261,7 +261,7 @@ private struct SecondaryActionPill: View {
             .font(.system(size: 13, weight: .semibold))
             .foregroundStyle(AppTheme.textPrimary)
             .padding(.horizontal, 12)
-            .frame(height: 32)
+            .frame(height: 36)
             .background(
                 Capsule()
                     .fill(AppTheme.accentSoft)
