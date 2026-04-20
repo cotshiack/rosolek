@@ -940,21 +940,19 @@ private struct ActiveCookingBannerLabel: View {
             .onAppear { isPulsing = true }
 
             VStack(alignment: .leading, spacing: 3) {
-                if let title = session.currentPhaseTitle, !title.isEmpty {
-                    Text(title)
-                        .font(.system(size: 15, weight: .bold))
-                        .foregroundStyle(Color.white)
-                        .lineLimit(1)
-                }
+                Text("Wróć do ekranu gotowania")
+                    .font(.system(size: 15, weight: .bold))
+                    .foregroundStyle(AppTheme.textPrimary)
+                    .lineLimit(1)
 
                 if let time = timeText {
                     HStack(spacing: 4) {
                         Image(systemName: "clock")
                             .font(.system(size: 11, weight: .semibold))
-                            .foregroundStyle(Color.white.opacity(0.7))
+                            .foregroundStyle(AppTheme.textSecondary)
                         Text("Pozostało \(time)")
                             .font(.system(size: 13, weight: .medium))
-                            .foregroundStyle(Color.white.opacity(0.7))
+                            .foregroundStyle(AppTheme.textSecondary)
                             .lineLimit(1)
                     }
                 }
@@ -964,11 +962,15 @@ private struct ActiveCookingBannerLabel: View {
 
             Image(systemName: "chevron.right")
                 .font(.system(size: 13, weight: .semibold))
-                .foregroundStyle(Color.white.opacity(0.45))
+                .foregroundStyle(AppTheme.textSecondary)
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 14)
-        .background(AppTheme.darkCard)
+        .background(AppTheme.accentSoft)
+        .overlay(
+            RoundedRectangle(cornerRadius: AppRadius.card, style: .continuous)
+                .stroke(AppTheme.accent.opacity(0.5), lineWidth: 1)
+        )
         .clipShape(RoundedRectangle(cornerRadius: AppRadius.card, style: .continuous))
     }
 }
