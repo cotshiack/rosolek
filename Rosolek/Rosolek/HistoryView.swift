@@ -28,7 +28,7 @@ struct HistoryView: View {
             }
             Button("Anuluj", role: .cancel) {}
         } message: { batch in
-            Text("Usuniesz „\(batch.displayTitle)". Tej operacji nie da się cofnąć.")
+            Text("Usuniesz \(batch.displayTitle). Tej operacji nie da się cofnąć.")
         }
         .alert("Zmień nazwę rosołu", isPresented: renameBinding, presenting: batchToRename) { batch in
             TextField(batch.defaultTitle, text: $renameText)
