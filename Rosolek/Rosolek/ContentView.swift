@@ -74,13 +74,6 @@ private struct HomeView: View {
 
                 ScrollView(showsIndicators: false) {
                     VStack(alignment: .leading, spacing: compact ? 22 : 26) {
-                        Text("DZIAŁA")
-                            .font(.system(size: 52, weight: .black))
-                            .foregroundStyle(.white)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 28)
-                            .background(Color.red)
-                            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
                         topBar
                         greetingSection(compact: compact)
                         presetCardsSection(compact: compact)
