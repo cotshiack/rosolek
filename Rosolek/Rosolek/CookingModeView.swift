@@ -1348,7 +1348,9 @@ struct CookingModeView: View {
             prepPotReady: prepPotReady,
             prepThermometerReady: prepThermometerReady,
             prepVinegarReady: prepVinegarReady,
-            backgroundedAt: backgrounded ? Date() : nil
+            backgroundedAt: backgrounded ? Date() : nil,
+            currentPhaseTitle: currentPhase.timelineLabel,
+            currentPhaseTotalSeconds: currentPhase.durationSeconds
         )
         session.save()
     }

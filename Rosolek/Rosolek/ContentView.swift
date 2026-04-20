@@ -138,39 +138,7 @@ private struct HomeView: View {
                     hasThermometer: batch.hasThermometer
                 )
             } label: {
-                HStack(spacing: 12) {
-                    ZStack {
-                        Circle()
-                            .fill(AppTheme.accent)
-                            .frame(width: 38, height: 38)
-                        Image(systemName: "flame.fill")
-                            .font(.system(size: 15, weight: .semibold))
-                            .foregroundStyle(AppTheme.textPrimary)
-                    }
-
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Aktywne gotowanie")
-                            .font(.system(size: 14, weight: .bold))
-                            .foregroundStyle(AppTheme.textPrimary)
-                        Text("Dotknij, aby wrócić do sesji")
-                            .font(.system(size: 12, weight: .medium))
-                            .foregroundStyle(AppTheme.textSecondary)
-                    }
-
-                    Spacer(minLength: 8)
-
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 13, weight: .semibold))
-                        .foregroundStyle(AppTheme.textSecondary)
-                }
-                .padding(.horizontal, 14)
-                .padding(.vertical, 12)
-                .background(AppTheme.accentSoft)
-                .overlay(
-                    RoundedRectangle(cornerRadius: AppRadius.card, style: .continuous)
-                        .stroke(AppTheme.accent.opacity(0.5), lineWidth: 1)
-                )
-                .clipShape(RoundedRectangle(cornerRadius: AppRadius.card, style: .continuous))
+                ActiveCookingBannerLabel(session: session)
             }
             .buttonStyle(.plain)
         }
@@ -918,6 +886,100 @@ private struct BeefCubeShape: View {
                 .frame(width: 3.4, height: 3.4)
                 .offset(x: 1, y: -6)
         }
+    }
+}
+
+private struct ActiveCookingBannerLabel: View {
+    let session: CookingSession
+
+    @State private var isPulsing = false
+
+    private var elapsedPhaseSeconds: Int {
+        let base = session.phaseElapsedSeconds
+        guard let bg = session.backgroundedAt else { return base }
+        return base + Int(Date().timeIntervalSince(bg))
+    }
+
+    private var timeText: String? {
+        if let total = session.currentPhaseTotalSeconds {
+            let remaining = max(0, total - elapsedPhaseSeconds)
+            return formatSeconds(remaining)
+        }
+        return nil
+    }
+
+    private func formatSeconds(_ s: Int) -> String {
+        let m = s / 60
+        let sec = s % 60
+        if m >= 60 {
+            return String(format: "%d:%02d:%02d", m / 60, m % 60, sec)
+        }
+        return String(format: "%02d:%02d", m, sec)
+    }
+
+    var body: some View {
+        HStack(alignment: .center, spacing: 14) {
+            ZStack {
+                Circle()
+                    .stroke(AppTheme.accent, lineWidth: 2)
+                    .frame(width: 48, height: 48)
+                    .opacity(isPulsing ? 0.15 : 0.9)
+                    .animation(
+                        .easeInOut(duration: 0.9).repeatForever(autoreverses: true),
+                        value: isPulsing
+                    )
+
+                Circle()
+                    .fill(AppTheme.accent)
+                    .frame(width: 38, height: 38)
+
+                Image(systemName: "flame.fill")
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(AppTheme.textPrimary)
+            }
+            .onAppear { isPulsing = true }
+
+            VStack(alignment: .leading, spacing: 3) {
+                Text("Trwa gotowanie")
+                    .font(.system(size: 15, weight: .bold))
+                    .foregroundStyle(AppTheme.textPrimary)
+
+                if let title = session.currentPhaseTitle, !title.isEmpty {
+                    Text(title)
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundStyle(AppTheme.textSecondary)
+                        .lineLimit(1)
+                }
+
+                HStack(spacing: 4) {
+                    if let time = timeText {
+                        Image(systemName: "clock")
+                            .font(.system(size: 10, weight: .semibold))
+                            .foregroundStyle(AppTheme.textSecondary)
+                        Text("Pozostało \(time)")
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundStyle(AppTheme.textSecondary)
+                    }
+                    Text("· Dotknij, aby wrócić")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundStyle(AppTheme.textTertiary)
+                }
+            }
+
+            Spacer(minLength: 8)
+
+            Image(systemName: "chevron.right")
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(AppTheme.textSecondary)
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 14)
+        .background(AppTheme.accentSoft)
+        .overlay(
+            RoundedRectangle(cornerRadius: AppRadius.card, style: .continuous)
+                .stroke(AppTheme.accent.opacity(0.5), lineWidth: 1)
+        )
+        .clipShape(RoundedRectangle(cornerRadius: AppRadius.card, style: .continuous))
     }
 }
 
