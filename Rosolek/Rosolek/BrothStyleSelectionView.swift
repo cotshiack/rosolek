@@ -56,7 +56,7 @@ struct BrothStyleSelectionView: View {
     private var header: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Wybierz profil\nrosołu")
-                .font(.system(size: 31, weight: .bold))
+                .font(.system(size: 29, weight: .bold))
                 .foregroundStyle(AppTheme.textPrimary)
 
             Text("To ustawia sposób liczenia. Mięso dodasz za chwilę.")

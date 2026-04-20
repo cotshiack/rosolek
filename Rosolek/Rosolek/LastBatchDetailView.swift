@@ -54,16 +54,13 @@ struct LastBatchDetailView: View {
                         }
                     }
                 }
-                .alert("Zmień nazwę rosołu", isPresented: $showRenameAlert) {
-                    TextField(batch.defaultTitle, text: $renameText)
-
-                    Button("Zapisz") {
+                .sheet(isPresented: $showRenameAlert) {
+                    BatchRenameSheet(
+                        defaultTitle: batch.defaultTitle,
+                        renameText: $renameText
+                    ) {
                         batchStore.updateTitle(batchID: batch.id, customTitle: renameText)
                     }
-
-                    Button("Anuluj", role: .cancel) {}
-                } message: {
-                    Text("Zostaw puste pole, aby wrócić do nazwy domyślnej: „\(batch.defaultTitle)”.")
                 }
                 .alert("Usunąć wpis z historii?", isPresented: $showDeleteAlert) {
                     Button("Usuń", role: .destructive) {
@@ -340,40 +337,11 @@ private struct DetailMetaGlyph: View {
                 Image(systemName: "clock")
                     .font(.system(size: 10, weight: .semibold))
             case .yield:
-                DetailYieldGlyph()
+                AppYieldGlyph()
             case .profile:
-                DetailProfileGlyph()
+                AppProfileGlyph()
             }
         }
         .frame(width: 12, height: 12)
-    }
-}
-
-private struct DetailYieldGlyph: View {
-    var body: some View {
-        ZStack(alignment: .bottom) {
-            RoundedRectangle(cornerRadius: 3, style: .continuous)
-                .stroke(AppTheme.textPrimary.opacity(0.82), lineWidth: 1.35)
-                .frame(width: 10, height: 10)
-
-            RoundedRectangle(cornerRadius: 2, style: .continuous)
-                .fill(AppTheme.accent.opacity(0.95))
-                .frame(width: 8, height: 4)
-                .offset(y: -1)
-        }
-    }
-}
-
-private struct DetailProfileGlyph: View {
-    var body: some View {
-        VStack(spacing: 2) {
-            Capsule()
-                .fill(AppTheme.textPrimary.opacity(0.82))
-                .frame(width: 10, height: 3)
-
-            Capsule()
-                .fill(AppTheme.accent.opacity(0.95))
-                .frame(width: 7, height: 3)
-        }
     }
 }

@@ -56,6 +56,12 @@ enum AppSpacing {
     static let micro: CGFloat = 8
 }
 
+enum AppTypography {
+    static let screenHeader = Font.system(size: 34, weight: .bold)
+    static let flowHeader   = Font.system(size: 29, weight: .bold)
+    static let cardHeader   = Font.system(size: 22, weight: .bold)
+}
+
 enum AppRadius {
     static let card: CGFloat = 26
     static let button: CGFloat = 18

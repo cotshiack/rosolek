@@ -30,16 +30,13 @@ struct HistoryView: View {
         } message: { batch in
             Text("Usuniesz \(batch.displayTitle). Tej operacji nie da się cofnąć.")
         }
-        .alert("Zmień nazwę rosołu", isPresented: renameBinding, presenting: batchToRename) { batch in
-            TextField(batch.defaultTitle, text: $renameText)
-
-            Button("Zapisz") {
+        .sheet(item: $batchToRename) { batch in
+            BatchRenameSheet(
+                defaultTitle: batch.defaultTitle,
+                renameText: $renameText
+            ) {
                 batchStore.updateTitle(batchID: batch.id, customTitle: renameText)
             }
-
-            Button("Anuluj", role: .cancel) {}
-        } message: { batch in
-            Text("Zostaw puste pole, aby wrócić do nazwy domyślnej: „\(batch.defaultTitle)”.")
         }
     }
 
@@ -154,14 +151,6 @@ struct HistoryView: View {
         )
     }
 
-    private var renameBinding: Binding<Bool> {
-        Binding(
-            get: { batchToRename != nil },
-            set: { newValue in
-                if !newValue { batchToRename = nil }
-            }
-        )
-    }
 }
 
 private struct BatchHistoryCompactCard: View {
@@ -277,40 +266,86 @@ private struct HistoryMetaGlyph: View {
                 Image(systemName: "clock")
                     .font(.system(size: 10, weight: .semibold))
             case .yield:
-                HistoryYieldGlyph()
+                AppYieldGlyph()
             case .profile:
-                HistoryProfileGlyph()
+                AppProfileGlyph()
             }
         }
         .frame(width: 12, height: 12)
     }
 }
 
-private struct HistoryYieldGlyph: View {
-    var body: some View {
-        ZStack(alignment: .bottom) {
-            RoundedRectangle(cornerRadius: 3, style: .continuous)
-                .stroke(AppTheme.textPrimary.opacity(0.82), lineWidth: 1.35)
-                .frame(width: 10, height: 10)
+struct BatchRenameSheet: View {
+    let defaultTitle: String
+    @Binding var renameText: String
+    let onSave: () -> Void
 
-            RoundedRectangle(cornerRadius: 2, style: .continuous)
-                .fill(AppTheme.accent.opacity(0.95))
-                .frame(width: 8, height: 4)
-                .offset(y: -1)
-        }
+    @Environment(\.dismiss) private var dismiss
+
+    private var previewName: String {
+        let trimmed = renameText.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmed.isEmpty ? defaultTitle : trimmed
     }
-}
 
-private struct HistoryProfileGlyph: View {
     var body: some View {
-        VStack(spacing: 2) {
-            Capsule()
-                .fill(AppTheme.textPrimary.opacity(0.82))
-                .frame(width: 10, height: 3)
+        NavigationStack {
+            VStack(alignment: .leading, spacing: 20) {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Podgląd")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(AppTheme.textSecondary)
+                    Text(previewName)
+                        .font(.system(size: 22, weight: .bold))
+                        .foregroundStyle(AppTheme.textPrimary)
+                        .animation(.easeInOut(duration: 0.12), value: previewName)
+                }
+                .padding(AppSpacing.card)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(AppTheme.accentSoft)
+                .clipShape(RoundedRectangle(cornerRadius: AppRadius.card, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: AppRadius.card, style: .continuous)
+                        .stroke(AppTheme.accent.opacity(0.4), lineWidth: 1)
+                )
 
-            Capsule()
-                .fill(AppTheme.accent.opacity(0.95))
-                .frame(width: 7, height: 3)
+                TextField(defaultTitle, text: $renameText)
+                    .font(.system(size: 17, weight: .semibold))
+                    .foregroundStyle(AppTheme.textPrimary)
+                    .padding(.horizontal, 16)
+                    .frame(height: 54)
+                    .background(AppTheme.surface)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: AppRadius.button, style: .continuous)
+                            .stroke(AppTheme.border, lineWidth: 1)
+                    )
+                    .clipShape(RoundedRectangle(cornerRadius: AppRadius.button, style: .continuous))
+
+                Text("Zostaw puste, aby wrócić do nazwy domyślnej.")
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundStyle(AppTheme.textSecondary)
+
+                Spacer()
+            }
+            .padding(AppSpacing.screen)
+            .background(AppTheme.background)
+            .navigationTitle("Zmień nazwę")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button("Anuluj") { dismiss() }
+                        .foregroundStyle(AppTheme.textSecondary)
+                }
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Zapisz") {
+                        onSave()
+                        dismiss()
+                    }
+                    .font(.system(size: 16, weight: .bold))
+                    .foregroundStyle(AppTheme.textPrimary)
+                }
+            }
         }
+        .presentationDetents([.medium])
+        .presentationDragIndicator(.visible)
     }
 }

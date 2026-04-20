@@ -1166,8 +1166,7 @@ private struct ResultMetricCard: View {
                 .fixedSize(horizontal: false, vertical: true)
         }
         .frame(maxWidth: .infinity, minHeight: 98, alignment: .leading)
-        .padding(.horizontal, 16)
-        .padding(.vertical, 12)
+        .padding(AppSpacing.card)
         .background(AppTheme.surface)
         .overlay(
             RoundedRectangle(cornerRadius: AppRadius.card, style: .continuous)

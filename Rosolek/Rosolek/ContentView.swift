@@ -482,7 +482,7 @@ private struct HomeMetricGlyph: View {
                 Image(systemName: "clock")
                     .font(.system(size: 10, weight: .semibold))
             case .yield:
-                YieldGlyph()
+                AppYieldGlyph()
             }
         }
         .frame(width: 12, height: 12)
@@ -532,41 +532,12 @@ private struct HistoryInfoGlyph: View {
                 Image(systemName: "clock")
                     .font(.system(size: 10, weight: .semibold))
             case .yield:
-                YieldGlyph()
+                AppYieldGlyph()
             case .profile:
-                ProfileGlyph()
+                AppProfileGlyph()
             }
         }
         .frame(width: 12, height: 12)
-    }
-}
-
-private struct YieldGlyph: View {
-    var body: some View {
-        ZStack(alignment: .bottom) {
-            RoundedRectangle(cornerRadius: 3, style: .continuous)
-                .stroke(AppTheme.textPrimary.opacity(0.82), lineWidth: 1.35)
-                .frame(width: 10, height: 10)
-
-            RoundedRectangle(cornerRadius: 2, style: .continuous)
-                .fill(AppTheme.accent.opacity(0.95))
-                .frame(width: 8, height: 4)
-                .offset(y: -1)
-        }
-    }
-}
-
-private struct ProfileGlyph: View {
-    var body: some View {
-        VStack(spacing: 2) {
-            Capsule()
-                .fill(AppTheme.textPrimary.opacity(0.82))
-                .frame(width: 10, height: 3)
-
-            Capsule()
-                .fill(AppTheme.accent.opacity(0.95))
-                .frame(width: 7, height: 3)
-        }
     }
 }
 
