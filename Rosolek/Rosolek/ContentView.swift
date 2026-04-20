@@ -923,7 +923,7 @@ private struct ActiveCookingBannerLabel: View {
                 Circle()
                     .stroke(AppTheme.accent, lineWidth: 2)
                     .frame(width: 48, height: 48)
-                    .opacity(isPulsing ? 0.15 : 0.9)
+                    .opacity(isPulsing ? 0.15 : 0.85)
                     .animation(
                         .easeInOut(duration: 0.9).repeatForever(autoreverses: true),
                         value: isPulsing
@@ -942,12 +942,12 @@ private struct ActiveCookingBannerLabel: View {
             VStack(alignment: .leading, spacing: 3) {
                 Text("Trwa gotowanie")
                     .font(.system(size: 15, weight: .bold))
-                    .foregroundStyle(AppTheme.textPrimary)
+                    .foregroundStyle(Color.white)
 
                 if let title = session.currentPhaseTitle, !title.isEmpty {
                     Text(title)
                         .font(.system(size: 12, weight: .medium))
-                        .foregroundStyle(AppTheme.textSecondary)
+                        .foregroundStyle(AppTheme.accent)
                         .lineLimit(1)
                 }
 
@@ -955,14 +955,14 @@ private struct ActiveCookingBannerLabel: View {
                     if let time = timeText {
                         Image(systemName: "clock")
                             .font(.system(size: 10, weight: .semibold))
-                            .foregroundStyle(AppTheme.textSecondary)
+                            .foregroundStyle(Color.white)
                         Text("Pozostało \(time)")
                             .font(.system(size: 12, weight: .medium))
-                            .foregroundStyle(AppTheme.textSecondary)
+                            .foregroundStyle(Color.white)
                     }
                     Text("· Dotknij, aby wrócić")
                         .font(.system(size: 12, weight: .medium))
-                        .foregroundStyle(AppTheme.textTertiary)
+                        .foregroundStyle(Color.white.opacity(0.55))
                 }
             }
 
@@ -970,15 +970,11 @@ private struct ActiveCookingBannerLabel: View {
 
             Image(systemName: "chevron.right")
                 .font(.system(size: 13, weight: .semibold))
-                .foregroundStyle(AppTheme.textSecondary)
+                .foregroundStyle(Color.white.opacity(0.45))
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 14)
-        .background(AppTheme.accentSoft)
-        .overlay(
-            RoundedRectangle(cornerRadius: AppRadius.card, style: .continuous)
-                .stroke(AppTheme.accent.opacity(0.5), lineWidth: 1)
-        )
+        .background(AppTheme.darkCard)
         .clipShape(RoundedRectangle(cornerRadius: AppRadius.card, style: .continuous))
     }
 }
