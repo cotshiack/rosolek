@@ -939,35 +939,25 @@ private struct ActiveCookingBannerLabel: View {
             }
             .onAppear { isPulsing = true }
 
-            VStack(alignment: .leading, spacing: 2) {
-                Text("Trwa gotowanie")
-                    .font(.system(size: 15, weight: .bold))
-                    .foregroundStyle(Color.white)
-                    .lineLimit(1)
-
+            VStack(alignment: .leading, spacing: 3) {
                 if let title = session.currentPhaseTitle, !title.isEmpty {
                     Text(title)
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundStyle(AppTheme.accent)
+                        .font(.system(size: 15, weight: .bold))
+                        .foregroundStyle(Color.white)
                         .lineLimit(1)
                 }
 
                 if let time = timeText {
                     HStack(spacing: 4) {
                         Image(systemName: "clock")
-                            .font(.system(size: 10, weight: .semibold))
-                            .foregroundStyle(Color.white)
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundStyle(Color.white.opacity(0.7))
                         Text("Pozostało \(time)")
-                            .font(.system(size: 12, weight: .medium))
-                            .foregroundStyle(Color.white)
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundStyle(Color.white.opacity(0.7))
                             .lineLimit(1)
                     }
                 }
-
-                Text("Dotknij, aby wrócić")
-                    .font(.system(size: 11, weight: .medium))
-                    .foregroundStyle(Color.white.opacity(0.5))
-                    .lineLimit(1)
             }
 
             Spacer(minLength: 8)
