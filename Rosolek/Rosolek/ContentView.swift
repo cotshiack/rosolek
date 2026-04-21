@@ -200,10 +200,8 @@ private struct HomeView: View {
                     ForEach(filteredPresetItems) { item in
                         NavigationLink {
                             BrothResultView(
-                                selectedStyle: item.recipe.compatibilityStyle,
-                                totalWeight: item.recipe.totalWeightGrams,
-                                selectedIngredientCount: item.recipe.selectedIngredientIDs.count,
-                                selectedIDs: item.recipe.selectedIngredientIDs
+                                preset: item.recipe.preset,
+                                potSizeLiters: potSizeLiters
                             )
                         } label: {
                             HomePresetCard(
