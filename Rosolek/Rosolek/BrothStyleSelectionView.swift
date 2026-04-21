@@ -1,7 +1,7 @@
 import SwiftUI
 
-// Tymczasowy typ zgodności dla starszych ekranów.
-// Usuniemy go później, gdy cały flow przejdzie w 100% na BrothProfile / BrothMode.
+// Legacy persistence type — used only for BatchRecord.styleRawValue storage and migration.
+// Do not use in UI code. Use BrothProfile (.cleaner / .richer) instead.
 enum BrothStyle: String, CaseIterable, Identifiable {
     case light
     case intense
@@ -56,7 +56,7 @@ struct BrothStyleSelectionView: View {
     private var header: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Wybierz profil\nrosołu")
-                .font(.system(size: 31, weight: .bold))
+                .font(.system(size: 29, weight: .bold))
                 .foregroundStyle(AppTheme.textPrimary)
 
             Text("To ustawia sposób liczenia. Mięso dodasz za chwilę.")

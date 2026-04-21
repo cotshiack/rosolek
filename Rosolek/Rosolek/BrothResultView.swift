@@ -14,6 +14,7 @@ struct BrothResultView: View {
 
     @State private var savedBatch: BatchRecord?
     @State private var navigateToCooking = false
+    @State private var isStartingCooking = false
     @State private var clarityMode: BrothClarityMode = .normal
     @State private var useVinegar = false
 
@@ -62,76 +63,6 @@ struct BrothResultView: View {
         )
     }
 
-    init(
-        selectedStyle: BrothStyle,
-        totalWeight: Int,
-        selectedIngredientCount: Int,
-        selectedIDs: [String]
-    ) {
-        let normalizedCurrentIDs = Set(selectedIDs.map {
-            $0.folding(options: .diacriticInsensitive, locale: .current).lowercased()
-        })
-
-        let draftSelections = CustomBrothDraftBridge.selections
-        let normalizedDraftIDs = Set(draftSelections.map {
-            $0.ingredientID.folding(options: .diacriticInsensitive, locale: .current).lowercased()
-        })
-
-        let draftWeight = draftSelections.reduce(0) { $0 + $1.grams }
-        let draftMatchesCurrentInput =
-            CustomBrothDraftBridge.selectedStyle == selectedStyle &&
-            !draftSelections.isEmpty &&
-            normalizedDraftIDs == normalizedCurrentIDs &&
-            draftWeight == totalWeight
-
-        if draftMatchesCurrentInput {
-            let profile: BrothProfile = selectedStyle == .light ? .cleaner : .richer
-            self.init(
-                mode: .custom(profile),
-                totalWeight: totalWeight,
-                selectedIngredientCount: selectedIngredientCount,
-                selectedIDs: selectedIDs,
-                initialSelections: draftSelections
-            )
-            return
-        }
-
-        let normalizedIDs = Set(selectedIDs.map {
-            $0.folding(options: .diacriticInsensitive, locale: .current).lowercased()
-        })
-
-        if selectedStyle == .light && normalizedIDs == ["kura"] {
-            self.init(
-                mode: .preset(.poultryReady),
-                totalWeight: totalWeight,
-                selectedIngredientCount: selectedIngredientCount,
-                selectedIDs: selectedIDs,
-                initialSelections: []
-            )
-            return
-        }
-
-        if selectedStyle == .intense && normalizedIDs == ["kura", "szponder"] {
-            self.init(
-                mode: .preset(.poultryBeefReady),
-                totalWeight: totalWeight,
-                selectedIngredientCount: selectedIngredientCount,
-                selectedIDs: selectedIDs,
-                initialSelections: []
-            )
-            return
-        }
-
-        let profile: BrothProfile = selectedStyle == .light ? .cleaner : .richer
-        self.init(
-            mode: .custom(profile),
-            totalWeight: totalWeight,
-            selectedIngredientCount: selectedIngredientCount,
-            selectedIDs: selectedIDs,
-            initialSelections: draftSelections
-        )
-    }
-
     private var result: BrothCalculationResult {
         switch mode {
         case .preset(let preset):
@@ -156,17 +87,6 @@ struct BrothResultView: View {
     private var resolvedSelections: [BrothIngredientSelection] {
         if !initialSelections.isEmpty {
             return sortedSelections(initialSelections)
-        }
-
-        let draftSelections = CustomBrothDraftBridge.selections
-        let draftIDs = Set(draftSelections.map { normalize($0.id) })
-        let currentIDs = Set(selectedIDs.map(normalize))
-        let draftWeight = draftSelections.reduce(0) { $0 + $1.grams }
-
-        if !draftSelections.isEmpty,
-           draftIDs == currentIDs,
-           draftWeight == totalWeight {
-            return sortedSelections(draftSelections)
         }
 
         return sortedSelections(syntheticSelections())
@@ -318,10 +238,10 @@ struct BrothResultView: View {
             } label: {
                 AppPrimaryButtonLabel(
                     title: "Przejdź do gotowania",
-                    disabled: hasBlockingFailure
+                    disabled: hasBlockingFailure || isStartingCooking
                 )
             }
-            .disabled(hasBlockingFailure)
+            .disabled(hasBlockingFailure || isStartingCooking)
             .padding(.horizontal, AppSpacing.screen)
             .padding(.top, 8)
             .padding(.bottom, 8)
@@ -336,7 +256,6 @@ struct BrothResultView: View {
                 CookingModeView(
                     batch: savedBatch,
                     result: result,
-                    selectedStyle: compatibilityStyle,
                     totalWeightGrams: totalWeight,
                     selectedIngredientCount: selectedIngredientCount,
                     hasThermometer: hasThermometer
@@ -977,7 +896,8 @@ extension BrothResultView {
     }
 
     private func startCooking() {
-        guard !hasBlockingFailure else { return }
+        guard !hasBlockingFailure, !isStartingCooking else { return }
+        isStartingCooking = true
 
         let ingredientSnapshots = resolvedSelections.map { selection in
             BatchIngredientSnapshot(
@@ -1164,8 +1084,7 @@ private struct ResultMetricCard: View {
                 .fixedSize(horizontal: false, vertical: true)
         }
         .frame(maxWidth: .infinity, minHeight: 98, alignment: .leading)
-        .padding(.horizontal, 16)
-        .padding(.vertical, 12)
+        .padding(AppSpacing.card)
         .background(AppTheme.surface)
         .overlay(
             RoundedRectangle(cornerRadius: AppRadius.card, style: .continuous)
