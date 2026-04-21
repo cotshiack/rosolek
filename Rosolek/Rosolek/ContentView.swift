@@ -405,36 +405,43 @@ private struct HomePresetCard: View {
 private struct CalculatorEntryCard: View {
     let compact: Bool
 
+    private let heroArtwork = HomeCardArtwork.asset("HomeHeroCustomBroth")
+
     var body: some View {
-        ZStack {
+        ZStack(alignment: .bottomLeading) {
+            Group {
+                if heroArtwork.isAvailable {
+                    Image(heroArtwork.assetName)
+                        .resizable()
+                        .scaledToFill()
+                } else {
+                    LinearGradient(
+                        colors: [AppTheme.accentSoft.opacity(0.92), AppTheme.surface],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                }
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+
             LinearGradient(
-                colors: [
-                    AppTheme.accentSoft.opacity(0.92),
-                    AppTheme.surface
-                ],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
+                colors: [.clear, Color.black.opacity(0.62)],
+                startPoint: .top,
+                endPoint: .bottom
             )
 
-            HStack(alignment: .center, spacing: 14) {
-                VStack(alignment: .leading, spacing: 12) {
-                    Text("Własny rosół od podstaw")
-                        .font(.system(size: compact ? 21 : 22, weight: .bold))
-                        .foregroundStyle(AppTheme.textPrimary)
-                        .lineLimit(2)
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Własny rosół od podstaw")
+                    .font(.system(size: compact ? 21 : 22, weight: .bold))
+                    .foregroundStyle(.white)
+                    .lineLimit(2)
 
-                    Text("Dobierz składniki i proporcje do swojego garnka.")
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundStyle(AppTheme.textSecondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-
-                Spacer(minLength: 8)
-
-                HomeHeroArtwork(compact: compact)
+                Text("Dobierz składniki i proporcje do swojego garnka.")
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundStyle(.white.opacity(0.85))
+                    .fixedSize(horizontal: false, vertical: true)
             }
             .padding(AppSpacing.card)
-            .padding(.top, 18)
         }
         .overlay(alignment: .topLeading) {
             AppPill(title: "Tryb własny", systemImage: "sparkles", filled: true)
@@ -443,10 +450,6 @@ private struct CalculatorEntryCard: View {
                 .padding(.leading, 12)
         }
         .frame(maxWidth: .infinity, minHeight: compact ? 168 : 176, alignment: .leading)
-        .overlay(
-            RoundedRectangle(cornerRadius: AppRadius.card, style: .continuous)
-                .stroke(AppTheme.accent.opacity(0.42), lineWidth: 1)
-        )
         .clipShape(RoundedRectangle(cornerRadius: AppRadius.card, style: .continuous))
         .appSoftShadow()
     }
