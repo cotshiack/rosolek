@@ -71,12 +71,14 @@ private struct HomeView: View {
         [
             HomePresetItem(
                 recipe: poultryPresetRecipe,
-                illustrationStyle: .light,
+                artwork: .asset("HomeRecipePoultry"),
+                fallbackStyle: .light,
                 filter: .poultry
             ),
             HomePresetItem(
                 recipe: poultryBeefPresetRecipe,
-                illustrationStyle: .intense,
+                artwork: .asset("HomeRecipePoultryBeef"),
+                fallbackStyle: .intense,
                 filter: .poultryBeef
             )
         ]
@@ -207,7 +209,8 @@ private struct HomeView: View {
                             HomePresetCard(
                                 title: item.recipe.title,
                                 subtitle: item.recipe.subtitle,
-                                illustrationStyle: item.illustrationStyle,
+                                artwork: item.artwork,
+                                fallbackStyle: item.fallbackStyle,
                                 metrics: [
                                     HomeMetric(kind: .time, title: item.recipe.cookingDurationText),
                                     HomeMetric(kind: .yield, title: item.recipe.estimatedYieldText)
@@ -353,7 +356,8 @@ private struct SecondaryActionPill: View {
 private struct HomePresetCard: View {
     let title: String
     let subtitle: String
-    let illustrationStyle: BrothIllustrationStyle
+    let artwork: HomeCardArtwork
+    let fallbackStyle: BrothIllustrationStyle
     let metrics: [HomeMetric]
     let compact: Bool
 
@@ -367,10 +371,11 @@ private struct HomePresetCard: View {
             border: AppTheme.border
         ) {
             VStack(alignment: .leading, spacing: compact ? 16 : 18) {
-                HStack(alignment: .top) {
-                    PresetIngredientIllustration(style: illustrationStyle, compact: compact)
-                    Spacer(minLength: 0)
-                }
+                HomeRecipeArtwork(
+                    artwork: artwork,
+                    fallbackStyle: fallbackStyle,
+                    compact: compact
+                )
 
                 VStack(alignment: .leading, spacing: 8) {
                     Text(title)
@@ -414,36 +419,30 @@ private struct CalculatorEntryCard: View {
                 endPoint: .bottomTrailing
             )
 
-            HStack(alignment: .center, spacing: 16) {
+            HStack(alignment: .center, spacing: 14) {
                 VStack(alignment: .leading, spacing: 12) {
                     Text("Własny rosół od podstaw")
                         .font(.system(size: compact ? 21 : 22, weight: .bold))
                         .foregroundStyle(AppTheme.textPrimary)
                         .lineLimit(2)
 
-                    Text("Dobierz składniki i proporcje idealne dla Twojego garnka.")
-                        .font(.system(size: 15, weight: .medium))
+                    Text("Dobierz składniki i proporcje do swojego garnka.")
+                        .font(.system(size: 14, weight: .medium))
                         .foregroundStyle(AppTheme.textSecondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
 
                 Spacer(minLength: 8)
 
-                ZStack {
-                    Circle()
-                        .fill(AppTheme.surface.opacity(0.84))
-                        .frame(width: compact ? 120 : 128, height: compact ? 120 : 128)
-
-                    HeroBrothGlyph()
-                        .scaleEffect(compact ? 0.96 : 1)
-                }
+                HomeHeroArtwork(compact: compact)
             }
             .padding(AppSpacing.card)
+            .padding(.top, 18)
         }
-        .overlay(alignment: .topTrailing) {
+        .overlay(alignment: .topLeading) {
             AppPill(title: "Tryb własny", systemImage: "sparkles", filled: true)
                 .padding(.top, 12)
-                .padding(.trailing, 12)
+                .padding(.leading, 12)
         }
         .frame(maxWidth: .infinity, minHeight: compact ? 168 : 176, alignment: .leading)
         .overlay(
@@ -683,8 +682,24 @@ private struct HomeMetric: Identifiable {
 private struct HomePresetItem: Identifiable {
     let id = UUID()
     let recipe: HomePresetRecipe
-    let illustrationStyle: BrothIllustrationStyle
+    let artwork: HomeCardArtwork
+    let fallbackStyle: BrothIllustrationStyle
     let filter: HomeRecipeFilter
+}
+
+private enum HomeCardArtwork {
+    case asset(String)
+
+    var assetName: String {
+        switch self {
+        case .asset(let name):
+            return name
+        }
+    }
+
+    var isAvailable: Bool {
+        UIImage(named: assetName) != nil
+    }
 }
 
 private enum HomeRecipeFilter: String, CaseIterable, Identifiable {
@@ -807,6 +822,59 @@ private struct HistoryInfoGlyph: View {
             }
         }
         .frame(width: 12, height: 12)
+    }
+}
+
+private struct HomeRecipeArtwork: View {
+    let artwork: HomeCardArtwork
+    let fallbackStyle: BrothIllustrationStyle
+    let compact: Bool
+
+    var body: some View {
+        Group {
+            if artwork.isAvailable {
+                Image(artwork.assetName)
+                    .resizable()
+                    .scaledToFill()
+                    .frame(height: compact ? 120 : 128)
+                    .frame(maxWidth: .infinity)
+                    .clipShape(RoundedRectangle(cornerRadius: compact ? 18 : 20, style: .continuous))
+            } else {
+                HStack(alignment: .top) {
+                    PresetIngredientIllustration(style: fallbackStyle, compact: compact)
+                    Spacer(minLength: 0)
+                }
+            }
+        }
+    }
+}
+
+private struct HomeHeroArtwork: View {
+    let compact: Bool
+
+    private var size: CGFloat {
+        compact ? 118 : 126
+    }
+
+    private let heroArtwork = HomeCardArtwork.asset("HomeHeroCustomBroth")
+
+    var body: some View {
+        ZStack {
+            Circle()
+                .fill(AppTheme.surface.opacity(0.84))
+                .frame(width: size, height: size)
+
+            if heroArtwork.isAvailable {
+                Image(heroArtwork.assetName)
+                    .resizable()
+                    .scaledToFill()
+                    .frame(width: size - 10, height: size - 10)
+                    .clipShape(Circle())
+            } else {
+                HeroBrothGlyph()
+                    .scaleEffect(compact ? 0.96 : 1)
+            }
+        }
     }
 }
 
