@@ -406,9 +406,10 @@ private struct CalculatorEntryCard: View {
     let compact: Bool
 
     private let heroArtwork = HomeCardArtwork.asset("HomeHeroCustomBroth")
+    private var cardHeight: CGFloat { compact ? 156 : 164 }
 
     var body: some View {
-        ZStack(alignment: .bottomLeading) {
+        ZStack(alignment: .bottom) {
             Group {
                 if heroArtwork.isAvailable {
                     Image(heroArtwork.assetName)
@@ -424,32 +425,30 @@ private struct CalculatorEntryCard: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
 
-            LinearGradient(
-                colors: [.clear, Color.black.opacity(0.62)],
-                startPoint: .top,
-                endPoint: .bottom
-            )
-
-            VStack(alignment: .leading, spacing: 6) {
+            VStack(alignment: .leading, spacing: 4) {
                 Text("Własny rosół od podstaw")
-                    .font(.system(size: compact ? 21 : 22, weight: .bold))
-                    .foregroundStyle(.white)
-                    .lineLimit(2)
+                    .font(.system(size: compact ? 17 : 18, weight: .bold))
+                    .foregroundStyle(.primary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.9)
 
                 Text("Dobierz składniki i proporcje do swojego garnka.")
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundStyle(.white.opacity(0.85))
-                    .fixedSize(horizontal: false, vertical: true)
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
             }
-            .padding(AppSpacing.card)
+            .padding(.horizontal, AppSpacing.card)
+            .padding(.vertical, 12)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(.ultraThinMaterial)
         }
+        .frame(maxWidth: .infinity, height: cardHeight)
         .overlay(alignment: .topLeading) {
             AppPill(title: "Tryb własny", systemImage: "sparkles", filled: true)
                 .foregroundStyle(AppTheme.surface)
                 .padding(.top, 12)
                 .padding(.leading, 12)
         }
-        .frame(maxWidth: .infinity, minHeight: compact ? 168 : 176, alignment: .leading)
         .clipShape(RoundedRectangle(cornerRadius: AppRadius.card, style: .continuous))
         .appSoftShadow()
     }
