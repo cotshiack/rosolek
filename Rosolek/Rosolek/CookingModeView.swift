@@ -728,6 +728,7 @@ struct CookingModeView: View {
                     ReadyToStartBanner()
                 }
             }
+            .animation(.easeInOut(duration: 0.2), value: canStartCooking)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .appSoftShadow()
@@ -1203,10 +1204,12 @@ struct CookingModeView: View {
     private func startCookingFromPrep() {
         guard canStartCooking else { return }
 
-        sessionStarted = true
-        phaseIndex = 1
-        phaseElapsedSeconds = 0
-        isStageRunning = true
+        withAnimation(.easeInOut(duration: 0.3)) {
+            sessionStarted = true
+            phaseIndex = 1
+            phaseElapsedSeconds = 0
+            isStageRunning = true
+        }
         playStartSignal()
         UINotificationFeedbackGenerator().notificationOccurred(.success)
     }
@@ -1226,18 +1229,22 @@ struct CookingModeView: View {
     private func advanceToNextPhase() {
         guard phaseIndex < phases.count - 1 else { return }
 
-        phaseIndex += 1
-        phaseElapsedSeconds = 0
-        overheatMessage = nil
+        withAnimation(.easeInOut(duration: 0.25)) {
+            phaseIndex += 1
+            phaseElapsedSeconds = 0
+            overheatMessage = nil
+        }
         UINotificationFeedbackGenerator().notificationOccurred(.warning)
     }
 
     private func goToPreviousStep() {
         guard canGoBackward else { return }
 
-        phaseIndex -= 1
-        phaseElapsedSeconds = 0
-        overheatMessage = nil
+        withAnimation(.easeInOut(duration: 0.25)) {
+            phaseIndex -= 1
+            phaseElapsedSeconds = 0
+            overheatMessage = nil
+        }
         UIImpactFeedbackGenerator(style: .light).impactOccurred()
         playTapSignal()
     }
