@@ -2746,43 +2746,26 @@ private struct PhaseDetailsSheet: View {
     var body: some View {
         NavigationStack {
             ScrollView(.vertical, showsIndicators: false) {
-                VStack(alignment: .leading, spacing: 20) {
-                    VStack(alignment: .leading, spacing: 10) {
-                        Text(model.eyebrow)
-                            .font(.system(size: 12, weight: .semibold))
-                            .foregroundStyle(AppTheme.textSecondary)
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 5)
-                            .background(AppTheme.accentSoft)
-                            .overlay(
-                                Capsule()
-                                    .stroke(AppTheme.accent.opacity(0.4), lineWidth: 1)
-                            )
-                            .clipShape(Capsule())
+                VStack(alignment: .leading, spacing: 0) {
+                    Text(model.eyebrow)
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundStyle(AppTheme.textTertiary)
+                        .padding(.bottom, 6)
 
-                        Text(content.title)
-                            .font(.system(size: 28, weight: .bold))
-                            .foregroundStyle(AppTheme.textPrimary)
-                    }
+                    Text(content.title)
+                        .font(.system(size: 26, weight: .bold))
+                        .foregroundStyle(AppTheme.textPrimary)
+                        .padding(.bottom, 14)
 
-                    HStack(spacing: 0) {
-                        Rectangle()
-                            .fill(AppTheme.accent)
-                            .frame(width: 3)
-                            .clipShape(RoundedRectangle(cornerRadius: 2, style: .continuous))
-
-                        Text(model.intro)
-                            .font(.system(size: 15, weight: .medium))
-                            .foregroundStyle(AppTheme.textPrimary)
-                            .fixedSize(horizontal: false, vertical: true)
-                            .padding(.horizontal, 14)
-                            .padding(.vertical, 12)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                    }
-                    .background(AppTheme.accentSoft)
-                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                    Text(model.intro)
+                        .font(.system(size: 15, weight: .regular))
+                        .foregroundStyle(AppTheme.textSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .padding(.bottom, 24)
 
                     if !model.sections.isEmpty {
+                        Divider()
+                            .overlay(AppTheme.border)
                         SheetGroupedSectionsPanel(sections: model.sections)
                     }
 
@@ -2867,60 +2850,50 @@ private struct SheetGroupedSectionsPanel: View {
     let sections: [PhaseSheetSection]
 
     var body: some View {
-        AppCard(background: AppTheme.surface, border: AppTheme.border) {
-            VStack(spacing: 0) {
-                ForEach(Array(sections.enumerated()), id: \.element.id) { index, section in
-                    SheetGroupedSectionRow(
-                        title: section.title,
-                        systemImage: section.systemImage,
-                        text: section.text,
-                        bullets: section.bullets
-                    )
-
-                    if index < sections.count - 1 {
-                        Divider()
-                            .overlay(AppTheme.border)
-                    }
+        VStack(spacing: 0) {
+            ForEach(Array(sections.enumerated()), id: \.element.id) { index, section in
+                if index > 0 {
+                    Divider()
+                        .overlay(AppTheme.border)
                 }
+                SheetGroupedSectionRow(
+                    title: section.title,
+                    text: section.text,
+                    bullets: section.bullets
+                )
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
 
 private struct SheetGroupedSectionRow: View {
     let title: String
-    let systemImage: String
     let text: String
     let bullets: [String]
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack(alignment: .center, spacing: 10) {
-                SheetSectionIconBadge(systemImage: systemImage)
-
-                Text(title)
-                    .font(.system(size: 15, weight: .semibold))
-                    .foregroundStyle(AppTheme.textPrimary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
+        VStack(alignment: .leading, spacing: 8) {
+            Text(title)
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundStyle(AppTheme.textSecondary)
 
             Text(text)
-                .font(.system(size: 14, weight: .regular))
-                .foregroundStyle(AppTheme.textSecondary)
+                .font(.system(size: 15, weight: .regular))
+                .foregroundStyle(AppTheme.textPrimary)
                 .fixedSize(horizontal: false, vertical: true)
 
             if !bullets.isEmpty {
-                VStack(alignment: .leading, spacing: 7) {
+                VStack(alignment: .leading, spacing: 6) {
                     ForEach(bullets, id: \.self) { bullet in
-                        HStack(alignment: .top, spacing: 10) {
+                        HStack(alignment: .top, spacing: 8) {
                             Circle()
-                                .fill(AppTheme.accent)
-                                .frame(width: 5, height: 5)
-                                .padding(.top, 6)
+                                .fill(AppTheme.textTertiary)
+                                .frame(width: 4, height: 4)
+                                .padding(.top, 7)
 
                             Text(bullet)
-                                .font(.system(size: 14, weight: .medium))
+                                .font(.system(size: 14, weight: .regular))
                                 .foregroundStyle(AppTheme.textSecondary)
                                 .fixedSize(horizontal: false, vertical: true)
 
@@ -2928,11 +2901,10 @@ private struct SheetGroupedSectionRow: View {
                         }
                     }
                 }
-                .padding(.top, 2)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(16)
+        .padding(.vertical, 16)
     }
 }
 
@@ -2942,33 +2914,23 @@ private struct SheetSupportStrip: View {
     let text: String
 
     var body: some View {
-        AppCard(
-            background: AppTheme.accentSoft,
-            border: AppTheme.accent.opacity(0.35)
-        ) {
-            HStack(alignment: .top, spacing: 12) {
-                Image(systemName: systemImage)
-                    .font(.system(size: 15, weight: .semibold))
+        VStack(alignment: .leading, spacing: 0) {
+            Divider()
+                .overlay(AppTheme.border)
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(title)
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(AppTheme.textTertiary)
+
+                Text(text)
+                    .font(.system(size: 13, weight: .regular))
                     .foregroundStyle(AppTheme.textSecondary)
-                    .frame(width: 22, height: 22)
-                    .padding(.top, 1)
-
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(title)
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundStyle(AppTheme.textSecondary)
-                        .textCase(.uppercase)
-                        .tracking(0.4)
-
-                    Text(text)
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundStyle(AppTheme.textPrimary)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-
-                Spacer(minLength: 0)
+                    .fixedSize(horizontal: false, vertical: true)
             }
+            .padding(.top, 14)
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
 
