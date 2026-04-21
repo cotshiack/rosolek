@@ -111,6 +111,11 @@ private struct PhaseSheetModel {
     let footerLabel: String
 }
 
+private struct SheetContentHeightKey: PreferenceKey {
+    static var defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = nextValue() }
+}
+
 private enum LiveIngredientIconKind: Hashable {
     case carrot
     case celery
@@ -640,17 +645,14 @@ struct CookingModeView: View {
             switch sheet {
             case .phase(let content):
                 PhaseDetailsSheet(content: content)
-                    .presentationDetents([.large])
                     .presentationDragIndicator(.visible)
 
             case .temperature(let content):
                 TemperatureDetailsSheet(content: content)
-                    .presentationDetents([.large])
                     .presentationDragIndicator(.visible)
 
             case .ingredients(let content):
                 IngredientsReminderSheet(content: content)
-                    .presentationDetents([.large])
                     .presentationDragIndicator(.visible)
             }
         }
@@ -2087,42 +2089,44 @@ private struct OverheatBanner: View {
 
 private struct IngredientsReminderSheet: View {
     let content: IngredientsReminderSheetContent
+    @State private var sheetHeight: CGFloat = 500
 
     var body: some View {
         NavigationStack {
-            GeometryReader { _ in
-                ScrollView(.vertical, showsIndicators: false) {
-                    VStack(alignment: .leading, spacing: 18) {
-                        Text(content.title)
-                            .font(.system(size: 32, weight: .bold))
-                            .foregroundStyle(AppTheme.textPrimary)
+            ScrollView(.vertical, showsIndicators: false) {
+                VStack(alignment: .leading, spacing: 18) {
+                    Text(content.title)
+                        .font(.system(size: 32, weight: .bold))
+                        .foregroundStyle(AppTheme.textPrimary)
 
-                        Text(content.subtitle)
-                            .font(.system(size: 15, weight: .medium))
-                            .foregroundStyle(AppTheme.textSecondary)
-                            .fixedSize(horizontal: false, vertical: true)
+                    Text(content.subtitle)
+                        .font(.system(size: 15, weight: .medium))
+                        .foregroundStyle(AppTheme.textSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
 
-                        IngredientsSectionCard(
-                            title: "Warzywa",
-                            rows: content.vegetableRows
-                        )
+                    IngredientsSectionCard(
+                        title: "Warzywa",
+                        rows: content.vegetableRows
+                    )
 
-                        IngredientsSectionCard(
-                            title: "Przyprawy",
-                            rows: content.spiceRows
-                        )
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal, AppSpacing.screen)
-                    .padding(.top, 28)
-                    .padding(.bottom, 32)
+                    IngredientsSectionCard(
+                        title: "Przyprawy",
+                        rows: content.spiceRows
+                    )
                 }
-                .scrollBounceBehavior(.basedOnSize, axes: .vertical)
-                .background(AppTheme.background)
-                .clipped()
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, AppSpacing.screen)
+                .padding(.top, 28)
+                .padding(.bottom, 32)
+                .background(GeometryReader { geo in
+                    Color.clear.preference(key: SheetContentHeightKey.self, value: geo.size.height)
+                })
             }
+            .scrollBounceBehavior(.basedOnSize, axes: .vertical)
+            .background(AppTheme.background)
+            .onPreferenceChange(SheetContentHeightKey.self) { sheetHeight = $0 + 60 }
         }
+        .presentationDetents([.height(sheetHeight), .large])
     }
 }
 
@@ -2223,6 +2227,7 @@ private struct LiveIngredientIllustrationBadge: View {
 
 private struct TemperatureDetailsSheet: View {
     let content: TemperatureSheetContent
+    @State private var sheetHeight: CGFloat = 500
 
     private var heroText: String {
         content.hasThermometer
@@ -2262,10 +2267,15 @@ private struct TemperatureDetailsSheet: View {
                 .padding(.horizontal, AppSpacing.screen)
                 .padding(.top, 28)
                 .padding(.bottom, 32)
+                .background(GeometryReader { geo in
+                    Color.clear.preference(key: SheetContentHeightKey.self, value: geo.size.height)
+                })
             }
             .scrollBounceBehavior(.basedOnSize, axes: .vertical)
             .background(AppTheme.background)
+            .onPreferenceChange(SheetContentHeightKey.self) { sheetHeight = $0 + 60 }
         }
+        .presentationDetents([.height(sheetHeight), .large])
     }
 }
 
@@ -2460,6 +2470,7 @@ private struct TemperatureMeaningRow: View {
 
 private struct PhaseDetailsSheet: View {
     let content: InstructionSheetContent
+    @State private var sheetHeight: CGFloat = 500
 
     private var model: PhaseSheetModel {
         switch content.phaseKind {
@@ -2760,7 +2771,7 @@ private struct PhaseDetailsSheet: View {
                         .padding(.bottom, 6)
 
                     Text(content.title)
-                        .font(.system(size: 26, weight: .bold))
+                        .font(.system(size: 32, weight: .bold))
                         .foregroundStyle(AppTheme.textPrimary)
                         .padding(.bottom, 14)
 
@@ -2768,12 +2779,13 @@ private struct PhaseDetailsSheet: View {
                         .font(.system(size: 15, weight: .regular))
                         .foregroundStyle(AppTheme.textSecondary)
                         .fixedSize(horizontal: false, vertical: true)
-                        .padding(.bottom, 24)
+                        .padding(.bottom, 20)
 
                     if !model.sections.isEmpty {
-                        Divider()
-                            .overlay(AppTheme.border)
-                        SheetGroupedSectionsPanel(sections: model.sections)
+                        AppCard(background: AppTheme.surface, border: AppTheme.border) {
+                            SheetGroupedSectionsPanel(sections: model.sections)
+                        }
+                        .padding(.bottom, 4)
                     }
 
                     if let footer = model.footer {
@@ -2788,10 +2800,15 @@ private struct PhaseDetailsSheet: View {
                 .padding(.horizontal, AppSpacing.screen)
                 .padding(.top, 28)
                 .padding(.bottom, 32)
+                .background(GeometryReader { geo in
+                    Color.clear.preference(key: SheetContentHeightKey.self, value: geo.size.height)
+                })
             }
             .scrollBounceBehavior(.basedOnSize, axes: .vertical)
             .background(AppTheme.background)
+            .onPreferenceChange(SheetContentHeightKey.self) { sheetHeight = $0 + 60 }
         }
+        .presentationDetents([.height(sheetHeight), .large])
     }
 }
 
@@ -2865,6 +2882,7 @@ private struct SheetGroupedSectionsPanel: View {
                 }
                 SheetGroupedSectionRow(
                     title: section.title,
+                    systemImage: section.systemImage,
                     text: section.text,
                     bullets: section.bullets
                 )
@@ -2876,17 +2894,22 @@ private struct SheetGroupedSectionsPanel: View {
 
 private struct SheetGroupedSectionRow: View {
     let title: String
+    let systemImage: String
     let text: String
     let bullets: [String]
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text(title)
-                .font(.system(size: 11, weight: .semibold))
-                .foregroundStyle(AppTheme.textSecondary)
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(alignment: .center, spacing: 10) {
+                SheetSectionIconBadge(systemImage: systemImage)
+
+                Text(title)
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(AppTheme.textSecondary)
+            }
 
             Text(text)
-                .font(.system(size: 15, weight: .regular))
+                .font(.system(size: 15, weight: .semibold))
                 .foregroundStyle(AppTheme.textPrimary)
                 .fixedSize(horizontal: false, vertical: true)
 
@@ -2911,7 +2934,7 @@ private struct SheetGroupedSectionRow: View {
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.vertical, 16)
+        .padding(16)
     }
 }
 
