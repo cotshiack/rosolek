@@ -640,7 +640,7 @@ struct CookingModeView: View {
             switch sheet {
             case .phase(let content):
                 PhaseDetailsSheet(content: content)
-                    .presentationDetents([.medium, .large])
+                    .presentationDetents([.large])
                     .presentationDragIndicator(.visible)
 
             case .temperature(let content):
@@ -2318,69 +2318,66 @@ private struct TemperatureMechanicsPanel: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 14) {
+            VStack(alignment: .leading, spacing: 6) {
                 Text("Temperatura w praktyce")
-                    .font(.system(size: 24, weight: .bold))
+                    .font(.system(size: 17, weight: .semibold))
                     .foregroundStyle(AppTheme.textPrimary)
 
                 Text(introText)
-                    .font(.system(size: 15, weight: .medium))
+                    .font(.system(size: 14, weight: .regular))
                     .foregroundStyle(AppTheme.textSecondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
-            .padding(.bottom, 18)
 
-            Divider()
-                .overlay(AppTheme.border)
+            AppCard(background: AppTheme.surface, border: AppTheme.border) {
+                VStack(spacing: 0) {
+                    TemperatureMeaningRow(
+                        title: "Za niska",
+                        rangeText: lowRange,
+                        explanation: lowExplanation,
+                        actionText: lowAction,
+                        tone: .neutral
+                    )
 
-            TemperatureMeaningRow(
-                title: "Za niska",
-                rangeText: lowRange,
-                explanation: lowExplanation,
-                actionText: lowAction,
-                systemImage: hasThermometer ? "thermometer.low" : "thermometer.medium",
-                tone: .neutral
-            )
+                    Divider().overlay(AppTheme.border)
 
-            Divider()
-                .overlay(AppTheme.border)
-                .padding(.leading, 46)
+                    TemperatureMeaningRow(
+                        title: "Prawidłowa",
+                        rangeText: goodRange,
+                        explanation: goodExplanation,
+                        actionText: goodAction,
+                        tone: .positive
+                    )
 
-            TemperatureMeaningRow(
-                title: "Prawidłowa",
-                rangeText: goodRange,
-                explanation: goodExplanation,
-                actionText: goodAction,
-                systemImage: "checkmark",
-                tone: .positive
-            )
+                    Divider().overlay(AppTheme.border)
 
-            Divider()
-                .overlay(AppTheme.border)
-                .padding(.leading, 46)
+                    TemperatureMeaningRow(
+                        title: "Za wysoka lub wrzenie",
+                        rangeText: highRange,
+                        explanation: highExplanation,
+                        actionText: highAction,
+                        tone: .warning
+                    )
 
-            TemperatureMeaningRow(
-                title: "Za wysoka lub wrzenie",
-                rangeText: highRange,
-                explanation: highExplanation,
-                actionText: highAction,
-                systemImage: "exclamationmark",
-                tone: .warning
-            )
+                    Divider().overlay(AppTheme.border)
 
-            Divider()
-                .overlay(AppTheme.border)
-                .padding(.top, 2)
+                    HStack(alignment: .top, spacing: 10) {
+                        Image(systemName: hasThermometer ? "thermometer.medium" : "eye")
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundStyle(AppTheme.textTertiary)
+                            .frame(width: 18, height: 18)
+                            .padding(.top, 1)
 
-            HStack(alignment: .top, spacing: 12) {
-                SheetSectionIconBadge(systemImage: hasThermometer ? "thermometer.medium" : "eye")
-                Text(sensoryNote)
-                    .font(.system(size: 15, weight: .medium))
-                    .foregroundStyle(AppTheme.textSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
+                        Text(sensoryNote)
+                            .font(.system(size: 13, weight: .regular))
+                            .foregroundStyle(AppTheme.textSecondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    .padding(16)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                }
             }
-            .padding(.top, 18)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
@@ -2391,8 +2388,15 @@ private struct TemperatureMeaningRow: View {
     let rangeText: String
     let explanation: String
     let actionText: String
-    let systemImage: String
     let tone: SheetIconTone
+
+    private var dotColor: Color {
+        switch tone {
+        case .neutral: return AppTheme.textTertiary
+        case .positive: return AppTheme.success
+        case .warning: return AppTheme.warning
+        }
+    }
 
     private var pillBackground: Color {
         switch tone {
@@ -2411,44 +2415,38 @@ private struct TemperatureMeaningRow: View {
     }
 
     var body: some View {
-        HStack(alignment: .top, spacing: 14) {
-            SheetInlineMarker(systemImage: systemImage, tone: tone)
-                .padding(.top, 2)
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 8) {
+                Circle()
+                    .fill(dotColor)
+                    .frame(width: 8, height: 8)
 
-            VStack(alignment: .leading, spacing: 10) {
                 Text(title)
-                    .font(.system(size: 17, weight: .bold))
+                    .font(.system(size: 15, weight: .semibold))
                     .foregroundStyle(AppTheme.textPrimary)
-                    .fixedSize(horizontal: false, vertical: true)
 
                 Text(rangeText)
-                    .font(.system(size: 12, weight: .bold))
+                    .font(.system(size: 11, weight: .bold))
                     .foregroundStyle(AppTheme.textSecondary)
-                    .padding(.horizontal, 10)
-                    .frame(height: 28)
+                    .padding(.horizontal, 8)
+                    .frame(height: 22)
                     .background(pillBackground)
-                    .overlay(
-                        Capsule()
-                            .stroke(pillStroke, lineWidth: 1)
-                    )
+                    .overlay(Capsule().stroke(pillStroke, lineWidth: 1))
                     .clipShape(Capsule())
                     .fixedSize(horizontal: true, vertical: false)
-
-                Text(explanation)
-                    .font(.system(size: 15, weight: .medium))
-                    .foregroundStyle(AppTheme.textSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
-
-                Text(actionText)
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(AppTheme.textPrimary)
-                    .fixedSize(horizontal: false, vertical: true)
             }
 
-            Spacer(minLength: 0)
+            Text(explanation)
+                .font(.system(size: 13, weight: .regular))
+                .foregroundStyle(AppTheme.textSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+
+            Text(actionText)
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(AppTheme.textPrimary)
+                .fixedSize(horizontal: false, vertical: true)
         }
-        .padding(.horizontal, 18)
-        .padding(.vertical, 16)
+        .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
@@ -2748,16 +2746,41 @@ private struct PhaseDetailsSheet: View {
     var body: some View {
         NavigationStack {
             ScrollView(.vertical, showsIndicators: false) {
-                VStack(alignment: .leading, spacing: 18) {
-                    Text(content.title)
-                        .font(.system(size: 32, weight: .bold))
-                        .foregroundStyle(AppTheme.textPrimary)
+                VStack(alignment: .leading, spacing: 20) {
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text(model.eyebrow)
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundStyle(AppTheme.textSecondary)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 5)
+                            .background(AppTheme.accentSoft)
+                            .overlay(
+                                Capsule()
+                                    .stroke(AppTheme.accent.opacity(0.4), lineWidth: 1)
+                            )
+                            .clipShape(Capsule())
 
-                    SheetHeroCard(
-                        eyebrow: model.eyebrow,
-                        emphasis: nil,
-                        text: model.intro
-                    )
+                        Text(content.title)
+                            .font(.system(size: 28, weight: .bold))
+                            .foregroundStyle(AppTheme.textPrimary)
+                    }
+
+                    HStack(spacing: 0) {
+                        Rectangle()
+                            .fill(AppTheme.accent)
+                            .frame(width: 3)
+                            .clipShape(RoundedRectangle(cornerRadius: 2, style: .continuous))
+
+                        Text(model.intro)
+                            .font(.system(size: 15, weight: .medium))
+                            .foregroundStyle(AppTheme.textPrimary)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 12)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    .background(AppTheme.accentSoft)
+                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
 
                     if !model.sections.isEmpty {
                         SheetGroupedSectionsPanel(sections: model.sections)
@@ -2844,24 +2867,24 @@ private struct SheetGroupedSectionsPanel: View {
     let sections: [PhaseSheetSection]
 
     var body: some View {
-        VStack(spacing: 0) {
-            ForEach(Array(sections.enumerated()), id: \.element.id) { index, section in
-                SheetGroupedSectionRow(
-                    title: section.title,
-                    systemImage: section.systemImage,
-                    text: section.text,
-                    bullets: section.bullets,
-                    isFirst: index == 0
-                )
+        AppCard(background: AppTheme.surface, border: AppTheme.border) {
+            VStack(spacing: 0) {
+                ForEach(Array(sections.enumerated()), id: \.element.id) { index, section in
+                    SheetGroupedSectionRow(
+                        title: section.title,
+                        systemImage: section.systemImage,
+                        text: section.text,
+                        bullets: section.bullets
+                    )
 
-                if index < sections.count - 1 {
-                    Divider()
-                        .overlay(AppTheme.border)
-                        .padding(.leading, 46)
+                    if index < sections.count - 1 {
+                        Divider()
+                            .overlay(AppTheme.border)
+                    }
                 }
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
 
@@ -2870,50 +2893,46 @@ private struct SheetGroupedSectionRow: View {
     let systemImage: String
     let text: String
     let bullets: [String]
-    let isFirst: Bool
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            HStack(alignment: .top, spacing: 12) {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(alignment: .center, spacing: 10) {
                 SheetSectionIconBadge(systemImage: systemImage)
 
-                VStack(alignment: .leading, spacing: 12) {
-                    Text(title)
-                        .font(.system(size: isFirst ? 22 : 21, weight: .bold))
-                        .foregroundStyle(AppTheme.textPrimary)
-                        .fixedSize(horizontal: false, vertical: true)
+                Text(title)
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(AppTheme.textPrimary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
 
-                    Text(text)
-                        .font(.system(size: 15, weight: .medium))
-                        .foregroundStyle(AppTheme.textSecondary)
-                        .fixedSize(horizontal: false, vertical: true)
+            Text(text)
+                .font(.system(size: 14, weight: .regular))
+                .foregroundStyle(AppTheme.textSecondary)
+                .fixedSize(horizontal: false, vertical: true)
 
-                    if !bullets.isEmpty {
-                        VStack(alignment: .leading, spacing: 10) {
-                            ForEach(bullets, id: \.self) { bullet in
-                                HStack(alignment: .top, spacing: 12) {
-                                    Circle()
-                                        .fill(AppTheme.accent)
-                                        .frame(width: 7, height: 7)
-                                        .padding(.top, 8)
+            if !bullets.isEmpty {
+                VStack(alignment: .leading, spacing: 7) {
+                    ForEach(bullets, id: \.self) { bullet in
+                        HStack(alignment: .top, spacing: 10) {
+                            Circle()
+                                .fill(AppTheme.accent)
+                                .frame(width: 5, height: 5)
+                                .padding(.top, 6)
 
-                                    Text(bullet)
-                                        .font(.system(size: 15, weight: .semibold))
-                                        .foregroundStyle(AppTheme.textPrimary)
-                                        .fixedSize(horizontal: false, vertical: true)
+                            Text(bullet)
+                                .font(.system(size: 14, weight: .medium))
+                                .foregroundStyle(AppTheme.textSecondary)
+                                .fixedSize(horizontal: false, vertical: true)
 
-                                    Spacer(minLength: 0)
-                                }
-                            }
+                            Spacer(minLength: 0)
                         }
                     }
                 }
-
-                Spacer(minLength: 0)
+                .padding(.top, 2)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.vertical, isFirst ? 18 : 20)
+        .padding(16)
     }
 }
 
@@ -2924,19 +2943,25 @@ private struct SheetSupportStrip: View {
 
     var body: some View {
         AppCard(
-            background: AppTheme.surface,
-            border: AppTheme.border
+            background: AppTheme.accentSoft,
+            border: AppTheme.accent.opacity(0.35)
         ) {
             HStack(alignment: .top, spacing: 12) {
-                SheetSectionIconBadge(systemImage: systemImage)
+                Image(systemName: systemImage)
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(AppTheme.textSecondary)
+                    .frame(width: 22, height: 22)
+                    .padding(.top, 1)
 
-                VStack(alignment: .leading, spacing: 6) {
+                VStack(alignment: .leading, spacing: 4) {
                     Text(title)
-                        .font(.system(size: 14, weight: .semibold))
+                        .font(.system(size: 12, weight: .semibold))
                         .foregroundStyle(AppTheme.textSecondary)
+                        .textCase(.uppercase)
+                        .tracking(0.4)
 
                     Text(text)
-                        .font(.system(size: 16, weight: .semibold))
+                        .font(.system(size: 14, weight: .medium))
                         .foregroundStyle(AppTheme.textPrimary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
@@ -2952,16 +2977,16 @@ private struct SheetSectionIconBadge: View {
 
     var body: some View {
         ZStack {
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
                 .fill(AppTheme.surfaceSoft)
-                .frame(width: 40, height: 40)
+                .frame(width: 32, height: 32)
 
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
                 .stroke(AppTheme.border, lineWidth: 1)
-                .frame(width: 40, height: 40)
+                .frame(width: 32, height: 32)
 
             Image(systemName: systemImage)
-                .font(.system(size: 16, weight: .semibold))
+                .font(.system(size: 14, weight: .semibold))
                 .foregroundStyle(AppTheme.textPrimary)
         }
     }
