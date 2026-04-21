@@ -404,28 +404,61 @@ private struct CalculatorEntryCard: View {
     let compact: Bool
 
     var body: some View {
-        AppCard(
-            background: AppTheme.surface,
-            border: AppTheme.border
-        ) {
+        ZStack {
+            LinearGradient(
+                colors: [
+                    AppTheme.accentSoft.opacity(0.92),
+                    AppTheme.surface
+                ],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+
             HStack(alignment: .center, spacing: 16) {
-                VStack(alignment: .leading, spacing: 8) {
+                VStack(alignment: .leading, spacing: 10) {
+                    AppPill(title: "Tryb własny", systemImage: "sparkles", filled: true)
+
                     Text("Własny rosół od podstaw")
-                        .font(.system(size: compact ? 18 : 19, weight: .bold))
+                        .font(.system(size: compact ? 21 : 22, weight: .bold))
                         .foregroundStyle(AppTheme.textPrimary)
+                        .lineLimit(2)
 
                     Text("Wybierz składniki i od razu sprawdź proporcje wody, warzyw oraz przypraw dla Twojego garnka.")
-                        .font(.system(size: 14, weight: .medium))
+                        .font(.system(size: 15, weight: .medium))
                         .foregroundStyle(AppTheme.textSecondary)
                         .fixedSize(horizontal: false, vertical: true)
+
+                    HStack(spacing: 6) {
+                        Text("Personalizowany przepis")
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundStyle(AppTheme.textPrimary.opacity(0.82))
+
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 11, weight: .bold))
+                            .foregroundStyle(AppTheme.textPrimary.opacity(0.82))
+                    }
+                    .padding(.top, 2)
                 }
 
-                Spacer(minLength: 12)
+                Spacer(minLength: 8)
 
-                PresetIngredientIllustration(style: .custom, compact: false)
+                ZStack {
+                    RoundedRectangle(cornerRadius: 26, style: .continuous)
+                        .fill(AppTheme.surface.opacity(0.92))
+                        .frame(width: compact ? 106 : 114, height: compact ? 106 : 114)
+
+                    PresetIngredientIllustration(style: .custom, compact: false)
+                        .scaleEffect(compact ? 1.08 : 1.12)
+                }
             }
-            .frame(maxWidth: .infinity, minHeight: compact ? 116 : 122, alignment: .leading)
+            .padding(AppSpacing.card)
         }
+        .frame(maxWidth: .infinity, minHeight: compact ? 168 : 176, alignment: .leading)
+        .overlay(
+            RoundedRectangle(cornerRadius: AppRadius.card, style: .continuous)
+                .stroke(AppTheme.accent.opacity(0.42), lineWidth: 1)
+        )
+        .clipShape(RoundedRectangle(cornerRadius: AppRadius.card, style: .continuous))
         .appSoftShadow()
     }
 }
