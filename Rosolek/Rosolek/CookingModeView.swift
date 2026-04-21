@@ -111,6 +111,11 @@ private struct PhaseSheetModel {
     let footerLabel: String
 }
 
+private struct SheetContentHeightKey: PreferenceKey {
+    static var defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = nextValue() }
+}
+
 
 private enum LiveIngredientIconKind: Hashable {
     case carrot
@@ -641,17 +646,14 @@ struct CookingModeView: View {
             switch sheet {
             case .phase(let content):
                 PhaseDetailsSheet(content: content)
-                    .presentationDetents([.medium, .large])
                     .presentationDragIndicator(.visible)
 
             case .temperature(let content):
                 TemperatureDetailsSheet(content: content)
-                    .presentationDetents([.medium, .large])
                     .presentationDragIndicator(.visible)
 
             case .ingredients(let content):
                 IngredientsReminderSheet(content: content)
-                    .presentationDetents([.medium, .large])
                     .presentationDragIndicator(.visible)
             }
         }
@@ -2088,6 +2090,7 @@ private struct OverheatBanner: View {
 
 private struct IngredientsReminderSheet: View {
     let content: IngredientsReminderSheetContent
+    @State private var sheetHeight: CGFloat = 700
 
     var body: some View {
         NavigationStack {
@@ -2116,10 +2119,18 @@ private struct IngredientsReminderSheet: View {
                 .padding(.horizontal, AppSpacing.screen)
                 .padding(.top, 28)
                 .padding(.bottom, 32)
+                .background(GeometryReader { geo in
+                    Color.clear.preference(key: SheetContentHeightKey.self, value: geo.size.height)
+                })
             }
             .scrollBounceBehavior(.basedOnSize, axes: .vertical)
             .background(AppTheme.background)
+            .onPreferenceChange(SheetContentHeightKey.self) { height in
+                guard height > 100 else { return }
+                sheetHeight = height + 60
+            }
         }
+        .presentationDetents([.height(sheetHeight), .large])
     }
 }
 
@@ -2220,6 +2231,7 @@ private struct LiveIngredientIllustrationBadge: View {
 
 private struct TemperatureDetailsSheet: View {
     let content: TemperatureSheetContent
+    @State private var sheetHeight: CGFloat = 700
 
     private var heroText: String {
         content.hasThermometer
@@ -2259,10 +2271,18 @@ private struct TemperatureDetailsSheet: View {
                 .padding(.horizontal, AppSpacing.screen)
                 .padding(.top, 28)
                 .padding(.bottom, 32)
+                .background(GeometryReader { geo in
+                    Color.clear.preference(key: SheetContentHeightKey.self, value: geo.size.height)
+                })
             }
             .scrollBounceBehavior(.basedOnSize, axes: .vertical)
             .background(AppTheme.background)
+            .onPreferenceChange(SheetContentHeightKey.self) { height in
+                guard height > 100 else { return }
+                sheetHeight = height + 60
+            }
         }
+        .presentationDetents([.height(sheetHeight), .large])
     }
 }
 
@@ -2457,6 +2477,7 @@ private struct TemperatureMeaningRow: View {
 
 private struct PhaseDetailsSheet: View {
     let content: InstructionSheetContent
+    @State private var sheetHeight: CGFloat = 700
 
     private var model: PhaseSheetModel {
         switch content.phaseKind {
@@ -2786,10 +2807,18 @@ private struct PhaseDetailsSheet: View {
                 .padding(.horizontal, AppSpacing.screen)
                 .padding(.top, 28)
                 .padding(.bottom, 32)
+                .background(GeometryReader { geo in
+                    Color.clear.preference(key: SheetContentHeightKey.self, value: geo.size.height)
+                })
             }
             .scrollBounceBehavior(.basedOnSize, axes: .vertical)
             .background(AppTheme.background)
+            .onPreferenceChange(SheetContentHeightKey.self) { height in
+                guard height > 100 else { return }
+                sheetHeight = height + 60
+            }
         }
+        .presentationDetents([.height(sheetHeight), .large])
     }
 }
 
