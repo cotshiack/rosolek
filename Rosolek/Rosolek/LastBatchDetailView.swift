@@ -54,16 +54,13 @@ struct LastBatchDetailView: View {
                         }
                     }
                 }
-                .alert("Zmień nazwę rosołu", isPresented: $showRenameAlert) {
-                    TextField(batch.defaultTitle, text: $renameText)
-
-                    Button("Zapisz") {
+                .sheet(isPresented: $showRenameAlert) {
+                    BatchRenameSheet(
+                        defaultTitle: batch.defaultTitle,
+                        renameText: $renameText
+                    ) {
                         batchStore.updateTitle(batchID: batch.id, customTitle: renameText)
                     }
-
-                    Button("Anuluj", role: .cancel) {}
-                } message: {
-                    Text("Zostaw puste pole, aby wrócić do nazwy domyślnej: „\(batch.defaultTitle)”.")
                 }
                 .alert("Usunąć wpis z historii?", isPresented: $showDeleteAlert) {
                     Button("Usuń", role: .destructive) {
@@ -73,7 +70,7 @@ struct LastBatchDetailView: View {
 
                     Button("Anuluj", role: .cancel) {}
                 } message: {
-                    Text("Tej operacji nie da się cofnąć.")
+                    Text("Usuniesz \(batch.displayTitle). Tej operacji nie da się cofnąć.")
                 }
             } else {
                 missingBatchState
@@ -180,6 +177,12 @@ struct LastBatchDetailView: View {
                             if let clarity {
                                 AppInfoRow(title: "Klarowność", value: clarity)
                             }
+
+                            if strength == nil && fat == nil && clarity == nil {
+                                Text("Brak szczegółowej oceny")
+                                    .font(.system(size: 14, weight: .medium))
+                                    .foregroundStyle(AppTheme.textSecondary)
+                            }
                         }
                     }
                     .appSoftShadow()
@@ -211,26 +214,43 @@ struct LastBatchDetailView: View {
             if let replayIngredientIDs = batch.selectedIngredientIDs, !replayIngredientIDs.isEmpty {
                 NavigationLink {
                     BrothResultView(
-                        selectedStyle: batch.styleRawValue == BrothStyle.intense.rawValue ? .intense : .light,
+                        mode: .custom(batch.brothProfile),
                         totalWeight: batch.totalWeightGrams,
                         selectedIngredientCount: replayIngredientIDs.count,
-                        selectedIDs: replayIngredientIDs
+                        selectedIDs: replayIngredientIDs,
+                        initialSelections: batch.selectedIngredientsSnapshot?.map {
+                            BrothIngredientSelection(
+                                ingredientID: $0.ingredientID,
+                                ingredientName: $0.ingredientName,
+                                category: IngredientCategory(rawValue: $0.categoryRawValue) ?? .poultry,
+                                grams: $0.grams
+                            )
+                        } ?? []
                     )
                 } label: {
                     AppPrimaryButtonLabel(title: "Ugotuj ponownie")
                 }
             } else {
-                VStack(alignment: .leading, spacing: 10) {
-                    Text("Ten starszy batch nie ma pełnego zapisu składników.")
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundStyle(AppTheme.textSecondary)
+                AppCard {
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("Brak pełnego zapisu składników")
+                            .font(.system(size: 15, weight: .bold))
+                            .foregroundStyle(AppTheme.textPrimary)
 
-                    NavigationLink {
-                        BrothStyleSelectionView()
-                    } label: {
-                        AppSecondaryButtonLabel(title: "Przejdź do kalkulatora")
+                        Text("Ten batch był zapisany w starszej wersji aplikacji, która nie przechowywała listy składników. Możesz jednak zacząć nowe gotowanie z tym samym profilem (\(batch.profileTitle)).")
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundStyle(AppTheme.textSecondary)
+                            .fixedSize(horizontal: false, vertical: true)
+
+                        NavigationLink {
+                            BrothStyleSelectionView()
+                        } label: {
+                            AppSecondaryButtonLabel(title: "Zacznij nowe gotowanie")
+                        }
+                        .padding(.top, 4)
                     }
                 }
+                .appSoftShadow()
             }
         }
     }
@@ -285,7 +305,7 @@ private struct DetailRatingBadge: View {
     var body: some View {
         Text(text)
             .font(.system(size: 12, weight: .bold))
-            .foregroundStyle(AppTheme.textPrimary)
+            .foregroundStyle(hasRating ? AppTheme.textPrimary : AppTheme.textSecondary)
             .padding(.horizontal, 10)
             .frame(height: 30)
             .background(hasRating ? AppTheme.accent : AppTheme.surfaceMuted)
@@ -340,40 +360,11 @@ private struct DetailMetaGlyph: View {
                 Image(systemName: "clock")
                     .font(.system(size: 10, weight: .semibold))
             case .yield:
-                DetailYieldGlyph()
+                AppYieldGlyph()
             case .profile:
-                DetailProfileGlyph()
+                AppProfileGlyph()
             }
         }
         .frame(width: 12, height: 12)
-    }
-}
-
-private struct DetailYieldGlyph: View {
-    var body: some View {
-        ZStack(alignment: .bottom) {
-            RoundedRectangle(cornerRadius: 3, style: .continuous)
-                .stroke(AppTheme.textPrimary.opacity(0.82), lineWidth: 1.35)
-                .frame(width: 10, height: 10)
-
-            RoundedRectangle(cornerRadius: 2, style: .continuous)
-                .fill(AppTheme.accent.opacity(0.95))
-                .frame(width: 8, height: 4)
-                .offset(y: -1)
-        }
-    }
-}
-
-private struct DetailProfileGlyph: View {
-    var body: some View {
-        VStack(spacing: 2) {
-            Capsule()
-                .fill(AppTheme.textPrimary.opacity(0.82))
-                .frame(width: 10, height: 3)
-
-            Capsule()
-                .fill(AppTheme.accent.opacity(0.95))
-                .frame(width: 7, height: 3)
-        }
     }
 }

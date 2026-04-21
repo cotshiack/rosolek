@@ -14,10 +14,11 @@ struct SettingsView: View {
     @State private var draftHasThermometer = true
     @State private var isCustomPotSelected = false
     @State private var customPotSize = ""
+    @State private var showDiscardToast = false
 
     @FocusState private var focusedField: Field?
 
-    private let standardPotSizes = [5, 7, 10, 12]
+    private let standardPotSizes = UserPreferencesConstants.standardPotSizes
 
     private enum EditableSetting {
         case name
@@ -40,6 +41,20 @@ struct SettingsView: View {
             .padding(.bottom, 28)
         }
         .background(AppTheme.background.ignoresSafeArea())
+        .overlay(alignment: .bottom) {
+            if showDiscardToast {
+                Text("Zmiany zostały odrzucone")
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 10)
+                    .background(AppTheme.textPrimary.opacity(0.85))
+                    .clipShape(Capsule())
+                    .padding(.bottom, 24)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+            }
+        }
+        .animation(.spring(response: 0.3), value: showDiscardToast)
         .navigationTitle("Ustawienia")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
@@ -57,13 +72,11 @@ struct SettingsView: View {
             resetDrafts()
         }
         .onChange(of: customPotSize) { newValue in
-            let filtered = newValue.filter(\.isNumber)
-
+            let filtered = UserPreferencesConstants.filteredPotSizeInput(newValue)
             if filtered != newValue {
                 customPotSize = filtered
                 return
             }
-
             if isCustomPotSelected, let value = Int(filtered), value > 0 {
                 draftPotSize = value
             }
@@ -511,8 +524,21 @@ struct SettingsView: View {
         }
     }
 
+    private var hasUnsavedChanges: Bool {
+        draftName.trimmingCharacters(in: .whitespacesAndNewlines) != userFirstName ||
+        draftPotSize != potSizeLiters ||
+        draftHasThermometer != hasThermometer
+    }
+
     private func cancelEditing() {
         focusedField = nil
+        if hasUnsavedChanges {
+            showDiscardToast = true
+            Task {
+                try? await Task.sleep(for: .seconds(2))
+                showDiscardToast = false
+            }
+        }
         resetDrafts()
         activeEditor = nil
     }

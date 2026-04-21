@@ -7,7 +7,7 @@ enum AppTheme {
     static let surfaceSoft = Color(hex: "FCFCFA")
 
     static let textPrimary = Color(hex: "111111")
-    static let textSecondary = Color(hex: "8E8E93")
+    static let textSecondary = Color(hex: "6E6E73")
     static let textTertiary = Color(hex: "C7C7CC")
 
     static let accent = Color(hex: "F4D83F")
@@ -54,6 +54,12 @@ enum AppSpacing {
     static let card: CGFloat = 16
     static let small: CGFloat = 12
     static let micro: CGFloat = 8
+}
+
+enum AppTypography {
+    static let screenHeader = Font.system(size: 34, weight: .bold)
+    static let flowHeader   = Font.system(size: 29, weight: .bold)
+    static let cardHeader   = Font.system(size: 22, weight: .bold)
 }
 
 enum AppRadius {
@@ -162,7 +168,7 @@ struct AppIconCircleButton: View {
         Image(systemName: systemName)
             .font(.system(size: 15, weight: .semibold))
             .foregroundStyle(AppTheme.textPrimary)
-            .frame(width: 42, height: 42)
+            .frame(width: 44, height: 44)
             .background(AppTheme.surface)
             .overlay(
                 Circle()
@@ -481,5 +487,18 @@ struct AppBatchSummaryCard<Trailing: View>: View {
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .appSoftShadow()
+    }
+}
+
+enum UserPreferencesConstants {
+    static let standardPotSizes = [5, 7, 10, 12]
+
+    static func isValidCustomPotSize(_ text: String) -> Bool {
+        guard let value = Int(text.filter(\.isNumber)), value > 0 else { return false }
+        return true
+    }
+
+    static func filteredPotSizeInput(_ text: String) -> String {
+        text.filter(\.isNumber)
     }
 }

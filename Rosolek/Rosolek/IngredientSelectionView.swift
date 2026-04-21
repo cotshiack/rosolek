@@ -50,21 +50,6 @@ struct BrothIngredientSelection: Identifiable, Hashable {
     var amountGrams: Int { grams }
 }
 
-enum CustomBrothDraftBridge {
-    static var selectedStyle: BrothStyle?
-    static var selections: [BrothIngredientSelection] = []
-
-    static func save(profile: BrothProfile, selections: [BrothIngredientSelection]) {
-        selectedStyle = profile.legacyStyle
-        self.selections = selections
-    }
-
-    static func clear() {
-        selectedStyle = nil
-        selections = []
-    }
-}
-
 enum FloatingStatusTone {
     case neutral
     case good
@@ -92,10 +77,6 @@ struct IngredientSelectionView: View {
 
     init(selectedProfile: BrothProfile) {
         self.selectedProfile = selectedProfile
-    }
-
-    init(selectedStyle: BrothStyle) {
-        self.selectedProfile = selectedStyle == .light ? .cleaner : .richer
     }
 
     private let ingredients: [IngredientOption] = [
@@ -145,12 +126,6 @@ struct IngredientSelectionView: View {
                     focusedFieldID = nil
                 }
             }
-        }
-        .onAppear {
-            CustomBrothDraftBridge.save(profile: selectedProfile, selections: selectedIngredients)
-        }
-        .onChange(of: amounts) { _, _ in
-            CustomBrothDraftBridge.save(profile: selectedProfile, selections: selectedIngredients)
         }
         .safeAreaInset(edge: .bottom) {
             floatingBottomBar
@@ -238,7 +213,6 @@ struct IngredientSelectionView: View {
             Button {
                 guard canProceed else { return }
                 focusedFieldID = nil
-                CustomBrothDraftBridge.save(profile: selectedProfile, selections: selectedIngredients)
                 navigateToSummary = true
             } label: {
                 AppPrimaryButtonLabel(

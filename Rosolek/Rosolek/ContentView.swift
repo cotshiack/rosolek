@@ -42,6 +42,7 @@ private struct HomeView: View {
     @AppStorage("returnToHomeTrigger") private var returnToHomeTrigger = 0
 
     @State private var selectedPresetFilter: HomeRecipeFilter = .all
+    @State private var activeCookingSession: CookingSession?
 
     private var latestBatch: BatchRecord? {
         batchStore.batches.first
@@ -96,6 +97,9 @@ private struct HomeView: View {
                 ScrollView(showsIndicators: false) {
                     VStack(alignment: .leading, spacing: compact ? 22 : 26) {
                         topBar
+                        if activeCookingSession != nil {
+                            activeCookingBanner
+                        }
                         greetingSection(compact: compact)
                         calculatorSection(compact: compact)
                         readyRecipesSection(compact: compact)
@@ -113,6 +117,7 @@ private struct HomeView: View {
         .toolbar(.hidden, for: .navigationBar)
         .onAppear {
             returnToHomeTrigger = 0
+            activeCookingSession = CookingSession.load()
         }
     }
 
@@ -134,6 +139,27 @@ private struct HomeView: View {
                 SettingsView()
             } label: {
                 AppIconCircleButton(systemName: "gearshape")
+            }
+            .buttonStyle(.plain)
+        }
+    }
+
+    @ViewBuilder
+    private var activeCookingBanner: some View {
+        if let session = activeCookingSession,
+           let batch = batchStore.batch(for: session.batchID) {
+            let result = batch.calculationResult(potSizeLiters: potSizeLiters)
+
+            NavigationLink {
+                CookingModeView(
+                    batch: batch,
+                    result: result,
+                    totalWeightGrams: batch.totalWeightGrams,
+                    selectedIngredientCount: batch.selectedIngredientCount,
+                    hasThermometer: batch.hasThermometer
+                )
+            } label: {
+                ActiveCookingBannerLabel(session: session)
             }
             .buttonStyle(.plain)
         }
@@ -273,12 +299,7 @@ private struct HomeView: View {
                 }
                 .buttonStyle(.plain)
             } else {
-                NavigationLink {
-                    HistoryView()
-                } label: {
-                    EmptyHistoryCompactCard(compact: compact)
-                }
-                .buttonStyle(.plain)
+                EmptyHistoryCompactCard(compact: compact)
             }
         }
     }
@@ -319,7 +340,7 @@ private struct SecondaryActionPill: View {
             .font(.system(size: 13, weight: .semibold))
             .foregroundStyle(AppTheme.textPrimary)
             .padding(.horizontal, 12)
-            .frame(height: 32)
+            .frame(height: 36)
             .background(
                 Capsule()
                     .fill(AppTheme.accentSoft)
@@ -538,7 +559,7 @@ private struct RecentRatingBadge: View {
     var body: some View {
         Text(text)
             .font(.system(size: 12, weight: .bold))
-            .foregroundStyle(AppTheme.textPrimary)
+            .foregroundStyle(hasRating ? AppTheme.textPrimary : AppTheme.textSecondary)
             .padding(.horizontal, 10)
             .frame(height: 30)
             .background(hasRating ? AppTheme.accent : AppTheme.surfaceMuted)
@@ -558,17 +579,37 @@ private struct EmptyHistoryCompactCard: View {
             background: AppTheme.surface,
             border: AppTheme.border
         ) {
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Brak ostatniego gotowania")
-                    .font(.system(size: compact ? 18 : 19, weight: .bold))
-                    .foregroundStyle(AppTheme.textPrimary)
+            VStack(alignment: .leading, spacing: 12) {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Brak ostatniego gotowania")
+                        .font(.system(size: compact ? 18 : 19, weight: .bold))
+                        .foregroundStyle(AppTheme.textPrimary)
 
-                Text("Po pierwszym gotowaniu zobaczysz tu ostatni batch i szybki podgląd jego wyniku.")
-                    .font(.system(size: 13, weight: .medium))
-                    .foregroundStyle(AppTheme.textSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
+                    Text("Tu pojawi się Twój ostatni rosół po pierwszym gotowaniu.")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundStyle(AppTheme.textSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+
+                NavigationLink {
+                    BrothStyleSelectionView()
+                } label: {
+                    HStack(spacing: 6) {
+                        Text("Zacznij pierwsze gotowanie")
+                            .font(.system(size: 13, weight: .semibold))
+                        Image(systemName: "arrow.right")
+                            .font(.system(size: 11, weight: .semibold))
+                    }
+                    .foregroundStyle(AppTheme.textPrimary)
+                    .padding(.horizontal, 12)
+                    .frame(height: 34)
+                    .background(AppTheme.accentSoft)
+                    .overlay(Capsule().stroke(AppTheme.accent.opacity(0.4), lineWidth: 1))
+                    .clipShape(Capsule())
+                }
+                .buttonStyle(.plain)
             }
-            .frame(maxWidth: .infinity, minHeight: compact ? 92 : 98, alignment: .leading)
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
         .appSoftShadow()
     }
@@ -651,7 +692,7 @@ private struct HomeMetricGlyph: View {
                 Image(systemName: "clock")
                     .font(.system(size: 10, weight: .semibold))
             case .yield:
-                YieldGlyph()
+                AppYieldGlyph()
             }
         }
         .frame(width: 12, height: 12)
@@ -701,41 +742,12 @@ private struct HistoryInfoGlyph: View {
                 Image(systemName: "clock")
                     .font(.system(size: 10, weight: .semibold))
             case .yield:
-                YieldGlyph()
+                AppYieldGlyph()
             case .profile:
-                ProfileGlyph()
+                AppProfileGlyph()
             }
         }
         .frame(width: 12, height: 12)
-    }
-}
-
-private struct YieldGlyph: View {
-    var body: some View {
-        ZStack(alignment: .bottom) {
-            RoundedRectangle(cornerRadius: 3, style: .continuous)
-                .stroke(AppTheme.textPrimary.opacity(0.82), lineWidth: 1.35)
-                .frame(width: 10, height: 10)
-
-            RoundedRectangle(cornerRadius: 2, style: .continuous)
-                .fill(AppTheme.accent.opacity(0.95))
-                .frame(width: 8, height: 4)
-                .offset(y: -1)
-        }
-    }
-}
-
-private struct ProfileGlyph: View {
-    var body: some View {
-        VStack(spacing: 2) {
-            Capsule()
-                .fill(AppTheme.textPrimary.opacity(0.82))
-                .frame(width: 10, height: 3)
-
-            Capsule()
-                .fill(AppTheme.accent.opacity(0.95))
-                .frame(width: 7, height: 3)
-        }
     }
 }
 
@@ -1055,6 +1067,92 @@ private struct BeefCubeShape: View {
     }
 }
 
+private struct ActiveCookingBannerLabel: View {
+    let session: CookingSession
+
+    @State private var isPulsing = false
+
+    private var elapsedPhaseSeconds: Int {
+        let base = session.phaseElapsedSeconds
+        guard let bg = session.backgroundedAt else { return base }
+        return base + Int(Date().timeIntervalSince(bg))
+    }
+
+    private var timeText: String? {
+        if let total = session.currentPhaseTotalSeconds {
+            let remaining = max(0, total - elapsedPhaseSeconds)
+            return formatSeconds(remaining)
+        }
+        return nil
+    }
+
+    private func formatSeconds(_ s: Int) -> String {
+        let m = s / 60
+        let sec = s % 60
+        if m >= 60 {
+            return String(format: "%d:%02d:%02d", m / 60, m % 60, sec)
+        }
+        return String(format: "%02d:%02d", m, sec)
+    }
+
+    var body: some View {
+        HStack(alignment: .center, spacing: 14) {
+            ZStack {
+                Circle()
+                    .stroke(AppTheme.accent, lineWidth: 2)
+                    .frame(width: 48, height: 48)
+                    .opacity(isPulsing ? 0.15 : 0.85)
+                    .animation(
+                        .easeInOut(duration: 0.9).repeatForever(autoreverses: true),
+                        value: isPulsing
+                    )
+
+                Circle()
+                    .fill(AppTheme.accent)
+                    .frame(width: 38, height: 38)
+
+                Image(systemName: "flame.fill")
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(AppTheme.textPrimary)
+            }
+            .onAppear { isPulsing = true }
+
+            VStack(alignment: .leading, spacing: 3) {
+                Text("Wróć do ekranu gotowania")
+                    .font(.system(size: 15, weight: .bold))
+                    .foregroundStyle(AppTheme.textPrimary)
+                    .lineLimit(1)
+
+                if let time = timeText {
+                    HStack(spacing: 4) {
+                        Image(systemName: "clock")
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundStyle(AppTheme.textSecondary)
+                        Text("Pozostało \(time)")
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundStyle(AppTheme.textSecondary)
+                            .lineLimit(1)
+                    }
+                }
+            }
+
+            Spacer(minLength: 8)
+
+            Image(systemName: "chevron.right")
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(AppTheme.textSecondary)
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 14)
+        .background(AppTheme.accentSoft)
+        .overlay(
+            RoundedRectangle(cornerRadius: AppRadius.card, style: .continuous)
+                .stroke(AppTheme.accent.opacity(0.5), lineWidth: 1)
+        )
+        .clipShape(RoundedRectangle(cornerRadius: AppRadius.card, style: .continuous))
+    }
+}
+
 private struct HomePresetRecipe {
     let preset: BrothPreset
     let result: BrothCalculationResult
@@ -1078,10 +1176,6 @@ private struct HomePresetRecipe {
         case .poultryBeefReady:
             return "Gotowa receptura z drobiem i wołowiną — pełniejszy smak i mocniejszy wywar."
         }
-    }
-
-    var compatibilityStyle: BrothStyle {
-        preset.legacyStyle
     }
 
     var selectedIngredientIDs: [String] {
@@ -1139,7 +1233,7 @@ private struct OnboardingFlowView: View {
 
     @FocusState private var focusedField: OnboardingField?
 
-    private let standardPotSizes = [5, 7, 10, 12]
+    private let standardPotSizes = UserPreferencesConstants.standardPotSizes
 
     private var welcomeBackgroundColor: Color {
         Color(red: 0.914, green: 0.827, blue: 0.220)
@@ -1204,13 +1298,11 @@ private struct OnboardingFlowView: View {
             }
         }
         .onChange(of: customPotSize) { _, newValue in
-            let filtered = newValue.filter(\.isNumber)
-
+            let filtered = UserPreferencesConstants.filteredPotSizeInput(newValue)
             if filtered != newValue {
                 customPotSize = filtered
                 return
             }
-
             if isCustomPotSelected, let value = Int(filtered), value > 0 {
                 selectedPotSize = value
             }
@@ -1297,6 +1389,93 @@ private struct OnboardingFlowView: View {
                 )
             }
         }
+    }
+
+    private var customPotCard: some View {
+        AppCard(
+            background: isCustomPotSelected ? AppTheme.accentSoft : AppTheme.surface,
+            border: isCustomPotSelected ? AppTheme.accent : AppTheme.border,
+            lineWidth: isCustomPotSelected ? 1.5 : 1
+        ) {
+            VStack(alignment: .leading, spacing: 0) {
+                HStack(alignment: .center, spacing: 12) {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 14, style: .continuous)
+                            .fill(isCustomPotSelected ? AppTheme.surface : AppTheme.surfaceMuted)
+                            .frame(width: 44, height: 44)
+                        Image(systemName: "slider.horizontal.3")
+                            .font(.system(size: 17, weight: .semibold))
+                            .foregroundStyle(AppTheme.textPrimary)
+                    }
+
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text("Inna pojemność garnka")
+                            .font(.system(size: 17, weight: .bold))
+                            .foregroundStyle(AppTheme.textPrimary)
+                        Text("Wpisz litraż ręcznie, jeśli najczęściej gotujesz w innym garnku.")
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundStyle(AppTheme.textSecondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+
+                    Spacer(minLength: 10)
+
+                    ZStack {
+                        Circle()
+                            .fill(AppTheme.textPrimary)
+                            .frame(width: 22, height: 22)
+                        Image(systemName: "checkmark")
+                            .font(.system(size: 10, weight: .bold))
+                            .foregroundStyle(AppTheme.surface)
+                    }
+                    .opacity(isCustomPotSelected ? 1 : 0)
+                }
+                .frame(maxWidth: .infinity, minHeight: 84, alignment: .leading)
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    isCustomPotSelected = true
+                    if customPotSize.isEmpty, let selectedPotSize {
+                        customPotSize = "\(selectedPotSize)"
+                    }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+                        focusedField = .customPot
+                    }
+                }
+
+                if isCustomPotSelected {
+                    Rectangle()
+                        .fill(AppTheme.border)
+                        .frame(height: 1)
+                        .padding(.top, 12)
+
+                    VStack(alignment: .leading, spacing: 8) {
+                        TextField("Np. 8", text: $customPotSize)
+                            .keyboardType(.numberPad)
+                            .focused($focusedField, equals: .customPot)
+                            .font(.system(size: 19, weight: .bold))
+                            .foregroundStyle(AppTheme.textPrimary)
+                            .padding(.horizontal, 16)
+                            .frame(height: 54)
+                            .background(AppTheme.surface)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                    .stroke(AppTheme.border, lineWidth: 1)
+                            )
+                            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+
+                        if let customPotAlert {
+                            OnboardingInlineAlertCard(
+                                systemImage: customPotAlert.systemImage,
+                                message: customPotAlert.message,
+                                tone: customPotAlert.tone
+                            )
+                        }
+                    }
+                    .padding(.top, 12)
+                }
+            }
+        }
+        .appSoftShadow()
     }
 
     private func welcomeStep(in geo: GeometryProxy) -> some View {
@@ -1390,50 +1569,7 @@ private struct OnboardingFlowView: View {
                 }
             }
 
-            Button {
-                isCustomPotSelected = true
-                if customPotSize.isEmpty, let selectedPotSize {
-                    customPotSize = "\(selectedPotSize)"
-                }
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
-                    focusedField = .customPot
-                }
-            } label: {
-                OnboardingCompactSelectionCard(
-                    icon: "slider.horizontal.3",
-                    title: "Inna pojemność garnka",
-                    detail: "Wpisz litraż ręcznie, jeśli najczęściej gotujesz w innym garnku.",
-                    note: nil,
-                    isSelected: isCustomPotSelected
-                )
-            }
-            .buttonStyle(.plain)
-
-            if isCustomPotSelected {
-                VStack(alignment: .leading, spacing: 8) {
-                    TextField("Np. 8", text: $customPotSize)
-                        .keyboardType(.numberPad)
-                        .focused($focusedField, equals: .customPot)
-                        .font(.system(size: 19, weight: .bold))
-                        .foregroundStyle(AppTheme.textPrimary)
-                        .padding(.horizontal, 16)
-                        .frame(height: 54)
-                        .background(AppTheme.surface)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                                .stroke(AppTheme.border, lineWidth: 1)
-                        )
-                        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-
-                    if let customPotAlert {
-                        OnboardingInlineAlertCard(
-                            systemImage: customPotAlert.systemImage,
-                            message: customPotAlert.message,
-                            tone: customPotAlert.tone
-                        )
-                    }
-                }
-            }
+            customPotCard
 
             Text("To tylko punkt startowy. Później możesz to zmienić.")
                 .font(.system(size: 13, weight: .medium))
@@ -1509,20 +1645,6 @@ private struct OnboardingFlowView: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
 
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Podgląd na ekranie głównym")
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(AppTheme.textSecondary)
-
-                Text("Cześć, \(greetingPreviewName)")
-                    .font(.system(size: 15, weight: .bold))
-                    .foregroundStyle(AppTheme.textPrimary)
-                    .padding(.horizontal, 12)
-                    .frame(height: 34)
-                    .background(AppTheme.accentSoft)
-                    .clipShape(Capsule())
-            }
-
             TextField("Np. Paweł", text: $localName)
                 .textInputAutocapitalization(.words)
                 .autocorrectionDisabled(true)
@@ -1543,11 +1665,6 @@ private struct OnboardingFlowView: View {
                 .foregroundStyle(AppTheme.textSecondary)
                 .padding(.horizontal, 2)
         }
-    }
-
-    private var greetingPreviewName: String {
-        let trimmed = localName.trimmingCharacters(in: .whitespacesAndNewlines)
-        return trimmed.isEmpty ? "Paweł" : trimmed
     }
 
     private func defaultPotSubtitle(for size: Int) -> String {
@@ -1958,25 +2075,23 @@ private struct OnboardingPotTile: View {
             border: isSelected ? AppTheme.accent : AppTheme.border,
             lineWidth: isSelected ? 1.5 : 1
         ) {
-            VStack(alignment: .leading, spacing: 10) {
+            VStack(alignment: .leading, spacing: 8) {
                 HStack(alignment: .top, spacing: 10) {
                     Text(title)
-                        .font(.system(size: 26, weight: .bold))
+                        .font(.system(size: 20, weight: .bold))
                         .foregroundStyle(AppTheme.textPrimary)
 
                     Spacer(minLength: 0)
 
-                    if isSelected {
-                        ZStack {
-                            Circle()
-                                .fill(AppTheme.textPrimary)
-                                .frame(width: 20, height: 20)
-
-                            Image(systemName: "checkmark")
-                                .font(.system(size: 10, weight: .bold))
-                                .foregroundStyle(AppTheme.surface)
-                        }
+                    ZStack {
+                        Circle()
+                            .fill(AppTheme.textPrimary)
+                            .frame(width: 20, height: 20)
+                        Image(systemName: "checkmark")
+                            .font(.system(size: 10, weight: .bold))
+                            .foregroundStyle(AppTheme.surface)
                     }
+                    .opacity(isSelected ? 1 : 0)
                 }
 
                 Text(subtitle)
@@ -1984,7 +2099,7 @@ private struct OnboardingPotTile: View {
                     .foregroundStyle(AppTheme.textSecondary)
                     .lineLimit(1)
             }
-            .frame(maxWidth: .infinity, minHeight: 92, alignment: .topLeading)
+            .frame(maxWidth: .infinity, minHeight: 68, alignment: .topLeading)
         }
         .appSoftShadow()
     }
@@ -2027,17 +2142,15 @@ private struct OnboardingOptionCard: View {
 
                 Spacer(minLength: 8)
 
-                if isSelected {
-                    ZStack {
-                        Circle()
-                            .fill(AppTheme.textPrimary)
-                            .frame(width: 22, height: 22)
-
-                        Image(systemName: "checkmark")
-                            .font(.system(size: 10, weight: .bold))
-                            .foregroundStyle(AppTheme.surface)
-                    }
+                ZStack {
+                    Circle()
+                        .fill(AppTheme.textPrimary)
+                        .frame(width: 22, height: 22)
+                    Image(systemName: "checkmark")
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundStyle(AppTheme.surface)
                 }
+                .opacity(isSelected ? 1 : 0)
             }
             .frame(maxWidth: .infinity, minHeight: 98, alignment: .leading)
         }
@@ -2045,67 +2158,6 @@ private struct OnboardingOptionCard: View {
     }
 }
 
-private struct OnboardingCompactSelectionCard: View {
-    let icon: String
-    let title: String
-    let detail: String
-    let note: String?
-    let isSelected: Bool
-
-    var body: some View {
-        AppCard(
-            background: isSelected ? AppTheme.accentSoft : AppTheme.surface,
-            border: isSelected ? AppTheme.accent : AppTheme.border,
-            lineWidth: isSelected ? 1.5 : 1
-        ) {
-            HStack(alignment: .center, spacing: 12) {
-                ZStack {
-                    RoundedRectangle(cornerRadius: 14, style: .continuous)
-                        .fill(isSelected ? AppTheme.surface : AppTheme.surfaceMuted)
-                        .frame(width: 44, height: 44)
-
-                    Image(systemName: icon)
-                        .font(.system(size: 17, weight: .semibold))
-                        .foregroundStyle(AppTheme.textPrimary)
-                }
-
-                VStack(alignment: .leading, spacing: 3) {
-                    Text(title)
-                        .font(.system(size: 17, weight: .bold))
-                        .foregroundStyle(AppTheme.textPrimary)
-
-                    Text(detail)
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundStyle(AppTheme.textSecondary)
-                        .fixedSize(horizontal: false, vertical: true)
-
-                    if let note {
-                        Text(note)
-                            .font(.system(size: 13, weight: .medium))
-                            .foregroundStyle(AppTheme.textSecondary)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-                }
-
-                Spacer(minLength: 10)
-
-                if isSelected {
-                    ZStack {
-                        Circle()
-                            .fill(AppTheme.textPrimary)
-                            .frame(width: 22, height: 22)
-
-                        Image(systemName: "checkmark")
-                            .font(.system(size: 10, weight: .bold))
-                            .foregroundStyle(AppTheme.surface)
-                    }
-                }
-            }
-            .frame(maxWidth: .infinity, minHeight: 84, alignment: .leading)
-        }
-        .appSoftShadow()
-    }
-}
 
 #Preview("Home") {
     NavigationStack {

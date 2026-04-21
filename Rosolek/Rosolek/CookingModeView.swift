@@ -90,22 +90,27 @@ private struct OverheatMessage: Identifiable {
 private struct PhaseSheetSection: Identifiable {
     let id: UUID
     let title: String
+    let systemImage: String
     let text: String
     let bullets: [String]
 
-    init(title: String, text: String, bullets: [String] = []) {
+    init(title: String, systemImage: String = "square.text.square", text: String, bullets: [String] = []) {
         self.id = UUID()
         self.title = title
+        self.systemImage = systemImage
         self.text = text
         self.bullets = bullets
     }
 }
 
 private struct PhaseSheetModel {
+    let eyebrow: String
     let intro: String
     let sections: [PhaseSheetSection]
     let footer: String?
+    let footerLabel: String
 }
+
 
 private enum LiveIngredientIconKind: Hashable {
     case carrot
@@ -131,12 +136,12 @@ private struct LiveIngredientReminderRowData: Hashable {
 struct CookingModeView: View {
     let batch: BatchRecord
     let result: BrothCalculationResult
-    let selectedStyle: BrothStyle
     let totalWeightGrams: Int
     let selectedIngredientCount: Int
     let hasThermometer: Bool
 
     @EnvironmentObject private var batchStore: BatchStore
+    @Environment(\.scenePhase) private var scenePhase
 
     @State private var processElapsedSeconds = 0
     @State private var phaseIndex = 0
@@ -636,17 +641,17 @@ struct CookingModeView: View {
             switch sheet {
             case .phase(let content):
                 PhaseDetailsSheet(content: content)
-                    .presentationDetents([.large])
+                    .presentationDetents([.medium, .large])
                     .presentationDragIndicator(.visible)
 
             case .temperature(let content):
                 TemperatureDetailsSheet(content: content)
-                    .presentationDetents([.large])
+                    .presentationDetents([.medium, .large])
                     .presentationDragIndicator(.visible)
 
             case .ingredients(let content):
                 IngredientsReminderSheet(content: content)
-                    .presentationDetents([.large])
+                    .presentationDetents([.medium, .large])
                     .presentationDragIndicator(.visible)
             }
         }
@@ -655,6 +660,7 @@ struct CookingModeView: View {
             Button("Zakończ gotowanie", role: .destructive) {
                 finalStepCompleted = true
                 isStageRunning = false
+                CookingSession.clear()
                 playFinishSignal()
                 UINotificationFeedbackGenerator().notificationOccurred(.success)
             }
@@ -665,9 +671,18 @@ struct CookingModeView: View {
             UIApplication.shared.isIdleTimerDisabled = true
             prepThermometerReady = !hasThermometer
             prepVinegarReady = !batchUsesVinegar
+            restoreSessionIfNeeded()
         }
         .onDisappear {
             UIApplication.shared.isIdleTimerDisabled = false
+            saveSession(backgrounded: false)
+        }
+        .onChange(of: scenePhase) { _, newPhase in
+            if newPhase == .background {
+                saveSession(backgrounded: true)
+            } else if newPhase == .active {
+                resumeFromBackground()
+            }
         }
         .onReceive(timer) { _ in
             handleTick()
@@ -714,6 +729,7 @@ struct CookingModeView: View {
                     ReadyToStartBanner()
                 }
             }
+            .animation(.easeInOut(duration: 0.2), value: canStartCooking)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .appSoftShadow()
@@ -1189,10 +1205,12 @@ struct CookingModeView: View {
     private func startCookingFromPrep() {
         guard canStartCooking else { return }
 
-        sessionStarted = true
-        phaseIndex = 1
-        phaseElapsedSeconds = 0
-        isStageRunning = true
+        withAnimation(.easeInOut(duration: 0.3)) {
+            sessionStarted = true
+            phaseIndex = 1
+            phaseElapsedSeconds = 0
+            isStageRunning = true
+        }
         playStartSignal()
         UINotificationFeedbackGenerator().notificationOccurred(.success)
     }
@@ -1212,18 +1230,22 @@ struct CookingModeView: View {
     private func advanceToNextPhase() {
         guard phaseIndex < phases.count - 1 else { return }
 
-        phaseIndex += 1
-        phaseElapsedSeconds = 0
-        overheatMessage = nil
+        withAnimation(.easeInOut(duration: 0.25)) {
+            phaseIndex += 1
+            phaseElapsedSeconds = 0
+            overheatMessage = nil
+        }
         UINotificationFeedbackGenerator().notificationOccurred(.warning)
     }
 
     private func goToPreviousStep() {
         guard canGoBackward else { return }
 
-        phaseIndex -= 1
-        phaseElapsedSeconds = 0
-        overheatMessage = nil
+        withAnimation(.easeInOut(duration: 0.25)) {
+            phaseIndex -= 1
+            phaseElapsedSeconds = 0
+            overheatMessage = nil
+        }
         UIImpactFeedbackGenerator(style: .light).impactOccurred()
         playTapSignal()
     }
@@ -1320,6 +1342,75 @@ struct CookingModeView: View {
         if normalized.contains("ocet") { return .vinegar }
 
         return .generic
+    }
+
+    private func saveSession(backgrounded: Bool) {
+        guard sessionStarted, !isFinished else {
+            CookingSession.clear()
+            return
+        }
+        var session = CookingSession(
+            batchID: batch.id,
+            phaseIndex: phaseIndex,
+            phaseElapsedSeconds: phaseElapsedSeconds,
+            processElapsedSeconds: processElapsedSeconds,
+            isStageRunning: isStageRunning,
+            prepMeatReady: prepMeatReady,
+            prepWaterReady: prepWaterReady,
+            prepPotReady: prepPotReady,
+            prepThermometerReady: prepThermometerReady,
+            prepVinegarReady: prepVinegarReady,
+            backgroundedAt: backgrounded ? Date() : nil,
+            currentPhaseTitle: currentPhase.timelineLabel,
+            currentPhaseTotalSeconds: currentPhase.durationSeconds
+        )
+        session.save()
+    }
+
+    private func restoreSessionIfNeeded() {
+        guard let session = CookingSession.load(),
+              session.batchID == batch.id,
+              !isFinished
+        else { return }
+
+        phaseIndex = session.phaseIndex
+        phaseElapsedSeconds = session.phaseElapsedSeconds
+        processElapsedSeconds = session.processElapsedSeconds
+        isStageRunning = session.isStageRunning
+        sessionStarted = session.phaseIndex > 0
+        prepMeatReady = session.prepMeatReady
+        prepWaterReady = session.prepWaterReady
+        prepPotReady = session.prepPotReady
+        prepThermometerReady = session.prepThermometerReady
+        prepVinegarReady = session.prepVinegarReady
+
+        if let backgroundedAt = session.backgroundedAt, session.isStageRunning {
+            let elapsed = Int(Date().timeIntervalSince(backgroundedAt))
+            if elapsed > 0 {
+                processElapsedSeconds += elapsed
+                if currentPhaseHasTimer {
+                    phaseElapsedSeconds = min(phaseElapsedSeconds + elapsed, currentPhaseTotalSeconds)
+                }
+            }
+        }
+    }
+
+    private func resumeFromBackground() {
+        guard sessionStarted, !isFinished else { return }
+        guard let session = CookingSession.load(),
+              session.batchID == batch.id,
+              let backgroundedAt = session.backgroundedAt,
+              session.isStageRunning
+        else { return }
+
+        let elapsed = Int(Date().timeIntervalSince(backgroundedAt))
+        guard elapsed > 0 else { return }
+
+        processElapsedSeconds += elapsed
+        if currentPhaseHasTimer {
+            phaseElapsedSeconds = min(phaseElapsedSeconds + elapsed, currentPhaseTotalSeconds)
+        }
+        saveSession(backgrounded: false)
     }
 }
 
@@ -1577,7 +1668,7 @@ private struct ChecklistRow: View {
 
     var body: some View {
         Button {
-            withAnimation(.easeInOut(duration: 0.18)) {
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
                 isOn.toggle()
             }
         } label: {
@@ -1595,6 +1686,7 @@ private struct ChecklistRow: View {
                         Image(systemName: "checkmark")
                             .font(.system(size: 14, weight: .bold))
                             .foregroundStyle(AppTheme.textPrimary)
+                            .transition(.scale(scale: 0.4).combined(with: .opacity))
                     }
                 }
 
@@ -1834,10 +1926,10 @@ private struct StageStatusCapsule: View {
             .foregroundStyle(AppTheme.textPrimary)
             .padding(.horizontal, 14)
             .frame(height: 46)
-            .background(AppTheme.surfaceSoft)
+            .background(AppTheme.surface)
             .overlay(
                 Capsule()
-                    .stroke(AppTheme.border, lineWidth: 1)
+                    .stroke(AppTheme.borderStrong, lineWidth: 1)
             )
             .clipShape(Capsule())
             .lineLimit(1)
@@ -1999,38 +2091,34 @@ private struct IngredientsReminderSheet: View {
 
     var body: some View {
         NavigationStack {
-            GeometryReader { _ in
-                ScrollView(.vertical, showsIndicators: false) {
-                    VStack(alignment: .leading, spacing: 18) {
-                        Text(content.title)
-                            .font(.system(size: 32, weight: .bold))
-                            .foregroundStyle(AppTheme.textPrimary)
+            ScrollView(.vertical, showsIndicators: false) {
+                VStack(alignment: .leading, spacing: 18) {
+                    Text(content.title)
+                        .font(.system(size: 32, weight: .bold))
+                        .foregroundStyle(AppTheme.textPrimary)
 
-                        Text(content.subtitle)
-                            .font(.system(size: 15, weight: .medium))
-                            .foregroundStyle(AppTheme.textSecondary)
-                            .fixedSize(horizontal: false, vertical: true)
+                    Text(content.subtitle)
+                        .font(.system(size: 15, weight: .medium))
+                        .foregroundStyle(AppTheme.textSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
 
-                        IngredientsSectionCard(
-                            title: "Warzywa",
-                            rows: content.vegetableRows
-                        )
+                    IngredientsSectionCard(
+                        title: "Warzywa",
+                        rows: content.vegetableRows
+                    )
 
-                        IngredientsSectionCard(
-                            title: "Przyprawy",
-                            rows: content.spiceRows
-                        )
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal, AppSpacing.screen)
-                    .padding(.top, 28)
-                    .padding(.bottom, 32)
+                    IngredientsSectionCard(
+                        title: "Przyprawy",
+                        rows: content.spiceRows
+                    )
                 }
-                .scrollBounceBehavior(.basedOnSize, axes: .vertical)
-                .background(AppTheme.background)
-                .clipped()
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, AppSpacing.screen)
+                .padding(.top, 28)
+                .padding(.bottom, 32)
             }
+            .scrollBounceBehavior(.basedOnSize, axes: .vertical)
+            .background(AppTheme.background)
         }
     }
 }
@@ -2145,39 +2233,35 @@ private struct TemperatureDetailsSheet: View {
 
     var body: some View {
         NavigationStack {
-            GeometryReader { _ in
-                ScrollView(.vertical, showsIndicators: false) {
-                    VStack(alignment: .leading, spacing: 18) {
-                        Text("Temperatura")
-                            .font(.system(size: 32, weight: .bold))
-                            .foregroundStyle(AppTheme.textPrimary)
+            ScrollView(.vertical, showsIndicators: false) {
+                VStack(alignment: .leading, spacing: 18) {
+                    Text("Temperatura")
+                        .font(.system(size: 32, weight: .bold))
+                        .foregroundStyle(AppTheme.textPrimary)
 
-                        SheetHeroCard(
-                            eyebrow: "Zakres docelowy",
-                            emphasis: content.targetLabel,
-                            text: heroText
-                        )
+                    SheetHeroCard(
+                        eyebrow: "Zakres docelowy",
+                        emphasis: content.targetLabel,
+                        text: heroText
+                    )
 
-                        TemperatureMechanicsPanel(
-                            hasThermometer: content.hasThermometer
-                        )
+                    TemperatureMechanicsPanel(
+                        hasThermometer: content.hasThermometer
+                    )
 
-                        SheetSupportStrip(
-                            title: "Szumowiny i klarowność",
-                            systemImage: "sparkles",
-                            text: foamSupportText
-                        )
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal, AppSpacing.screen)
-                    .padding(.top, 28)
-                    .padding(.bottom, 32)
+                    SheetSupportStrip(
+                        title: "Szumowiny i klarowność",
+                        systemImage: "sparkles",
+                        text: foamSupportText
+                    )
                 }
-                .scrollBounceBehavior(.basedOnSize, axes: .vertical)
-                .background(AppTheme.background)
-                .clipped()
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, AppSpacing.screen)
+                .padding(.top, 28)
+                .padding(.bottom, 32)
             }
+            .scrollBounceBehavior(.basedOnSize, axes: .vertical)
+            .background(AppTheme.background)
         }
     }
 }
@@ -2238,69 +2322,66 @@ private struct TemperatureMechanicsPanel: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 14) {
+            VStack(alignment: .leading, spacing: 6) {
                 Text("Temperatura w praktyce")
-                    .font(.system(size: 24, weight: .bold))
+                    .font(.system(size: 17, weight: .semibold))
                     .foregroundStyle(AppTheme.textPrimary)
 
                 Text(introText)
-                    .font(.system(size: 15, weight: .medium))
+                    .font(.system(size: 14, weight: .regular))
                     .foregroundStyle(AppTheme.textSecondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
-            .padding(.bottom, 18)
 
-            Divider()
-                .overlay(AppTheme.border)
+            AppCard(background: AppTheme.surface, border: AppTheme.border) {
+                VStack(spacing: 0) {
+                    TemperatureMeaningRow(
+                        title: "Za niska",
+                        rangeText: lowRange,
+                        explanation: lowExplanation,
+                        actionText: lowAction,
+                        tone: .neutral
+                    )
 
-            TemperatureMeaningRow(
-                title: "Za niska",
-                rangeText: lowRange,
-                explanation: lowExplanation,
-                actionText: lowAction,
-                systemImage: hasThermometer ? "thermometer.low" : "thermometer.medium",
-                tone: .neutral
-            )
+                    Divider().overlay(AppTheme.border)
 
-            Divider()
-                .overlay(AppTheme.border)
-                .padding(.leading, 46)
+                    TemperatureMeaningRow(
+                        title: "Prawidłowa",
+                        rangeText: goodRange,
+                        explanation: goodExplanation,
+                        actionText: goodAction,
+                        tone: .positive
+                    )
 
-            TemperatureMeaningRow(
-                title: "Prawidłowa",
-                rangeText: goodRange,
-                explanation: goodExplanation,
-                actionText: goodAction,
-                systemImage: "checkmark",
-                tone: .positive
-            )
+                    Divider().overlay(AppTheme.border)
 
-            Divider()
-                .overlay(AppTheme.border)
-                .padding(.leading, 46)
+                    TemperatureMeaningRow(
+                        title: "Za wysoka lub wrzenie",
+                        rangeText: highRange,
+                        explanation: highExplanation,
+                        actionText: highAction,
+                        tone: .warning
+                    )
 
-            TemperatureMeaningRow(
-                title: "Za wysoka lub wrzenie",
-                rangeText: highRange,
-                explanation: highExplanation,
-                actionText: highAction,
-                systemImage: "exclamationmark",
-                tone: .warning
-            )
+                    Divider().overlay(AppTheme.border)
 
-            Divider()
-                .overlay(AppTheme.border)
-                .padding(.top, 2)
+                    HStack(alignment: .top, spacing: 10) {
+                        Image(systemName: hasThermometer ? "thermometer.medium" : "eye")
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundStyle(AppTheme.textTertiary)
+                            .frame(width: 18, height: 18)
+                            .padding(.top, 1)
 
-            HStack(alignment: .top, spacing: 12) {
-                SheetSectionIconBadge(systemImage: hasThermometer ? "thermometer.medium" : "eye")
-                Text(sensoryNote)
-                    .font(.system(size: 15, weight: .medium))
-                    .foregroundStyle(AppTheme.textSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
+                        Text(sensoryNote)
+                            .font(.system(size: 13, weight: .regular))
+                            .foregroundStyle(AppTheme.textSecondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    .padding(16)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                }
             }
-            .padding(.top, 18)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
@@ -2311,48 +2392,65 @@ private struct TemperatureMeaningRow: View {
     let rangeText: String
     let explanation: String
     let actionText: String
-    let systemImage: String
     let tone: SheetIconTone
 
-    var body: some View {
-        HStack(alignment: .top, spacing: 14) {
-            SheetInlineMarker(systemImage: systemImage, tone: tone)
-                .padding(.top, 2)
+    private var dotColor: Color {
+        switch tone {
+        case .neutral: return AppTheme.textTertiary
+        case .positive: return AppTheme.success
+        case .warning: return AppTheme.warning
+        }
+    }
 
-            VStack(alignment: .leading, spacing: 10) {
+    private var pillBackground: Color {
+        switch tone {
+        case .neutral: return AppTheme.surfaceSoft
+        case .positive: return AppTheme.accentSoft
+        case .warning: return AppTheme.warning.opacity(0.12)
+        }
+    }
+
+    private var pillStroke: Color {
+        switch tone {
+        case .neutral: return AppTheme.border
+        case .positive: return AppTheme.accent.opacity(0.4)
+        case .warning: return AppTheme.warning.opacity(0.4)
+        }
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 8) {
+                Circle()
+                    .fill(dotColor)
+                    .frame(width: 8, height: 8)
+
                 Text(title)
-                    .font(.system(size: 17, weight: .bold))
+                    .font(.system(size: 15, weight: .semibold))
                     .foregroundStyle(AppTheme.textPrimary)
-                    .fixedSize(horizontal: false, vertical: true)
 
                 Text(rangeText)
-                    .font(.system(size: 12, weight: .bold))
+                    .font(.system(size: 11, weight: .bold))
                     .foregroundStyle(AppTheme.textSecondary)
-                    .padding(.horizontal, 10)
-                    .frame(height: 28)
-                    .background(AppTheme.surfaceSoft)
-                    .overlay(
-                        Capsule()
-                            .stroke(AppTheme.border, lineWidth: 1)
-                    )
+                    .padding(.horizontal, 8)
+                    .frame(height: 22)
+                    .background(pillBackground)
+                    .overlay(Capsule().stroke(pillStroke, lineWidth: 1))
                     .clipShape(Capsule())
                     .fixedSize(horizontal: true, vertical: false)
-
-                Text(explanation)
-                    .font(.system(size: 15, weight: .medium))
-                    .foregroundStyle(AppTheme.textSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
-
-                Text(actionText)
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(AppTheme.textPrimary)
-                    .fixedSize(horizontal: false, vertical: true)
             }
 
-            Spacer(minLength: 0)
+            Text(explanation)
+                .font(.system(size: 13, weight: .regular))
+                .foregroundStyle(AppTheme.textSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+
+            Text(actionText)
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(AppTheme.textPrimary)
+                .fixedSize(horizontal: false, vertical: true)
         }
-        .padding(.horizontal, 18)
-        .padding(.vertical, 16)
+        .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
@@ -2364,10 +2462,12 @@ private struct PhaseDetailsSheet: View {
         switch content.phaseKind {
         case .prep:
             return PhaseSheetModel(
+                eyebrow: "Zanim zaczniesz",
                 intro: "Rosół jest wywarem ekstrakcyjnym: jakość zależy od czasu i temperatury. Najczęstsze błędy wynikają z pośpiechu, mieszania i przekraczania temperatury pracy.",
                 sections: [
                     PhaseSheetSection(
                         title: "Przygotuj stanowisko",
+                        systemImage: "checklist",
                         text: "Zanim uruchomisz gotowanie, ustaw wszystko tak, żeby w trakcie pracy nie szukać narzędzi ani nie wykonywać nerwowych ruchów.",
                         bullets: [
                             "Mięso włóż do garnka i wlej wodę z kalkulatora.",
@@ -2377,280 +2477,318 @@ private struct PhaseDetailsSheet: View {
                     ),
                     PhaseSheetSection(
                         title: "Dodatkowe uwagi",
+                        systemImage: "text.badge.star",
                         text: "Ten etap porządkuje start. Dzięki temu później łatwiej utrzymać klarowność i właściwe tempo pracy.",
                         bullets: content.useVinegar ? ["Mięso możesz krótko opłukać tylko z luźnych resztek z pakowania. Nie blanszuj.", "Ocet działa tu funkcjonalnie i w małej ilości nie powinien być wyczuwalny w smaku."] : ["Mięso możesz krótko opłukać tylko z luźnych resztek z pakowania. Nie blanszuj."]
                     )
                 ],
-                footer: "Gdy wszystko będzie gotowe, uruchom Start i dalej prowadź rosół już bez pośpiechu."
+                footer: "Gdy wszystko będzie gotowe, uruchom Start i dalej prowadź rosół już bez pośpiechu.",
+                footerLabel: "Pamiętaj"
             )
 
         case .heatUp:
             return PhaseSheetModel(
+                eyebrow: "Kluczowy moment",
                 intro: "Celem jest osiągnięcie temperatury pracy bez wrzenia. Najwięcej problemów z klarownością powstaje właśnie w tej fazie.",
                 sections: [
                     PhaseSheetSection(
                         title: "Co dzieje się w garnku",
+                        systemImage: "drop",
                         text: "Wraz ze wzrostem temperatury białka ścinają się i wypływają jako piana. Wrzenie rozbija pianę na drobne cząstki i miesza je w płynie, przez co rosół łatwo mętnieje."
                     ),
                     PhaseSheetSection(
                         title: "Jak ma wyglądać dobra praca",
+                        systemImage: "thermometer.medium",
                         text: content.hasThermometer ? "Dąż do zakresu 88–90°C i utrzymaj go stabilnie." : "Szukaj spokojnej powierzchni, pojedynczych bąbli przy brzegu i braku intensywnego bulgotania na środku.",
                         bullets: ["Szumowiny zbieraj tylko wtedy, gdy same wypływają.", "Nie mieszaj wywaru.", "Jeśli doszło do wrzenia, zmniejsz ogień albo zdejmij garnek na 60–120 s."]
                     )
                 ],
-                footer: "W tym etapie liczy się cierpliwość — spokojna praca jest ważniejsza niż szybkie dojście do temperatury."
+                footer: "W tym etapie liczy się cierpliwość — spokojna praca jest ważniejsza niż szybkie dojście do temperatury.",
+                footerLabel: "Cierpliwość"
             )
 
         case .stabilization:
             return PhaseSheetModel(
+                eyebrow: "60 minut bez warzyw",
                 intro: "Przez 60 minut gotujesz wyłącznie mięso. To etap budowania czystej bazy.",
                 sections: [
                     PhaseSheetSection(
                         title: "Co dzieje się w garnku",
+                        systemImage: "drop",
                         text: "Aromaty rozpuszczalne w wodzie przechodzą do wywaru, elementy łącznotkankowe stopniowo oddają kolagen, a osad ma czas opaść na dno, jeśli nie mieszasz."
                     ),
                     PhaseSheetSection(
                         title: "Zasady etapu",
+                        systemImage: "checkmark.shield",
                         text: "To najbardziej techniczny moment budowania bazy.",
                         bullets: ["88–90°C, bez wrzenia.", "Brak mieszania.", "Zbieraj tylko to, co samo wypływa.", "Warzywa zostają poza garnkiem do końca stabilizacji."]
                     ),
                     PhaseSheetSection(
                         title: "Dlaczego bez warzyw",
+                        systemImage: "questionmark.circle",
                         text: "Warzywa oddają aromat szybko. Dodane zbyt wcześnie mogą zdominować profil i podnieść słodycz."
                     )
                 ],
-                footer: "Dopiero po pełnej stabilizacji dodajesz warzywa, cebulę i przyprawy."
+                footer: "Dopiero po pełnej stabilizacji dodajesz warzywa, cebulę i przyprawy.",
+                footerLabel: "Nie spiesz się"
             )
 
         case .addVegetables:
             return PhaseSheetModel(
+                eyebrow: "Zmiana w garnku",
                 intro: "Po stabilizacji dodaj warzywa, opaloną cebulę i przyprawy zgodnie z kalkulatorem.",
                 sections: [
                     PhaseSheetSection(
                         title: "Po dodaniu składników",
+                        systemImage: "arrow.right.circle",
                         text: "Temperatura zwykle spada o 1–3°C. Ustaw moc tak, aby wrócić do spokojnej pracy i nie przestrzelić w stronę wrzenia."
                     ),
                     PhaseSheetSection(
                         title: "Na co uważać",
+                        systemImage: "exclamationmark.triangle",
                         text: "Tu łatwo zepsuć balans przez zbyt mocny ogień albo za ciężką rękę do przypraw.",
                         bullets: ["Cebula opalana wnosi kolor i aromat, ale nie powinna być spalona na popiół.", "Przyprawy mają być tłem. Nadmiar pieprzu albo ziela łatwo dominuje smak."]
                     )
                 ],
-                footer: "Po dodaniu wszystkiego wróć do spokojnej pracy wywaru i nie mieszaj garnka."
+                footer: "Po dodaniu wszystkiego wróć do spokojnej pracy wywaru i nie mieszaj garnka.",
+                footerLabel: "Po dodaniu"
             )
 
         case .simmerToPoultryOut:
             return PhaseSheetModel(
+                eyebrow: "Klarowność zależy od temperatury",
                 intro: "W tym etapie klarowność zależy głównie od temperatury i braku mieszania.",
                 sections: [
                     PhaseSheetSection(
                         title: "Co dzieje się w garnku",
+                        systemImage: "drop",
                         text: "Warzywa oddają aromaty i cukry, a tłuszcz unosi się jako oczka. Wrzenie sprzyja emulsji tłuszczu i rozbiciu białek, co daje cięższe odczucie i gorszą klarowność."
                     ),
                     PhaseSheetSection(
                         title: "Zasady etapu",
+                        systemImage: "checkmark.shield",
                         text: "Prowadź rosół spokojnie aż do momentu wyjęcia drobiu.",
                         bullets: ["88–90°C.", "Nie mieszaj.", "Nie dopuszczaj do bulgotania."]
                     )
                 ],
-                footer: "Przygotuj naczynie na drób, ale nie wykonuj żadnych gwałtownych ruchów w garnku."
+                footer: "Przygotuj naczynie na drób, ale nie wykonuj żadnych gwałtownych ruchów w garnku.",
+                footerLabel: "Przed wyjęciem"
             )
 
         case .removePoultry:
             return PhaseSheetModel(
+                eyebrow: "Drób wychodzi pierwszy",
                 intro: "Drób wyjmuje się wcześniej niż wołowinę. Zbyt długie gotowanie może wnieść przegotowaną nutę i podnieść tłustość.",
                 sections: [
                     PhaseSheetSection(
                         title: "Jak wyjmować",
+                        systemImage: "hand.raised",
                         text: "Rób to spokojnie, najlepiej przy brzegu garnka.",
                         bullets: ["Użyj szczypiec albo łyżki cedzakowej.", "Ruszaj składnikami możliwie delikatnie.", "Nie wyciskaj drobiu nad wywarem."]
                     ),
                     PhaseSheetSection(
                         title: "Dlaczego to ważne",
+                        systemImage: "questionmark.circle",
                         text: "Wyciskanie wprowadza drobiny białek i tłuszczu do płynu, przez co klarowność spada."
                     )
                 ],
-                footer: "Po wyjęciu drobiu wywar dalej pracuje spokojnie — bez mieszania i bez wrzenia."
+                footer: "Po wyjęciu drobiu wywar dalej pracuje spokojnie — bez mieszania i bez wrzenia.",
+                footerLabel: "Po wyjęciu"
             )
 
         case .simmerToVegetablesOut:
             return PhaseSheetModel(
+                eyebrow: "Nie przeciągaj",
                 intro: "To etap, w którym łatwo przesadzić z warzywami.",
                 sections: [
                     PhaseSheetSection(
                         title: "Co się stanie, jeśli potrwa za długo",
+                        systemImage: "exclamationmark.triangle",
                         text: "Rośnie słodycz, szczególnie od marchwi, aromat robi się bardziej płaski, a profil przesuwa się w stronę cięższej zupy."
                     ),
                     PhaseSheetSection(
                         title: "Zasady etapu",
+                        systemImage: "checkmark.shield",
                         text: "Domknij pracę warzyw, ale nie przeciągaj tego etapu.",
                         bullets: ["88–90°C.", "Nie mieszaj.", "Nie dopuszczaj do wrzenia."]
                     )
                 ],
-                footer: "Gdy etap się skończy, wyjmij warzywa delikatnie i bez wyciskania."
+                footer: "Gdy etap się skończy, wyjmij warzywa delikatnie i bez wyciskania.",
+                footerLabel: "Przed wyjęciem"
             )
 
         case .removeVegetables:
             return PhaseSheetModel(
+                eyebrow: "Delikatnie i bez wyciskania",
                 intro: "Wyjmij warzywa delikatnie i bez wyciskania. W rosole priorytetem jest czysty płyn.",
                 sections: [
                     PhaseSheetSection(
                         title: "Jak to zrobić",
+                        systemImage: "hand.raised",
                         text: "Pracuj spokojnie przy brzegu garnka i nie wyciskaj warzyw nad wywarem."
                     ),
                     PhaseSheetSection(
                         title: "Dlaczego to ważne",
+                        systemImage: "questionmark.circle",
                         text: "Wyciskanie zwiększa mętność i wnosi dodatkową słodycz oraz drobiny."
                     )
                 ],
-                footer: "Po tym etapie zostaje już sama baza mięsna i końcowe domknięcie smaku."
+                footer: "Po tym etapie zostaje już sama baza mięsna i końcowe domknięcie smaku.",
+                footerLabel: "Po wyjęciu"
             )
 
         case .finishBase:
             return PhaseSheetModel(
+                eyebrow: "Ostatnie wyrównanie smaku",
                 intro: "To etap wyrównania smaku na samej bazie mięsnej.",
                 sections: [
                     PhaseSheetSection(
                         title: "Co dzieje się w garnku",
+                        systemImage: "drop",
                         text: "Aromat stabilizuje się, a drobne cząstki mają czas opaść. Trzymaj spokojną temperaturę do końca etapu."
                     ),
                     PhaseSheetSection(
                         title: "Zasady etapu",
+                        systemImage: "checkmark.shield",
                         text: "To ostatni spokojny finisz samej bazy.",
                         bullets: ["88–90°C.", "Bez wrzenia.", "Bez mieszania."]
                     )
                 ],
-                footer: "Nie przyspieszaj końcówki. W tym etapie liczy się równa praca i czysty smak."
+                footer: "Nie przyspieszaj końcówki. W tym etapie liczy się równa praca i czysty smak.",
+                footerLabel: "Nie przyspieszaj"
             )
 
         case .addLiver:
             return PhaseSheetModel(
+                eyebrow: "Tylko na końcu",
                 intro: "Wątróbkę dodaje się tylko na końcu.",
                 sections: [
                     PhaseSheetSection(
                         title: "Dlaczego tak późno",
+                        systemImage: "questionmark.circle",
                         text: "Długo gotowana wątróbka może dać metaliczny posmak i pogorszyć klarowność."
                     ),
                     PhaseSheetSection(
                         title: "Zasady etapu",
+                        systemImage: "checkmark.shield",
                         text: "To tylko krótki krok przed finałem.",
                         bullets: ["Dodaj na końcu.", "Prowadź dalej w 88–90°C.", "Nie dopuszczaj do wrzenia."]
                     )
                 ],
-                footer: "Po dodaniu przejdź od razu do krótkiego etapu końcowego z wątróbką."
+                footer: "Po dodaniu przejdź od razu do krótkiego etapu końcowego z wątróbką.",
+                footerLabel: "Zaraz po tym"
             )
 
         case .finishWithLiver:
             return PhaseSheetModel(
+                eyebrow: "Finał aktywnego gotowania",
                 intro: "To krótki etap końcowy. Zbyt wysoka temperatura pogarsza klarowność.",
                 sections: [
                     PhaseSheetSection(
                         title: "Zasady etapu",
+                        systemImage: "checkmark.shield",
                         text: "Utrzymaj pełną kontrolę do samego końca.",
                         bullets: ["88–90°C.", "Bez wrzenia.", "Po czasie wyłącz grzanie."]
                     )
                 ],
-                footer: "Nie przeciągaj tego etapu. Tutaj kończy się aktywne gotowanie."
+                footer: "Nie przeciągaj tego etapu. Tutaj kończy się aktywne gotowanie.",
+                footerLabel: "Koniec gotowania"
             )
 
         case .beginRest:
             return PhaseSheetModel(
+                eyebrow: "Garnek stoi, nie ruszaj",
                 intro: "Po zakończeniu gotowania aktywnego nie wykonuj żadnych ruchów w garnku.",
                 sections: [
                     PhaseSheetSection(
                         title: "Co dzieje się w tym etapie",
+                        systemImage: "drop",
                         text: "Osad i drobne cząstki opadają na dno. Poruszenie garnka podrywa osad i pogarsza klarowność."
                     )
                 ],
-                footer: "Wyłącz grzanie, odstaw garnek i pozwól mu spokojnie się wyciszyć."
+                footer: "Wyłącz grzanie, odstaw garnek i pozwól mu spokojnie się wyciszyć.",
+                footerLabel: "Wyłącz grzanie"
             )
 
         case .rest:
             return PhaseSheetModel(
+                eyebrow: "Czas na klarowność",
                 intro: "Odstawienie na 15–20 minut poprawia klarowność i ułatwia czyste cedzenie.",
                 sections: [
                     PhaseSheetSection(
                         title: "Dlaczego warto poczekać",
+                        systemImage: "questionmark.circle",
                         text: "W tym czasie drobiny stabilizują się i opadają na dno, więc później łatwiej oddzielić czysty płyn od osadu."
                     )
                 ],
-                footer: "Nie mieszaj i nie przenoś garnka bez potrzeby. Cierpliwość daje lepszy efekt niż pośpiech."
+                footer: "Nie mieszaj i nie przenoś garnka bez potrzeby. Cierpliwość daje lepszy efekt niż pośpiech.",
+                footerLabel: "Bez mieszania"
             )
 
         case .strainAndSeason:
             return PhaseSheetModel(
+                eyebrow: "Najpierw cedzenie, potem sól",
                 intro: "Zasada główna: najpierw cedzenie, dopiero potem doprawianie.",
                 sections: [
                     PhaseSheetSection(
                         title: content.clarityMode == .paperFilter ? "Cedzenie i filtracja" : "Cedzenie",
+                        systemImage: "line.3.horizontal.decrease.circle",
                         text: content.clarityMode == .paperFilter ? "Najpierw przecedź wywar wstępnie, potem przefiltruj go papierem. Filtr usuwa część tłuszczu i drobin, więc uzysk bywa mniejszy, a smak delikatniejszy." : "Przelewaj powoli przez sito lub gazę i nie wyciskaj składników. Nie przelewaj do końca — ostatnie 200–300 ml z dna zawiera zwykle najwięcej osadu."
                     ),
                     PhaseSheetSection(
                         title: "Doprawianie",
+                        systemImage: "fork.knife",
                         text: "Sól dodawaj dopiero po cedzeniu i rób to stopniowo."
                     )
                 ],
-                footer: "Po cedzeniu pracuj spokojnie. To ostatni moment, w którym łatwo zepsuć klarowność pośpiechem."
+                footer: "Po cedzeniu pracuj spokojnie. To ostatni moment, w którym łatwo zepsuć klarowność pośpiechem.",
+                footerLabel: "Ostatni krok"
             )
         }
     }
 
-    private func sectionSymbol(for title: String) -> String {
-        let normalized = normalizeCookingID(title)
-
-        if normalized.contains("stanowisko") || normalized.contains("przygot") { return "checklist" }
-        if normalized.contains("uwagi") { return "text.badge.star" }
-        if normalized.contains("co dzieje") { return "drop" }
-        if normalized.contains("zasady") { return "checkmark.shield" }
-        if normalized.contains("jak ma wygladac") || normalized.contains("jak ma wyglądać") { return "thermometer.medium" }
-        if normalized.contains("jak wyjmowac") || normalized.contains("jak wyjmować") || normalized.contains("jak to zrobic") || normalized.contains("jak to zrobić") { return "hand.raised" }
-        if normalized.contains("dlaczego") { return "questionmark.circle" }
-        if normalized.contains("na co uwazac") || normalized.contains("na co uważać") { return "exclamationmark.triangle" }
-        if normalized.contains("cedzenie") { return "line.3.horizontal.decrease.circle" }
-        if normalized.contains("doprawianie") { return "fork.knife" }
-        return "square.text.square"
-    }
-
     var body: some View {
         NavigationStack {
-            GeometryReader { _ in
-                ScrollView(.vertical, showsIndicators: false) {
-                    VStack(alignment: .leading, spacing: 18) {
-                        Text(content.title)
-                            .font(.system(size: 32, weight: .bold))
-                            .foregroundStyle(AppTheme.textPrimary)
+            ScrollView(.vertical, showsIndicators: false) {
+                VStack(alignment: .leading, spacing: 0) {
+                    Text(model.eyebrow)
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundStyle(AppTheme.textTertiary)
+                        .padding(.bottom, 6)
 
-                        SheetHeroCard(
-                            eyebrow: "Na tym etapie",
-                            emphasis: nil,
-                            text: model.intro
-                        )
+                    Text(content.title)
+                        .font(.system(size: 32, weight: .bold))
+                        .foregroundStyle(AppTheme.textPrimary)
+                        .padding(.bottom, 14)
 
-                        if !model.sections.isEmpty {
-                            SheetGroupedSectionsPanel(
-                                sections: model.sections,
-                                iconProvider: sectionSymbol
-                            )
+                    Text(model.intro)
+                        .font(.system(size: 15, weight: .regular))
+                        .foregroundStyle(AppTheme.textSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .padding(.bottom, 20)
+
+                    if !model.sections.isEmpty {
+                        AppCard(background: AppTheme.surface, border: AppTheme.border) {
+                            SheetGroupedSectionsPanel(sections: model.sections)
                         }
-
-                        if let footer = model.footer {
-                            SheetSupportStrip(
-                                title: "Ważne",
-                                systemImage: "info.circle",
-                                text: footer
-                            )
-                        }
+                        .padding(.bottom, 4)
                     }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal, AppSpacing.screen)
-                    .padding(.top, 28)
-                    .padding(.bottom, 32)
+
+                    if let footer = model.footer {
+                        SheetSupportStrip(
+                            title: model.footerLabel,
+                            systemImage: "info.circle",
+                            text: footer
+                        )
+                    }
                 }
-                .scrollBounceBehavior(.basedOnSize, axes: .vertical)
-                .background(AppTheme.background)
-                .clipped()
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, AppSpacing.screen)
+                .padding(.top, 28)
+                .padding(.bottom, 32)
             }
+            .scrollBounceBehavior(.basedOnSize, axes: .vertical)
+            .background(AppTheme.background)
         }
     }
 }
@@ -2715,24 +2853,20 @@ private struct SheetHeroCard: View {
 
 private struct SheetGroupedSectionsPanel: View {
     let sections: [PhaseSheetSection]
-    let iconProvider: (String) -> String
 
     var body: some View {
         VStack(spacing: 0) {
             ForEach(Array(sections.enumerated()), id: \.element.id) { index, section in
-                SheetGroupedSectionRow(
-                    title: section.title,
-                    systemImage: iconProvider(section.title),
-                    text: section.text,
-                    bullets: section.bullets,
-                    isFirst: index == 0
-                )
-
-                if index < sections.count - 1 {
+                if index > 0 {
                     Divider()
                         .overlay(AppTheme.border)
-                        .padding(.leading, 46)
                 }
+                SheetGroupedSectionRow(
+                    title: section.title,
+                    systemImage: section.systemImage,
+                    text: section.text,
+                    bullets: section.bullets
+                )
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -2744,50 +2878,44 @@ private struct SheetGroupedSectionRow: View {
     let systemImage: String
     let text: String
     let bullets: [String]
-    let isFirst: Bool
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            HStack(alignment: .top, spacing: 12) {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(alignment: .center, spacing: 10) {
                 SheetSectionIconBadge(systemImage: systemImage)
 
-                VStack(alignment: .leading, spacing: 12) {
-                    Text(title)
-                        .font(.system(size: isFirst ? 22 : 21, weight: .bold))
-                        .foregroundStyle(AppTheme.textPrimary)
-                        .fixedSize(horizontal: false, vertical: true)
+                Text(title)
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(AppTheme.textSecondary)
+            }
 
-                    Text(text)
-                        .font(.system(size: 15, weight: .medium))
-                        .foregroundStyle(AppTheme.textSecondary)
-                        .fixedSize(horizontal: false, vertical: true)
+            Text(text)
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundStyle(AppTheme.textPrimary)
+                .fixedSize(horizontal: false, vertical: true)
 
-                    if !bullets.isEmpty {
-                        VStack(alignment: .leading, spacing: 10) {
-                            ForEach(bullets, id: \.self) { bullet in
-                                HStack(alignment: .top, spacing: 12) {
-                                    Circle()
-                                        .fill(AppTheme.accent)
-                                        .frame(width: 7, height: 7)
-                                        .padding(.top, 8)
+            if !bullets.isEmpty {
+                VStack(alignment: .leading, spacing: 6) {
+                    ForEach(bullets, id: \.self) { bullet in
+                        HStack(alignment: .top, spacing: 8) {
+                            Circle()
+                                .fill(AppTheme.textTertiary)
+                                .frame(width: 4, height: 4)
+                                .padding(.top, 7)
 
-                                    Text(bullet)
-                                        .font(.system(size: 15, weight: .semibold))
-                                        .foregroundStyle(AppTheme.textPrimary)
-                                        .fixedSize(horizontal: false, vertical: true)
+                            Text(bullet)
+                                .font(.system(size: 14, weight: .regular))
+                                .foregroundStyle(AppTheme.textSecondary)
+                                .fixedSize(horizontal: false, vertical: true)
 
-                                    Spacer(minLength: 0)
-                                }
-                            }
+                            Spacer(minLength: 0)
                         }
                     }
                 }
-
-                Spacer(minLength: 0)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.vertical, isFirst ? 18 : 20)
+        .padding(16)
     }
 }
 
@@ -2797,27 +2925,23 @@ private struct SheetSupportStrip: View {
     let text: String
 
     var body: some View {
-        AppCard(
-            background: AppTheme.surface,
-            border: AppTheme.border
-        ) {
-            HStack(alignment: .top, spacing: 12) {
-                SheetSectionIconBadge(systemImage: systemImage)
+        VStack(alignment: .leading, spacing: 0) {
+            Divider()
+                .overlay(AppTheme.border)
 
-                VStack(alignment: .leading, spacing: 6) {
-                    Text(title)
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundStyle(AppTheme.textSecondary)
+            VStack(alignment: .leading, spacing: 4) {
+                Text(title)
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(AppTheme.textTertiary)
 
-                    Text(text)
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundStyle(AppTheme.textPrimary)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-
-                Spacer(minLength: 0)
+                Text(text)
+                    .font(.system(size: 13, weight: .regular))
+                    .foregroundStyle(AppTheme.textSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
             }
+            .padding(.top, 14)
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
 
@@ -2826,16 +2950,16 @@ private struct SheetSectionIconBadge: View {
 
     var body: some View {
         ZStack {
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
                 .fill(AppTheme.surfaceSoft)
-                .frame(width: 40, height: 40)
+                .frame(width: 32, height: 32)
 
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
                 .stroke(AppTheme.border, lineWidth: 1)
-                .frame(width: 40, height: 40)
+                .frame(width: 32, height: 32)
 
             Image(systemName: systemImage)
-                .font(.system(size: 16, weight: .semibold))
+                .font(.system(size: 14, weight: .semibold))
                 .foregroundStyle(AppTheme.textPrimary)
         }
     }
