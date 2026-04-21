@@ -415,43 +415,35 @@ private struct CalculatorEntryCard: View {
             )
 
             HStack(alignment: .center, spacing: 16) {
-                VStack(alignment: .leading, spacing: 10) {
-                    AppPill(title: "Tryb własny", systemImage: "sparkles", filled: true)
-
+                VStack(alignment: .leading, spacing: 12) {
                     Text("Własny rosół od podstaw")
                         .font(.system(size: compact ? 21 : 22, weight: .bold))
                         .foregroundStyle(AppTheme.textPrimary)
                         .lineLimit(2)
 
-                    Text("Wybierz składniki i od razu sprawdź proporcje wody, warzyw oraz przypraw dla Twojego garnka.")
+                    Text("Dobierz składniki i proporcje idealne dla Twojego garnka.")
                         .font(.system(size: 15, weight: .medium))
                         .foregroundStyle(AppTheme.textSecondary)
                         .fixedSize(horizontal: false, vertical: true)
-
-                    HStack(spacing: 6) {
-                        Text("Personalizowany przepis")
-                            .font(.system(size: 13, weight: .semibold))
-                            .foregroundStyle(AppTheme.textPrimary.opacity(0.82))
-
-                        Image(systemName: "chevron.right")
-                            .font(.system(size: 11, weight: .bold))
-                            .foregroundStyle(AppTheme.textPrimary.opacity(0.82))
-                    }
-                    .padding(.top, 2)
                 }
 
                 Spacer(minLength: 8)
 
                 ZStack {
-                    RoundedRectangle(cornerRadius: 26, style: .continuous)
-                        .fill(AppTheme.surface.opacity(0.92))
-                        .frame(width: compact ? 106 : 114, height: compact ? 106 : 114)
+                    Circle()
+                        .fill(AppTheme.surface.opacity(0.84))
+                        .frame(width: compact ? 120 : 128, height: compact ? 120 : 128)
 
-                    PresetIngredientIllustration(style: .custom, compact: false)
-                        .scaleEffect(compact ? 1.08 : 1.12)
+                    HeroBrothGlyph()
+                        .scaleEffect(compact ? 0.96 : 1)
                 }
             }
             .padding(AppSpacing.card)
+        }
+        .overlay(alignment: .topTrailing) {
+            AppPill(title: "Tryb własny", systemImage: "sparkles", filled: true)
+                .padding(.top, 12)
+                .padding(.trailing, 12)
         }
         .frame(maxWidth: .infinity, minHeight: compact ? 168 : 176, alignment: .leading)
         .overlay(
@@ -460,6 +452,42 @@ private struct CalculatorEntryCard: View {
         )
         .clipShape(RoundedRectangle(cornerRadius: AppRadius.card, style: .continuous))
         .appSoftShadow()
+    }
+}
+
+private struct HeroBrothGlyph: View {
+    var body: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                .fill(AppTheme.surface)
+                .frame(width: 96, height: 96)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 24, style: .continuous)
+                        .stroke(AppTheme.border, lineWidth: 1)
+                )
+
+            VStack(spacing: 10) {
+                HStack(spacing: 6) {
+                    Capsule().fill(AppTheme.textPrimary.opacity(0.28)).frame(width: 20, height: 5)
+                    Capsule().fill(AppTheme.textPrimary.opacity(0.22)).frame(width: 14, height: 5)
+                }
+
+                ZStack(alignment: .bottom) {
+                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        .fill(AppTheme.surfaceMuted)
+                        .frame(width: 52, height: 38)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                .stroke(AppTheme.border, lineWidth: 1)
+                        )
+
+                    RoundedRectangle(cornerRadius: 6, style: .continuous)
+                        .fill(AppTheme.accent.opacity(0.5))
+                        .frame(width: 38, height: 12)
+                        .offset(y: -5)
+                }
+            }
+        }
     }
 }
 
