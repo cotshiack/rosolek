@@ -212,35 +212,14 @@ struct BatchRenameSheet: View {
     let onSave: () -> Void
 
     @Environment(\.dismiss) private var dismiss
-
-    private var previewName: String {
-        let trimmed = renameText.trimmingCharacters(in: .whitespacesAndNewlines)
-        return trimmed.isEmpty ? defaultTitle : trimmed
-    }
+    @FocusState private var fieldFocused: Bool
 
     var body: some View {
         NavigationStack {
-            VStack(alignment: .leading, spacing: 20) {
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("Podgląd")
-                        .font(.system(size: 13, weight: .semibold))
-                        .foregroundStyle(AppTheme.textSecondary)
-                    Text(previewName)
-                        .font(.system(size: 22, weight: .bold))
-                        .foregroundStyle(AppTheme.textPrimary)
-                        .animation(.easeInOut(duration: 0.12), value: previewName)
-                }
-                .padding(AppSpacing.card)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(AppTheme.accentSoft)
-                .clipShape(RoundedRectangle(cornerRadius: AppRadius.card, style: .continuous))
-                .overlay(
-                    RoundedRectangle(cornerRadius: AppRadius.card, style: .continuous)
-                        .stroke(AppTheme.accent.opacity(0.4), lineWidth: 1)
-                )
-
+            VStack(alignment: .leading, spacing: 12) {
                 TextField(defaultTitle, text: $renameText)
-                    .font(.system(size: 17, weight: .semibold))
+                    .focused($fieldFocused)
+                    .font(.system(size: 19, weight: .bold))
                     .foregroundStyle(AppTheme.textPrimary)
                     .padding(.horizontal, 16)
                     .frame(height: 54)
@@ -278,5 +257,6 @@ struct BatchRenameSheet: View {
         }
         .presentationDetents([.medium])
         .presentationDragIndicator(.visible)
+        .onAppear { fieldFocused = true }
     }
 }

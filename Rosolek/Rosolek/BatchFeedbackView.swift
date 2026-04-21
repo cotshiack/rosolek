@@ -80,6 +80,7 @@ struct BatchFeedbackView: View {
     let batch: BatchRecord
     var standaloneMode: Bool = false
 
+    @State private var batchName: String
     @State private var overallRating: Double
     @State private var strengthFeedback: BatchStrengthFeedback?
     @State private var fatFeedback: BatchFatFeedback?
@@ -89,6 +90,7 @@ struct BatchFeedbackView: View {
     init(batch: BatchRecord, standaloneMode: Bool = false) {
         self.batch = batch
         self.standaloneMode = standaloneMode
+        _batchName = State(initialValue: batch.customTitle ?? "")
         _overallRating = State(initialValue: Double(batch.overallRating ?? 8))
         _strengthFeedback = State(initialValue: batch.strengthFeedbackRawValue.flatMap { BatchStrengthFeedback(rawValue: $0) })
         _fatFeedback = State(initialValue: batch.fatFeedbackRawValue.flatMap { BatchFatFeedback(rawValue: $0) })
@@ -100,6 +102,7 @@ struct BatchFeedbackView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
                 headerSection
+                nameSection
                 overallRatingSection
                 criteriaSection
                 notesSection
@@ -138,6 +141,37 @@ struct BatchFeedbackView: View {
         }
     }
 
+    private var nameSection: some View {
+        AppCard {
+            VStack(alignment: .leading, spacing: 10) {
+                HStack(alignment: .firstTextBaseline) {
+                    Text("Nazwa partii")
+                        .font(.system(size: 18, weight: .bold))
+                        .foregroundStyle(AppTheme.textPrimary)
+
+                    Spacer()
+
+                    Text("Opcjonalnie")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundStyle(AppTheme.textSecondary)
+                }
+
+                TextField(batch.defaultTitle, text: $batchName)
+                    .font(.system(size: 15, weight: .medium))
+                    .foregroundStyle(AppTheme.textPrimary)
+                    .padding(.horizontal, 14)
+                    .frame(height: 46)
+                    .background(AppTheme.surfaceMuted)
+                    .clipShape(RoundedRectangle(cornerRadius: AppRadius.button, style: .continuous))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: AppRadius.button, style: .continuous)
+                            .stroke(AppTheme.border, lineWidth: 1)
+                    )
+            }
+        }
+        .appSoftShadow()
+    }
+
     private var overallRatingSection: some View {
         AppCard {
             VStack(alignment: .leading, spacing: 14) {
@@ -156,6 +190,7 @@ struct BatchFeedbackView: View {
                 Text(ratingDescription)
                     .font(.system(size: 14, weight: .medium))
                     .foregroundStyle(AppTheme.textSecondary)
+                    .lineLimit(2, reservesSpace: true)
 
                 Slider(value: $overallRating, in: 1...10, step: 1)
                     .tint(AppTheme.accent)
@@ -323,13 +358,13 @@ struct BatchFeedbackView: View {
 
         switch value {
         case 1...4:
-            return "Ten rosół wymaga jeszcze kilku poprawek."
+            return "Rosół do poprawki — czas i proporcje wymagają korekty."
         case 5...6:
-            return "Solidna baza, ale można go jeszcze dopracować."
+            return "Solidna baza — jest z czego budować przy następnej próbie."
         case 7...8:
-            return "Bardzo dobry rezultat, blisko powtarzalnego przepisu."
+            return "Bardzo dobry wynik, bliski powtarzalnego przepisu."
         case 9...10:
-            return "To jest rosół, do którego warto wracać."
+            return "Perfekcyjny rosół — warto zapamiętać te proporcje."
         default:
             return "Oceń ogólne wrażenie po spróbowaniu."
         }
@@ -337,6 +372,8 @@ struct BatchFeedbackView: View {
 
     private func saveFeedback() {
         notesFieldFocused = false
+
+        batchStore.updateTitle(batchID: batch.id, customTitle: batchName.trimmingCharacters(in: .whitespacesAndNewlines))
 
         batchStore.updateFeedback(
             batchID: batch.id,

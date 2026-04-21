@@ -186,16 +186,19 @@ struct LastBatchDetailView: View {
                 .appSoftShadow()
             } else {
                 AppCard {
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("Ta partia nie ma jeszcze oceny.")
+                    HStack {
+                        Text("Brak oceny tej partii")
                             .font(.system(size: 14, weight: .medium))
                             .foregroundStyle(AppTheme.textSecondary)
+
+                        Spacer()
 
                         Button {
                             showFeedback = true
                         } label: {
-                            AppPrimaryButtonLabel(title: "Oceń tę partię")
+                            AppPill(title: "Oceń", systemImage: "star", filled: false)
                         }
+                        .buttonStyle(.plain)
                     }
                 }
                 .appSoftShadow()
