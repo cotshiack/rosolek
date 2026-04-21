@@ -97,9 +97,9 @@ final class BatchStore: ObservableObject {
     func updateFeedback(
         batchID: UUID,
         overallRating: Int,
-        strengthFeedbackRawValue: String,
-        fatFeedbackRawValue: String,
-        clarityFeedbackRawValue: String,
+        strengthFeedbackRawValue: String?,
+        fatFeedbackRawValue: String?,
+        clarityFeedbackRawValue: String?,
         notes: String
     ) {
         guard let index = batches.firstIndex(where: { $0.id == batchID }) else { return }
