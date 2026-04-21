@@ -169,14 +169,9 @@ private struct HomeView: View {
 
     private func greetingSection(compact: Bool) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Cześć, \(displayName)")
+            Text("Co dzisiaj gotujemy \(displayName)?")
                 .font(.system(size: compact ? 24 : 26, weight: .bold))
                 .foregroundStyle(AppTheme.textPrimary)
-
-            Text("Co dziś gotujemy?")
-                .font(.system(size: compact ? 15 : 16, weight: .medium))
-                .foregroundStyle(AppTheme.textSecondary)
-                .fixedSize(horizontal: false, vertical: true)
         }
     }
 
@@ -256,14 +251,16 @@ private struct HomeView: View {
                     LockedChefRecipeCard(
                         compact: compact,
                         title: "Klasyczny ramen shoyu",
-                        subtitle: "Autorski przepis premium z prowadzeniem krok po kroku."
+                        subtitle: "Autorski przepis premium z prowadzeniem krok po kroku.",
+                        artwork: .asset("HomeChefRamen")
                     )
                     .frame(width: compact ? 206 : 216)
 
                     LockedChefRecipeCard(
                         compact: compact,
                         title: "Bulion wołowy demi-glace",
-                        subtitle: "Koncentrat o głębokim smaku, idealny do sosów i redukcji."
+                        subtitle: "Koncentrat o głębokim smaku, idealny do sosów i redukcji.",
+                        artwork: .asset("HomeChefDemiGlace")
                     )
                     .frame(width: compact ? 206 : 216)
                 }
@@ -440,7 +437,17 @@ private struct CalculatorEntryCard: View {
             .padding(.top, 18)
         }
         .overlay(alignment: .topLeading) {
-            AppPill(title: "Tryb własny", systemImage: "sparkles", filled: true)
+            AppPill(title: "Tryb własny", systemImage: "sparkles", filled: false)
+                .foregroundStyle(AppTheme.surface)
+                .background(
+                    Capsule()
+                        .fill(AppTheme.darkCard.opacity(0.84))
+                )
+                .overlay(
+                    Capsule()
+                        .stroke(AppTheme.darkCard, lineWidth: 1)
+                )
+                .clipShape(Capsule())
                 .padding(.top, 12)
                 .padding(.leading, 12)
         }
@@ -494,6 +501,7 @@ private struct LockedChefRecipeCard: View {
     let compact: Bool
     let title: String
     let subtitle: String
+    let artwork: HomeCardArtwork
 
     var body: some View {
         AppCard(
@@ -501,6 +509,12 @@ private struct LockedChefRecipeCard: View {
             border: AppTheme.border
         ) {
             VStack(alignment: .leading, spacing: compact ? 14 : 16) {
+                HomeRecipeArtwork(
+                    artwork: artwork,
+                    fallbackStyle: .intense,
+                    compact: compact
+                )
+
                 HStack {
                     PremiumBadge()
                     Spacer(minLength: 0)
