@@ -435,6 +435,25 @@ struct AppProfileGlyph: View {
     }
 }
 
+struct SharedRatingBadge: View {
+    let text: String
+    let hasRating: Bool
+
+    var body: some View {
+        Text(text)
+            .font(.system(size: 12, weight: .bold))
+            .foregroundStyle(hasRating ? AppTheme.textPrimary : AppTheme.textSecondary)
+            .padding(.horizontal, 10)
+            .frame(height: 30)
+            .background(hasRating ? AppTheme.accent : AppTheme.surfaceMuted)
+            .overlay(
+                Capsule()
+                    .stroke(hasRating ? AppTheme.accent : AppTheme.border, lineWidth: 1)
+            )
+            .clipShape(Capsule())
+    }
+}
+
 struct AppBatchSummaryCard<Trailing: View>: View {
     let title: String
     let subtitle: String
