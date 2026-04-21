@@ -41,6 +41,8 @@ private struct HomeView: View {
     @AppStorage("hasThermometer") private var hasThermometer = true
     @AppStorage("returnToHomeTrigger") private var returnToHomeTrigger = 0
 
+    @State private var selectedPresetFilter: HomeRecipeFilter = .all
+
     private var latestBatch: BatchRecord? {
         batchStore.batches.first
     }
@@ -64,6 +66,25 @@ private struct HomeView: View {
         )
     }
 
+    private var presetItems: [HomePresetItem] {
+        [
+            HomePresetItem(
+                recipe: poultryPresetRecipe,
+                illustrationStyle: .light,
+                filter: .poultry
+            ),
+            HomePresetItem(
+                recipe: poultryBeefPresetRecipe,
+                illustrationStyle: .intense,
+                filter: .poultryBeef
+            )
+        ]
+    }
+
+    private var filteredPresetItems: [HomePresetItem] {
+        presetItems.filter { selectedPresetFilter.matches($0.filter) }
+    }
+
     var body: some View {
         GeometryReader { geo in
             let compact = geo.size.height < 860
@@ -76,8 +97,9 @@ private struct HomeView: View {
                     VStack(alignment: .leading, spacing: compact ? 22 : 26) {
                         topBar
                         greetingSection(compact: compact)
-                        presetCardsSection(compact: compact)
                         calculatorSection(compact: compact)
+                        readyRecipesSection(compact: compact)
+                        chefRecipesSection(compact: compact)
                         lastCookingSection(compact: compact)
                     }
                     .padding(.horizontal, 16)
@@ -123,58 +145,10 @@ private struct HomeView: View {
                 .font(.system(size: compact ? 24 : 26, weight: .bold))
                 .foregroundStyle(AppTheme.textPrimary)
 
-            Text("Wybierz gotowy przepis albo zbuduj własny rosół na podstawie mięsa, które masz pod ręką.")
+            Text("Co dziś gotujemy?")
                 .font(.system(size: compact ? 15 : 16, weight: .medium))
                 .foregroundStyle(AppTheme.textSecondary)
                 .fixedSize(horizontal: false, vertical: true)
-        }
-    }
-
-    private func presetCardsSection(compact: Bool) -> some View {
-        HStack(alignment: .top, spacing: 14) {
-            NavigationLink {
-                BrothResultView(
-                    selectedStyle: poultryPresetRecipe.compatibilityStyle,
-                    totalWeight: poultryPresetRecipe.totalWeightGrams,
-                    selectedIngredientCount: poultryPresetRecipe.selectedIngredientIDs.count,
-                    selectedIDs: poultryPresetRecipe.selectedIngredientIDs
-                )
-            } label: {
-                HomePresetCard(
-                    title: poultryPresetRecipe.title,
-                    subtitle: poultryPresetRecipe.subtitle,
-                    illustrationStyle: .light,
-                    metrics: [
-                        HomeMetric(kind: .time, title: poultryPresetRecipe.cookingDurationText),
-                        HomeMetric(kind: .yield, title: poultryPresetRecipe.estimatedYieldText)
-                    ],
-                    compact: compact
-                )
-            }
-            .buttonStyle(.plain)
-            .frame(maxWidth: .infinity)
-
-            NavigationLink {
-                BrothResultView(
-                    selectedStyle: poultryBeefPresetRecipe.compatibilityStyle,
-                    totalWeight: poultryBeefPresetRecipe.totalWeightGrams,
-                    selectedIngredientCount: poultryBeefPresetRecipe.selectedIngredientIDs.count,
-                    selectedIDs: poultryBeefPresetRecipe.selectedIngredientIDs
-                )
-            } label: {
-                HomePresetCard(
-                    title: poultryBeefPresetRecipe.title,
-                    subtitle: poultryBeefPresetRecipe.subtitle,
-                    illustrationStyle: .intense,
-                    metrics: [
-                        HomeMetric(kind: .time, title: poultryBeefPresetRecipe.cookingDurationText),
-                        HomeMetric(kind: .yield, title: poultryBeefPresetRecipe.estimatedYieldText)
-                    ],
-                    compact: compact
-                )
-            }
-            .buttonStyle(.plain)
-            .frame(maxWidth: .infinity)
         }
     }
 
@@ -185,6 +159,90 @@ private struct HomeView: View {
             CalculatorEntryCard(compact: compact)
         }
         .buttonStyle(.plain)
+    }
+
+    private func readyRecipesSection(compact: Bool) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Gotowe przepisy")
+                .font(.system(size: compact ? 22 : 23, weight: .bold))
+                .foregroundStyle(AppTheme.textPrimary)
+
+            recipeFilterPills
+
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(alignment: .top, spacing: 14) {
+                    ForEach(filteredPresetItems) { item in
+                        NavigationLink {
+                            BrothResultView(
+                                selectedStyle: item.recipe.compatibilityStyle,
+                                totalWeight: item.recipe.totalWeightGrams,
+                                selectedIngredientCount: item.recipe.selectedIngredientIDs.count,
+                                selectedIDs: item.recipe.selectedIngredientIDs
+                            )
+                        } label: {
+                            HomePresetCard(
+                                title: item.recipe.title,
+                                subtitle: item.recipe.subtitle,
+                                illustrationStyle: item.illustrationStyle,
+                                metrics: [
+                                    HomeMetric(kind: .time, title: item.recipe.cookingDurationText),
+                                    HomeMetric(kind: .yield, title: item.recipe.estimatedYieldText)
+                                ],
+                                compact: compact
+                            )
+                        }
+                        .buttonStyle(.plain)
+                        .frame(width: compact ? 206 : 216)
+                    }
+                }
+                .padding(.vertical, 2)
+            }
+        }
+    }
+
+    private var recipeFilterPills: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8) {
+                ForEach(HomeRecipeFilter.allCases) { filter in
+                    Button {
+                        selectedPresetFilter = filter
+                    } label: {
+                        RecipeFilterPill(
+                            title: filter.title,
+                            isSelected: selectedPresetFilter == filter
+                        )
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+        }
+    }
+
+    private func chefRecipesSection(compact: Bool) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Przepisy szefów kuchni")
+                .font(.system(size: compact ? 22 : 23, weight: .bold))
+                .foregroundStyle(AppTheme.textPrimary)
+
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 14) {
+                    LockedChefRecipeCard(
+                        compact: compact,
+                        title: "Klasyczny ramen shoyu",
+                        subtitle: "Autorski przepis premium z prowadzeniem krok po kroku."
+                    )
+                    .frame(width: compact ? 206 : 216)
+
+                    LockedChefRecipeCard(
+                        compact: compact,
+                        title: "Bulion wołowy demi-glace",
+                        subtitle: "Koncentrat o głębokim smaku, idealny do sosów i redukcji."
+                    )
+                    .frame(width: compact ? 206 : 216)
+                }
+                .padding(.vertical, 2)
+            }
+        }
     }
 
     private func lastCookingSection(compact: Bool) -> some View {
@@ -333,11 +391,11 @@ private struct CalculatorEntryCard: View {
         ) {
             HStack(alignment: .center, spacing: 16) {
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("Własny rosół")
+                    Text("Własny rosół od podstaw")
                         .font(.system(size: compact ? 18 : 19, weight: .bold))
                         .foregroundStyle(AppTheme.textPrimary)
 
-                    Text("Wybierzesz profil wywaru, dodasz mięso i od razu zobaczysz, czy wszystko mieści się w garnku.")
+                    Text("Wybierz składniki i od razu sprawdź proporcje wody, warzyw oraz przypraw dla Twojego garnka.")
                         .font(.system(size: 14, weight: .medium))
                         .foregroundStyle(AppTheme.textSecondary)
                         .fixedSize(horizontal: false, vertical: true)
@@ -350,6 +408,87 @@ private struct CalculatorEntryCard: View {
             .frame(maxWidth: .infinity, minHeight: compact ? 116 : 122, alignment: .leading)
         }
         .appSoftShadow()
+    }
+}
+
+private struct LockedChefRecipeCard: View {
+    let compact: Bool
+    let title: String
+    let subtitle: String
+
+    var body: some View {
+        AppCard(
+            background: AppTheme.surfaceMuted,
+            border: AppTheme.border
+        ) {
+            VStack(alignment: .leading, spacing: compact ? 14 : 16) {
+                HStack {
+                    PremiumBadge()
+                    Spacer(minLength: 0)
+                    Image(systemName: "lock.fill")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(AppTheme.textSecondary)
+                }
+
+                Spacer(minLength: 0)
+
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(title)
+                        .font(.system(size: compact ? 17 : 18, weight: .bold))
+                        .foregroundStyle(AppTheme.textPrimary.opacity(0.92))
+                        .lineLimit(2)
+                        .minimumScaleFactor(0.82)
+
+                    Text(subtitle)
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundStyle(AppTheme.textSecondary)
+                        .lineLimit(3)
+                }
+            }
+            .frame(maxWidth: .infinity, minHeight: compact ? 198 : 210, alignment: .topLeading)
+        }
+        .saturation(0.45)
+        .opacity(0.9)
+        .appSoftShadow()
+    }
+}
+
+private struct PremiumBadge: View {
+    var body: some View {
+        Text("Premium")
+            .font(.system(size: 11, weight: .bold))
+            .foregroundStyle(AppTheme.textPrimary)
+            .padding(.horizontal, 10)
+            .frame(height: 24)
+            .background(
+                Capsule()
+                    .fill(AppTheme.accentSoft)
+            )
+            .overlay(
+                Capsule()
+                    .stroke(AppTheme.accent.opacity(0.38), lineWidth: 1)
+            )
+    }
+}
+
+private struct RecipeFilterPill: View {
+    let title: String
+    let isSelected: Bool
+
+    var body: some View {
+        Text(title)
+            .font(.system(size: 13, weight: .semibold))
+            .foregroundStyle(isSelected ? AppTheme.textPrimary : AppTheme.textSecondary)
+            .padding(.horizontal, 12)
+            .frame(height: 32)
+            .background(
+                Capsule()
+                    .fill(isSelected ? AppTheme.accentSoft : AppTheme.surface)
+            )
+            .overlay(
+                Capsule()
+                    .stroke(isSelected ? AppTheme.accent.opacity(0.45) : AppTheme.border, lineWidth: 1)
+            )
     }
 }
 
@@ -439,6 +578,36 @@ private struct HomeMetric: Identifiable {
     let id = UUID()
     let kind: HomeMetricKind
     let title: String
+}
+
+private struct HomePresetItem: Identifiable {
+    let id = UUID()
+    let recipe: HomePresetRecipe
+    let illustrationStyle: BrothIllustrationStyle
+    let filter: HomeRecipeFilter
+}
+
+private enum HomeRecipeFilter: String, CaseIterable, Identifiable {
+    case all
+    case poultry
+    case poultryBeef
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .all:
+            return "Wszystkie"
+        case .poultry:
+            return "Drobiowy"
+        case .poultryBeef:
+            return "Drobiowo-wołowy"
+        }
+    }
+
+    func matches(_ filter: HomeRecipeFilter) -> Bool {
+        self == .all || self == filter
+    }
 }
 
 private enum HomeMetricKind {
