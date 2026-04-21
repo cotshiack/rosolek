@@ -325,7 +325,7 @@ private struct HomePresetCard: View {
 
                 HStack(spacing: 8) {
                     ForEach(metrics) { metric in
-                        HomeMetricChip(metric: metric)
+                        AppMetaChip(metric: AppMetaMetric(kind: metric.kind == .time ? .time : .yield, title: metric.title))
                     }
                 }
             }
@@ -389,37 +389,18 @@ private struct RecentBrothCompactCard: View {
 
                     Spacer(minLength: 8)
 
-                    RecentRatingBadge(text: batch.ratingBadgeText, hasRating: batch.overallRating != nil)
+                    SharedRatingBadge(text: batch.ratingBadgeText, hasRating: batch.overallRating != nil)
                 }
 
                 HStack(spacing: 8) {
-                    HistoryInfoChip(kind: .time, title: batch.timeDisplayText)
-                    HistoryInfoChip(kind: .yield, title: batch.yieldDisplayText)
-                    HistoryInfoChip(kind: .profile, title: batch.profileTitle)
+                    AppMetaChip(metric: AppMetaMetric(kind: .time, title: batch.timeDisplayText))
+                    AppMetaChip(metric: AppMetaMetric(kind: .yield, title: batch.yieldDisplayText))
+                    AppMetaChip(metric: AppMetaMetric(kind: .profile, title: batch.profileTitle))
                 }
             }
             .frame(maxWidth: .infinity, minHeight: compact ? 112 : 118, alignment: .leading)
         }
         .appSoftShadow()
-    }
-}
-
-private struct RecentRatingBadge: View {
-    let text: String
-    let hasRating: Bool
-
-    var body: some View {
-        Text(text)
-            .font(.system(size: 12, weight: .bold))
-            .foregroundStyle(hasRating ? AppTheme.textPrimary : AppTheme.textSecondary)
-            .padding(.horizontal, 10)
-            .frame(height: 30)
-            .background(hasRating ? AppTheme.accent : AppTheme.surfaceMuted)
-            .overlay(
-                Capsule()
-                    .stroke(hasRating ? AppTheme.accent : AppTheme.border, lineWidth: 1)
-            )
-            .clipShape(Capsule())
     }
 }
 
@@ -476,101 +457,6 @@ private struct HomeMetric: Identifiable {
 private enum HomeMetricKind {
     case time
     case yield
-}
-
-private struct HomeMetricChip: View {
-    let metric: HomeMetric
-
-    var body: some View {
-        HStack(spacing: 6) {
-            HomeMetricGlyph(kind: metric.kind)
-
-            Text(metric.title)
-                .font(.system(size: 11, weight: .semibold))
-                .lineLimit(1)
-                .minimumScaleFactor(0.82)
-        }
-        .foregroundStyle(AppTheme.textPrimary.opacity(0.86))
-        .padding(.horizontal, 10)
-        .frame(height: 28)
-        .background(
-            Capsule()
-                .fill(AppTheme.surfaceMuted)
-        )
-        .overlay(
-            Capsule()
-                .stroke(AppTheme.border, lineWidth: 1)
-        )
-    }
-}
-
-private struct HomeMetricGlyph: View {
-    let kind: HomeMetricKind
-
-    var body: some View {
-        Group {
-            switch kind {
-            case .time:
-                Image(systemName: "clock")
-                    .font(.system(size: 10, weight: .semibold))
-            case .yield:
-                AppYieldGlyph()
-            }
-        }
-        .frame(width: 12, height: 12)
-    }
-}
-
-private enum HistoryInfoKind {
-    case time
-    case yield
-    case profile
-}
-
-private struct HistoryInfoChip: View {
-    let kind: HistoryInfoKind
-    let title: String
-
-    var body: some View {
-        HStack(spacing: 6) {
-            HistoryInfoGlyph(kind: kind)
-
-            Text(title)
-                .font(.system(size: 11, weight: .semibold))
-                .lineLimit(1)
-                .minimumScaleFactor(0.82)
-        }
-        .foregroundStyle(AppTheme.textPrimary.opacity(0.86))
-        .padding(.horizontal, 10)
-        .frame(height: 28)
-        .background(
-            Capsule()
-                .fill(AppTheme.surfaceMuted)
-        )
-        .overlay(
-            Capsule()
-                .stroke(AppTheme.border, lineWidth: 1)
-        )
-    }
-}
-
-private struct HistoryInfoGlyph: View {
-    let kind: HistoryInfoKind
-
-    var body: some View {
-        Group {
-            switch kind {
-            case .time:
-                Image(systemName: "clock")
-                    .font(.system(size: 10, weight: .semibold))
-            case .yield:
-                AppYieldGlyph()
-            case .profile:
-                AppProfileGlyph()
-            }
-        }
-        .frame(width: 12, height: 12)
-    }
 }
 
 private enum BrothIllustrationStyle {

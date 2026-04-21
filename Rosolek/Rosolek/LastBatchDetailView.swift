@@ -9,6 +9,7 @@ struct LastBatchDetailView: View {
     @State private var showRenameAlert = false
     @State private var renameText = ""
     @State private var showDeleteAlert = false
+    @State private var showFeedback = false
 
     private var batch: BatchRecord? {
         batchStore.batch(for: batchID)
@@ -19,7 +20,7 @@ struct LastBatchDetailView: View {
             if let batch {
                 ScrollView(showsIndicators: false) {
                     VStack(alignment: .leading, spacing: 24) {
-                        header
+                        header(for: batch)
                         summaryCard(batch)
                         cookingSection(batch)
                         qualitySection(batch)
@@ -32,9 +33,21 @@ struct LastBatchDetailView: View {
                 .background(AppTheme.background)
                 .navigationTitle("Szczegóły")
                 .navigationBarTitleDisplayMode(.inline)
+                .navigationDestination(isPresented: $showFeedback) {
+                    BatchFeedbackView(batch: batch, standaloneMode: true)
+                }
                 .toolbar {
                     ToolbarItem(placement: .topBarTrailing) {
                         Menu {
+                            Button {
+                                showFeedback = true
+                            } label: {
+                                Label(
+                                    batch.overallRating != nil ? "Edytuj ocenę" : "Oceń tę partię",
+                                    systemImage: "star"
+                                )
+                            }
+
                             Button {
                                 renameText = batch.customTitle ?? ""
                                 showRenameAlert = true
@@ -78,9 +91,9 @@ struct LastBatchDetailView: View {
         }
     }
 
-    private var header: some View {
+    private func header(for batch: BatchRecord) -> some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("Szczegóły gotowania")
+            Text(batch.displayTitle)
                 .font(.system(size: 34, weight: .bold))
                 .foregroundStyle(AppTheme.textPrimary)
 
@@ -98,29 +111,22 @@ struct LastBatchDetailView: View {
         ) {
             VStack(alignment: .leading, spacing: 14) {
                 HStack(alignment: .top, spacing: 12) {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(batch.displayTitle)
-                            .font(.system(size: 22, weight: .bold))
-                            .foregroundStyle(AppTheme.textPrimary)
-                            .lineLimit(2)
-
-                        Text(batch.createdAtDisplayText)
-                            .font(.system(size: 13, weight: .medium))
-                            .foregroundStyle(AppTheme.textSecondary)
-                    }
+                    Text(batch.createdAtDisplayText)
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundStyle(AppTheme.textSecondary)
 
                     Spacer(minLength: 8)
 
-                    DetailRatingBadge(
+                    SharedRatingBadge(
                         text: batch.ratingBadgeText,
                         hasRating: batch.overallRating != nil
                     )
                 }
 
                 HStack(spacing: 8) {
-                    DetailMetaChip(kind: .time, title: batch.timeDisplayText)
-                    DetailMetaChip(kind: .yield, title: batch.yieldDisplayText)
-                    DetailMetaChip(kind: .profile, title: batch.profileTitle)
+                    AppMetaChip(metric: AppMetaMetric(kind: .time, title: batch.timeDisplayText))
+                    AppMetaChip(metric: AppMetaMetric(kind: .yield, title: batch.yieldDisplayText))
+                    AppMetaChip(metric: AppMetaMetric(kind: .profile, title: batch.profileTitle))
                 }
             }
         }
@@ -151,42 +157,48 @@ struct LastBatchDetailView: View {
     }
 
     private func qualitySection(_ batch: BatchRecord) -> some View {
-        let strength = strengthValue(for: batch)
-        let fat = fatValue(for: batch)
-        let clarity = clarityValue(for: batch)
+        VStack(alignment: .leading, spacing: 10) {
+            AppSectionLabel(text: "Ocena partii")
 
-        return Group {
-            if batch.overallRating != nil || strength != nil || fat != nil || clarity != nil {
-                VStack(alignment: .leading, spacing: 10) {
-                    AppSectionLabel(text: "Ocena partii")
+            if batch.overallRating != nil {
+                AppCard {
+                    VStack(alignment: .leading, spacing: 12) {
+                        if let rating = batch.overallRating {
+                            AppInfoRow(title: "Ocena ogólna", value: "\(rating)/10")
+                        }
 
-                    AppCard {
-                        VStack(alignment: .leading, spacing: 12) {
-                            if let rating = batch.overallRating {
-                                AppInfoRow(title: "Ocena ogólna", value: "\(rating)/10")
-                            }
+                        if let raw = batch.strengthFeedbackRawValue,
+                           let value = BatchStrengthFeedback(rawValue: raw) {
+                            AppInfoRow(title: "Moc", value: value.title)
+                        }
 
-                            if let strength {
-                                AppInfoRow(title: "Moc", value: strength)
-                            }
+                        if let raw = batch.fatFeedbackRawValue,
+                           let value = BatchFatFeedback(rawValue: raw) {
+                            AppInfoRow(title: "Tłustość", value: value.title)
+                        }
 
-                            if let fat {
-                                AppInfoRow(title: "Tłustość", value: fat)
-                            }
-
-                            if let clarity {
-                                AppInfoRow(title: "Klarowność", value: clarity)
-                            }
-
-                            if strength == nil && fat == nil && clarity == nil {
-                                Text("Brak szczegółowej oceny")
-                                    .font(.system(size: 14, weight: .medium))
-                                    .foregroundStyle(AppTheme.textSecondary)
-                            }
+                        if let raw = batch.clarityFeedbackRawValue,
+                           let value = BatchClarityFeedback(rawValue: raw) {
+                            AppInfoRow(title: "Klarowność", value: value.title)
                         }
                     }
-                    .appSoftShadow()
                 }
+                .appSoftShadow()
+            } else {
+                AppCard {
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("Ta partia nie ma jeszcze oceny.")
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundStyle(AppTheme.textSecondary)
+
+                        Button {
+                            showFeedback = true
+                        } label: {
+                            AppPrimaryButtonLabel(title: "Oceń tę partię")
+                        }
+                    }
+                }
+                .appSoftShadow()
             }
         }
     }
@@ -280,91 +292,5 @@ struct LastBatchDetailView: View {
         .background(AppTheme.background)
         .navigationTitle("Szczegóły")
         .navigationBarTitleDisplayMode(.inline)
-    }
-
-    private func strengthValue(for batch: BatchRecord) -> String? {
-        guard let raw = batch.strengthFeedbackRawValue else { return nil }
-        return BatchStrengthFeedback(rawValue: raw)?.title
-    }
-
-    private func fatValue(for batch: BatchRecord) -> String? {
-        guard let raw = batch.fatFeedbackRawValue else { return nil }
-        return BatchFatFeedback(rawValue: raw)?.title
-    }
-
-    private func clarityValue(for batch: BatchRecord) -> String? {
-        guard let raw = batch.clarityFeedbackRawValue else { return nil }
-        return BatchClarityFeedback(rawValue: raw)?.title
-    }
-}
-
-private struct DetailRatingBadge: View {
-    let text: String
-    let hasRating: Bool
-
-    var body: some View {
-        Text(text)
-            .font(.system(size: 12, weight: .bold))
-            .foregroundStyle(hasRating ? AppTheme.textPrimary : AppTheme.textSecondary)
-            .padding(.horizontal, 10)
-            .frame(height: 30)
-            .background(hasRating ? AppTheme.accent : AppTheme.surfaceMuted)
-            .overlay(
-                Capsule()
-                    .stroke(hasRating ? AppTheme.accent : AppTheme.border, lineWidth: 1)
-            )
-            .clipShape(Capsule())
-    }
-}
-
-private enum DetailMetaKind {
-    case time
-    case yield
-    case profile
-}
-
-private struct DetailMetaChip: View {
-    let kind: DetailMetaKind
-    let title: String
-
-    var body: some View {
-        HStack(spacing: 6) {
-            DetailMetaGlyph(kind: kind)
-
-            Text(title)
-                .font(.system(size: 11, weight: .semibold))
-                .lineLimit(1)
-                .minimumScaleFactor(0.82)
-        }
-        .foregroundStyle(AppTheme.textPrimary.opacity(0.86))
-        .padding(.horizontal, 10)
-        .frame(height: 28)
-        .background(
-            Capsule()
-                .fill(AppTheme.surfaceMuted)
-        )
-        .overlay(
-            Capsule()
-                .stroke(AppTheme.border, lineWidth: 1)
-        )
-    }
-}
-
-private struct DetailMetaGlyph: View {
-    let kind: DetailMetaKind
-
-    var body: some View {
-        Group {
-            switch kind {
-            case .time:
-                Image(systemName: "clock")
-                    .font(.system(size: 10, weight: .semibold))
-            case .yield:
-                AppYieldGlyph()
-            case .profile:
-                AppProfileGlyph()
-            }
-        }
-        .frame(width: 12, height: 12)
     }
 }

@@ -66,7 +66,7 @@ enum BatchClarityFeedback: String, CaseIterable, BrothFeedbackOption {
         switch self {
         case .cloudy: return "cloud.fog"
         case .medium: return "sun.haze"
-        case .clear: return "sparkles"
+        case .clear: return "sun.max"
         }
     }
 }
@@ -74,22 +74,25 @@ enum BatchClarityFeedback: String, CaseIterable, BrothFeedbackOption {
 struct BatchFeedbackView: View {
     @EnvironmentObject private var batchStore: BatchStore
     @AppStorage("returnToHomeTrigger") private var returnToHomeTrigger = 0
+    @Environment(\.dismiss) private var dismiss
     @FocusState private var notesFieldFocused: Bool
 
     let batch: BatchRecord
+    var standaloneMode: Bool = false
 
     @State private var overallRating: Double
-    @State private var strengthFeedback: BatchStrengthFeedback
-    @State private var fatFeedback: BatchFatFeedback
-    @State private var clarityFeedback: BatchClarityFeedback
+    @State private var strengthFeedback: BatchStrengthFeedback?
+    @State private var fatFeedback: BatchFatFeedback?
+    @State private var clarityFeedback: BatchClarityFeedback?
     @State private var notes: String
 
-    init(batch: BatchRecord) {
+    init(batch: BatchRecord, standaloneMode: Bool = false) {
         self.batch = batch
+        self.standaloneMode = standaloneMode
         _overallRating = State(initialValue: Double(batch.overallRating ?? 8))
-        _strengthFeedback = State(initialValue: BatchStrengthFeedback(rawValue: batch.strengthFeedbackRawValue ?? "") ?? .ideal)
-        _fatFeedback = State(initialValue: BatchFatFeedback(rawValue: batch.fatFeedbackRawValue ?? "") ?? .ideal)
-        _clarityFeedback = State(initialValue: BatchClarityFeedback(rawValue: batch.clarityFeedbackRawValue ?? "") ?? .clear)
+        _strengthFeedback = State(initialValue: batch.strengthFeedbackRawValue.flatMap { BatchStrengthFeedback(rawValue: $0) })
+        _fatFeedback = State(initialValue: batch.fatFeedbackRawValue.flatMap { BatchFatFeedback(rawValue: $0) })
+        _clarityFeedback = State(initialValue: batch.clarityFeedbackRawValue.flatMap { BatchClarityFeedback(rawValue: $0) })
         _notes = State(initialValue: batch.notes)
     }
 
@@ -254,7 +257,7 @@ struct BatchFeedbackView: View {
     private func feedbackCard<T: BrothFeedbackOption>(
         title: String,
         subtitle: String,
-        selection: Binding<T>,
+        selection: Binding<T?>,
         options: T.AllCases
     ) -> some View {
         AppCard {
@@ -291,15 +294,10 @@ struct BatchFeedbackView: View {
     ) -> some View {
         Button(action: action) {
             VStack(spacing: 8) {
-                ZStack {
-                    Circle()
-                        .fill(isSelected ? AppTheme.textPrimary.opacity(0.08) : AppTheme.background)
-                        .frame(width: 32, height: 32)
-
-                    Image(systemName: option.iconName)
-                        .font(.system(size: 15, weight: .semibold))
-                        .foregroundStyle(AppTheme.textPrimary)
-                }
+                Image(systemName: option.iconName)
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(isSelected ? AppTheme.textPrimary : AppTheme.textSecondary)
+                    .frame(width: 32, height: 32)
 
                 Text(option.title)
                     .font(.system(size: 13, weight: .bold))
@@ -343,12 +341,18 @@ struct BatchFeedbackView: View {
         batchStore.updateFeedback(
             batchID: batch.id,
             overallRating: Int(overallRating.rounded()),
-            strengthFeedbackRawValue: strengthFeedback.rawValue,
-            fatFeedbackRawValue: fatFeedback.rawValue,
-            clarityFeedbackRawValue: clarityFeedback.rawValue,
+            strengthFeedbackRawValue: strengthFeedback?.rawValue,
+            fatFeedbackRawValue: fatFeedback?.rawValue,
+            clarityFeedbackRawValue: clarityFeedback?.rawValue,
             notes: notes.trimmingCharacters(in: .whitespacesAndNewlines)
         )
 
-        returnToHomeTrigger += 1
+        UINotificationFeedbackGenerator().notificationOccurred(.success)
+
+        if standaloneMode {
+            dismiss()
+        } else {
+            returnToHomeTrigger += 1
+        }
     }
 }
