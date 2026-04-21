@@ -437,17 +437,8 @@ private struct CalculatorEntryCard: View {
             .padding(.top, 18)
         }
         .overlay(alignment: .topLeading) {
-            AppPill(title: "Tryb własny", systemImage: "sparkles", filled: false)
+            AppPill(title: "Tryb własny", systemImage: "sparkles", filled: true)
                 .foregroundStyle(AppTheme.surface)
-                .background(
-                    Capsule()
-                        .fill(AppTheme.darkCard.opacity(0.84))
-                )
-                .overlay(
-                    Capsule()
-                        .stroke(AppTheme.darkCard, lineWidth: 1)
-                )
-                .clipShape(Capsule())
                 .padding(.top, 12)
                 .padding(.leading, 12)
         }
