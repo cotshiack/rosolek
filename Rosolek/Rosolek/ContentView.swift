@@ -689,11 +689,14 @@ private struct HomePresetItem: Identifiable {
 
 private enum HomeCardArtwork {
     case asset(String)
+    case systemDefault
 
     var assetName: String {
         switch self {
         case .asset(let name):
             return name
+        case .systemDefault:
+            return "OnboardingHeroRosolek"
         }
     }
 
@@ -839,6 +842,13 @@ private struct HomeRecipeArtwork: View {
                     .frame(height: compact ? 120 : 128)
                     .frame(maxWidth: .infinity)
                     .clipShape(RoundedRectangle(cornerRadius: compact ? 18 : 20, style: .continuous))
+            } else if HomeCardArtwork.systemDefault.isAvailable {
+                Image(HomeCardArtwork.systemDefault.assetName)
+                    .resizable()
+                    .scaledToFill()
+                    .frame(height: compact ? 120 : 128)
+                    .frame(maxWidth: .infinity)
+                    .clipShape(RoundedRectangle(cornerRadius: compact ? 18 : 20, style: .continuous))
             } else {
                 HStack(alignment: .top) {
                     PresetIngredientIllustration(style: fallbackStyle, compact: compact)
@@ -866,6 +876,12 @@ private struct HomeHeroArtwork: View {
 
             if heroArtwork.isAvailable {
                 Image(heroArtwork.assetName)
+                    .resizable()
+                    .scaledToFill()
+                    .frame(width: size - 10, height: size - 10)
+                    .clipShape(Circle())
+            } else if HomeCardArtwork.systemDefault.isAvailable {
+                Image(HomeCardArtwork.systemDefault.assetName)
                     .resizable()
                     .scaledToFill()
                     .frame(width: size - 10, height: size - 10)
@@ -1293,7 +1309,12 @@ private struct HomePresetRecipe {
     }
 
     var title: String {
-        preset.title
+        switch preset {
+        case .poultryReady:
+            return "Rosół drobiowy"
+        case .poultryBeefReady:
+            return "Rosół drobiowo-wołowy"
+        }
     }
 
     var subtitle: String {
