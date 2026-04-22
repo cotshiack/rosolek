@@ -13,39 +13,35 @@ struct BrothStyleSelectionView: View {
     @State private var selectedProfile: BrothProfile? = .cleaner
 
     var body: some View {
-        GeometryReader { geometry in
-            ScrollView(showsIndicators: false) {
-                VStack(alignment: .leading, spacing: 16) {
-                    header
+        GeometryReader { _ in
+            VStack(alignment: .leading, spacing: 12) {
+                header
 
-                    VStack(spacing: 14) {
+                GeometryReader { cardsGeometry in
+                    let cardHeight = max(0, (cardsGeometry.size.height - 8) / 2)
+
+                    VStack(spacing: 8) {
                         ForEach(BrothProfile.allCases) { profile in
                             ProfileChoiceCard(
                                 profile: profile,
                                 isSelected: selectedProfile == profile,
-                                imageHeight: cardImageHeight(for: geometry.size.height)
+                                imageHeight: cardHeight * 0.62
                             ) {
                                 withAnimation(.spring(response: 0.28, dampingFraction: 0.82)) {
                                     selectedProfile = profile
                                 }
                             }
+                            .frame(height: cardHeight)
                         }
                     }
                 }
-                .padding(.horizontal, AppSpacing.screen)
-                .padding(.top, 12)
-                .padding(.bottom, ctaOverlaySpace(for: geometry.safeAreaInsets.bottom))
+                .layoutPriority(1)
             }
+            .padding(AppSpacing.screen)
+            .frame(maxHeight: .infinity, alignment: .top)
             .background(AppTheme.background.ignoresSafeArea())
-            .overlay(alignment: .bottom) {
-                ctaButton
-                    .padding(.horizontal, AppSpacing.screen)
-                    .padding(.bottom, max(12, geometry.safeAreaInsets.bottom))
-                    .background(
-                        AppTheme.background
-                            .opacity(0.98)
-                            .ignoresSafeArea(edges: .bottom)
-                    )
+            .safeAreaInset(edge: .bottom) {
+                floatingBottomBar
             }
         }
         .navigationTitle("Własny rosół")
@@ -53,7 +49,7 @@ struct BrothStyleSelectionView: View {
     }
 
     private var header: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 6) {
             Text("Wybierz profil rosołu")
                 .font(AppTypography.flowHeader)
                 .foregroundStyle(AppTheme.textPrimary)
@@ -66,28 +62,28 @@ struct BrothStyleSelectionView: View {
         }
     }
 
-    private func cardImageHeight(for screenHeight: CGFloat) -> CGFloat {
-        let compact = screenHeight < 820
-        return compact ? 142 : 158
-    }
-
-    private func ctaOverlaySpace(for safeBottomInset: CGFloat) -> CGFloat {
-        let ctaHeight: CGFloat = 56
-        return ctaHeight + max(22, safeBottomInset + 12)
-    }
-
-    private var ctaButton: some View {
-        NavigationLink {
-            IngredientSelectionView(
-                selectedProfile: selectedProfile ?? .cleaner
-            )
-        } label: {
-            AppPrimaryButtonLabel(
-                title: "Wybierz składniki",
-                disabled: selectedProfile == nil
-            )
+    private var floatingBottomBar: some View {
+        VStack(spacing: 10) {
+            NavigationLink {
+                IngredientSelectionView(
+                    selectedProfile: selectedProfile ?? .cleaner
+                )
+            } label: {
+                AppPrimaryButtonLabel(
+                    title: "Wybierz składniki",
+                    disabled: selectedProfile == nil
+                )
+            }
+            .disabled(selectedProfile == nil)
         }
-        .disabled(selectedProfile == nil)
+        .padding(.horizontal, AppSpacing.screen)
+        .padding(.top, 8)
+        .padding(.bottom, 8)
+        .background(
+            AppTheme.background
+                .opacity(0.98)
+                .ignoresSafeArea(edges: .bottom)
+        )
     }
 }
 
@@ -111,19 +107,40 @@ private struct ProfileChoiceCard: View {
         }
     }
 
+    private var iconColor: Color {
+        switch profile {
+        case .cleaner: return isSelected ? Color(hex: "3D8FD4") : AppTheme.textSecondary
+        case .richer:  return isSelected ? Color(hex: "E07A35") : AppTheme.textSecondary
+        }
+    }
+
     private var chips: [String] {
         switch profile {
-        case .cleaner: return ["delikatny", "na co dzień", "większa ilość"]
-        case .richer:  return ["esencjonalny", "mocniejszy", "pełniejsze body"]
+        case .cleaner: return ["klarowniejszy", "większy uzysk", "na co dzień"]
+        case .richer:  return ["mocniejszy aromat", "pełniejsze body", "dłuższe gotowanie"]
         }
     }
 
     private var profileAudienceDescription: String {
         switch profile {
         case .cleaner:
-            return "Dla osób, które wolą lżejszy i delikatniejszy rosół."
+            return "Lżejszy profil z klarownym, delikatnym bulionem. Większy uzysk i krótszy czas gotowania — świetny na co dzień."
         case .richer:
-            return "Dla osób, które lubią intensywniejszy i bardziej esencjonalny smak."
+            return "Intensywny, ciemny rosół z głębokim aromatem i pełnym body. Wymaga cierpliwości, ale smakuje jak z babcinej kuchni."
+        }
+    }
+
+    private var cookTime: String {
+        switch profile {
+        case .cleaner: return "ok. 2–2.5h"
+        case .richer:  return "ok. 3–4h"
+        }
+    }
+
+    private var yieldHint: String {
+        switch profile {
+        case .cleaner: return "więcej płynu"
+        case .richer:  return "mniej płynu"
         }
     }
 
@@ -148,68 +165,81 @@ private struct ProfileChoiceCard: View {
                     .frame(height: imageHeight)
                     .overlay(
                         LinearGradient(
-                            colors: [.clear, .black.opacity(0.26)],
-                            startPoint: .center,
+                            colors: [.clear, .clear, .black.opacity(0.50)],
+                            startPoint: .top,
                             endPoint: .bottom
                         )
                     )
 
                     if isSelected {
-                        HStack(spacing: 4) {
+                        HStack(spacing: 5) {
                             Image(systemName: "checkmark")
-                                .font(.system(size: 10, weight: .bold))
-                            Text(profile.title)
-                                .font(.system(size: 12, weight: .semibold))
+                                .font(.system(size: 11, weight: .black))
+                            Text("Ten profil")
+                                .font(.system(size: 13, weight: .bold))
                         }
                         .foregroundStyle(AppTheme.textPrimary)
-                        .padding(.horizontal, 10)
-                        .frame(height: 28)
+                        .padding(.horizontal, 12)
+                        .frame(height: 30)
                         .background(AppTheme.accent)
                         .clipShape(Capsule())
-                        .padding(12)
+                        .padding(14)
                         .transition(.scale(scale: 0.7).combined(with: .opacity))
                     }
                 }
                 .clipShape(RoundedRectangle(cornerRadius: AppRadius.card, style: .continuous))
 
-                VStack(alignment: .leading, spacing: 8) {
+                VStack(alignment: .leading, spacing: 6) {
                     HStack(spacing: 6) {
                         Image(systemName: icon)
-                            .font(.system(size: 13, weight: .bold))
-                            .foregroundStyle(AppTheme.textSecondary)
+                            .font(.system(size: 14, weight: .bold))
+                            .foregroundStyle(iconColor)
                         Text(profile.title)
-                            .font(.system(size: 24, weight: .bold))
+                            .font(.system(size: 20, weight: .bold))
                             .foregroundStyle(AppTheme.textPrimary)
                     }
 
                     Text(profileAudienceDescription)
-                        .font(.system(size: 14, weight: .medium))
+                        .font(.system(size: 13, weight: .medium))
                         .foregroundStyle(AppTheme.textSecondary)
-                        .lineLimit(2)
                         .fixedSize(horizontal: false, vertical: true)
 
+                    HStack(spacing: 14) {
+                        Label(cookTime, systemImage: "clock")
+                        Label(yieldHint, systemImage: "drop")
+                    }
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundStyle(AppTheme.textTertiary)
+
                     LazyVGrid(
-                        columns: [GridItem(.adaptive(minimum: 104), spacing: 8)],
+                        columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 3),
                         alignment: .leading,
-                        spacing: 8
+                        spacing: 6
                     ) {
                         ForEach(chips, id: \.self) { chip in
-                            ProfileChip(title: chip)
+                            ProfileChip(title: chip, isSelected: isSelected)
                         }
                     }
                 }
-                .padding(14)
+                .padding(12)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .background(AppTheme.surface)
+                .frame(maxHeight: .infinity, alignment: .top)
+                .background(isSelected ? AppTheme.accentSoft.opacity(0.40) : AppTheme.surface)
             }
             .clipShape(RoundedRectangle(cornerRadius: AppRadius.card, style: .continuous))
             .contentShape(RoundedRectangle(cornerRadius: AppRadius.card, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: AppRadius.card, style: .continuous)
-                    .stroke(isSelected ? AppTheme.accent : AppTheme.border, lineWidth: isSelected ? 2.5 : 1)
+                    .stroke(isSelected ? AppTheme.accent : AppTheme.border, lineWidth: isSelected ? 2 : 1)
             )
-            .scaleEffect(isSelected ? 1.0 : 0.985)
-            .appSoftShadow()
+            .opacity(isSelected ? 1.0 : 0.70)
+            .scaleEffect(isSelected ? 1.0 : 0.975)
+            .shadow(
+                color: isSelected ? AppTheme.accent.opacity(0.28) : Color.black.opacity(0.05),
+                radius: isSelected ? 20 : 8,
+                x: 0,
+                y: isSelected ? 8 : 3
+            )
         }
         .buttonStyle(.plain)
         .animation(.spring(response: 0.28, dampingFraction: 0.82), value: isSelected)
@@ -218,18 +248,23 @@ private struct ProfileChoiceCard: View {
 
 private struct ProfileChip: View {
     let title: String
+    var isSelected: Bool = false
 
     var body: some View {
         Text(title)
-            .font(.system(size: 11, weight: .semibold))
+            .font(.system(size: 10, weight: .semibold))
             .foregroundStyle(AppTheme.textSecondary)
             .lineLimit(1)
-            .minimumScaleFactor(0.9)
+            .minimumScaleFactor(0.75)
+            .frame(maxWidth: .infinity)
             .padding(.horizontal, 9)
             .padding(.vertical, 5)
-            .background(AppTheme.surfaceMuted)
+            .background(isSelected ? AppTheme.accentSoft : AppTheme.surfaceMuted)
             .overlay(
-                Capsule().stroke(AppTheme.borderStrong, lineWidth: 1)
+                Capsule().stroke(
+                    isSelected ? AppTheme.accent.opacity(0.50) : AppTheme.borderStrong,
+                    lineWidth: 1
+                )
             )
             .clipShape(Capsule())
     }
