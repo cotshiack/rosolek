@@ -14,40 +14,38 @@ struct BrothStyleSelectionView: View {
 
     var body: some View {
         GeometryReader { geometry in
-            VStack(alignment: .leading, spacing: 20) {
-                header
+            ScrollView(showsIndicators: false) {
+                VStack(alignment: .leading, spacing: 16) {
+                    header
 
-                VStack(spacing: 14) {
-                    ForEach(BrothProfile.allCases) { profile in
-                        ProfileChoiceCard(
-                            profile: profile,
-                            isSelected: selectedProfile == profile
-                        ) {
-                            withAnimation(.spring(response: 0.28, dampingFraction: 0.82)) {
-                                selectedProfile = profile
+                    VStack(spacing: 14) {
+                        ForEach(BrothProfile.allCases) { profile in
+                            ProfileChoiceCard(
+                                profile: profile,
+                                isSelected: selectedProfile == profile,
+                                imageHeight: cardImageHeight(for: geometry.size.height)
+                            ) {
+                                withAnimation(.spring(response: 0.28, dampingFraction: 0.82)) {
+                                    selectedProfile = profile
+                                }
                             }
                         }
                     }
                 }
-
-                Spacer(minLength: 12)
-
-                NavigationLink {
-                    IngredientSelectionView(
-                        selectedProfile: selectedProfile ?? .cleaner
-                    )
-                } label: {
-                    AppPrimaryButtonLabel(
-                        title: "Dalej",
-                        disabled: selectedProfile == nil
-                    )
-                }
-                .disabled(selectedProfile == nil)
+                .padding(AppSpacing.screen)
+                .padding(.bottom, ctaOverlaySpace(for: geometry.safeAreaInsets.bottom))
             }
-            .padding(AppSpacing.screen)
-            .padding(.bottom, max(10, geometry.safeAreaInsets.bottom == 0 ? 10 : geometry.safeAreaInsets.bottom))
-            .frame(width: geometry.size.width, height: geometry.size.height, alignment: .topLeading)
             .background(AppTheme.background.ignoresSafeArea())
+            .overlay(alignment: .bottom) {
+                ctaButton
+                    .padding(.horizontal, AppSpacing.screen)
+                    .padding(.bottom, max(12, geometry.safeAreaInsets.bottom))
+                    .background(
+                        AppTheme.background
+                            .opacity(0.98)
+                            .ignoresSafeArea(edges: .bottom)
+                    )
+            }
         }
         .navigationTitle("Własny rosół")
         .navigationBarTitleDisplayMode(.inline)
@@ -55,23 +53,48 @@ struct BrothStyleSelectionView: View {
 
     private var header: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Wybierz profil\nrosołu")
-                .font(.system(size: 29, weight: .bold))
+            Text("Wybierz profil rosołu")
+                .font(AppTypography.flowHeader)
                 .foregroundStyle(AppTheme.textPrimary)
+                .lineLimit(2)
+                .fixedSize(horizontal: false, vertical: true)
 
-            Text("Decyduje o proporcjach wody do mięsa.")
+            Text("Wpływa na smak i ilość rosołu.")
                 .font(.system(size: 15, weight: .medium))
                 .foregroundStyle(AppTheme.textSecondary)
         }
+    }
+
+    private func cardImageHeight(for screenHeight: CGFloat) -> CGFloat {
+        let compact = screenHeight < 820
+        return compact ? 158 : 176
+    }
+
+    private func ctaOverlaySpace(for safeBottomInset: CGFloat) -> CGFloat {
+        let ctaHeight: CGFloat = 56
+        return ctaHeight + max(22, safeBottomInset + 12)
+    }
+
+    private var ctaButton: some View {
+        NavigationLink {
+            IngredientSelectionView(
+                selectedProfile: selectedProfile ?? .cleaner
+            )
+        } label: {
+            AppPrimaryButtonLabel(
+                title: "Wybierz składniki",
+                disabled: selectedProfile == nil
+            )
+        }
+        .disabled(selectedProfile == nil)
     }
 }
 
 private struct ProfileChoiceCard: View {
     let profile: BrothProfile
     let isSelected: Bool
+    let imageHeight: CGFloat
     let action: () -> Void
-
-    private let cardHeight: CGFloat = 192
 
     private var assetName: String {
         switch profile {
@@ -89,51 +112,24 @@ private struct ProfileChoiceCard: View {
 
     private var chips: [String] {
         switch profile {
-        case .cleaner: return ["więcej wody", "lżejszy profil", "większy uzysk"]
-        case .richer:  return ["mniej wody", "mocniejszy profil", "mniejszy uzysk"]
+        case .cleaner: return ["delikatny start", "codzienny rosół", "łagodny finisz"]
+        case .richer:  return ["niedzielny styl", "mocny aromat", "dłuższy finisz"]
+        }
+    }
+
+    private var audienceDescription: String {
+        switch profile {
+        case .cleaner:
+            return "Dla osób, które wolą lżejszy i delikatniejszy rosół."
+        case .richer:
+            return "Dla osób, które lubią intensywniejszy i bardziej esencjonalny smak."
         }
     }
 
     var body: some View {
         Button(action: action) {
-            Color.clear
-                .frame(height: cardHeight)
-                .frame(maxWidth: .infinity)
-                .overlay(alignment: .bottom) {
-                    VStack(alignment: .leading, spacing: 8) {
-                        HStack(spacing: 6) {
-                            Image(systemName: icon)
-                                .font(.system(size: 12, weight: .bold))
-                            Text(profile.title)
-                                .font(.system(size: 21, weight: .bold))
-                        }
-                        .foregroundStyle(.white)
-
-                        Text(profile.subtitle)
-                            .font(.system(size: 13, weight: .medium))
-                            .foregroundStyle(.white.opacity(0.85))
-                            .lineLimit(2)
-                            .fixedSize(horizontal: false, vertical: true)
-
-                        HStack(spacing: 6) {
-                            ForEach(chips, id: \.self) { chip in
-                                ProfileChip(title: chip)
-                            }
-                        }
-                    }
-                    .padding(.horizontal, 16)
-                    .padding(.bottom, 16)
-                    .padding(.top, 36)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(
-                        LinearGradient(
-                            colors: [.clear, .black.opacity(0.65)],
-                            startPoint: .top,
-                            endPoint: .bottom
-                        )
-                    )
-                }
-                .background {
+            VStack(spacing: 0) {
+                ZStack(alignment: .topLeading) {
                     Group {
                         if UIImage(named: assetName) != nil {
                             Image(assetName)
@@ -147,8 +143,16 @@ private struct ProfileChoiceCard: View {
                             )
                         }
                     }
-                }
-                .overlay(alignment: .topLeading) {
+                    .frame(maxWidth: .infinity)
+                    .frame(height: imageHeight)
+                    .overlay(
+                        LinearGradient(
+                            colors: [.clear, .black.opacity(0.26)],
+                            startPoint: .center,
+                            endPoint: .bottom
+                        )
+                    )
+
                     if isSelected {
                         HStack(spacing: 4) {
                             Image(systemName: "checkmark")
@@ -166,13 +170,40 @@ private struct ProfileChoiceCard: View {
                     }
                 }
                 .clipShape(RoundedRectangle(cornerRadius: AppRadius.card, style: .continuous))
-                .contentShape(RoundedRectangle(cornerRadius: AppRadius.card, style: .continuous))
-                .overlay(
-                    RoundedRectangle(cornerRadius: AppRadius.card, style: .continuous)
-                        .stroke(AppTheme.accent, lineWidth: isSelected ? 2.5 : 0)
-                )
-                .scaleEffect(isSelected ? 1.0 : 0.97)
-                .appSoftShadow()
+
+                VStack(alignment: .leading, spacing: 10) {
+                    HStack(spacing: 6) {
+                        Image(systemName: icon)
+                            .font(.system(size: 13, weight: .bold))
+                            .foregroundStyle(AppTheme.textSecondary)
+                        Text(profile.title)
+                            .font(.system(size: 29, weight: .bold))
+                            .foregroundStyle(AppTheme.textPrimary)
+                    }
+
+                    Text(audienceDescription)
+                        .font(.system(size: 15, weight: .medium))
+                        .foregroundStyle(AppTheme.textSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
+
+                    HStack(spacing: 6) {
+                        ForEach(chips, id: \.self) { chip in
+                            ProfileChip(title: chip)
+                        }
+                    }
+                }
+                .padding(16)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(AppTheme.surface)
+            }
+            .clipShape(RoundedRectangle(cornerRadius: AppRadius.card, style: .continuous))
+            .contentShape(RoundedRectangle(cornerRadius: AppRadius.card, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: AppRadius.card, style: .continuous)
+                    .stroke(isSelected ? AppTheme.accent : AppTheme.border, lineWidth: isSelected ? 2.5 : 1)
+            )
+            .scaleEffect(isSelected ? 1.0 : 0.985)
+            .appSoftShadow()
         }
         .buttonStyle(.plain)
         .animation(.spring(response: 0.28, dampingFraction: 0.82), value: isSelected)
@@ -185,13 +216,13 @@ private struct ProfileChip: View {
     var body: some View {
         Text(title)
             .font(.system(size: 11, weight: .semibold))
-            .foregroundStyle(.white)
+            .foregroundStyle(AppTheme.textSecondary)
             .lineLimit(1)
             .padding(.horizontal, 9)
             .padding(.vertical, 5)
-            .background(.white.opacity(0.18))
+            .background(AppTheme.surfaceMuted)
             .overlay(
-                Capsule().stroke(.white.opacity(0.38), lineWidth: 1)
+                Capsule().stroke(AppTheme.borderStrong, lineWidth: 1)
             )
             .clipShape(Capsule())
     }
