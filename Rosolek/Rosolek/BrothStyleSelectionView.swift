@@ -14,12 +14,12 @@ struct BrothStyleSelectionView: View {
 
     var body: some View {
         ScrollView(showsIndicators: false) {
-            VStack(alignment: .leading, spacing: 22) {
+            VStack(alignment: .leading, spacing: 16) {
                 header
                 profileCards
             }
             .padding(AppSpacing.screen)
-            .padding(.bottom, 8)
+            .padding(.bottom, 6)
         }
         .background(AppTheme.background)
         .safeAreaInset(edge: .bottom) {
@@ -30,7 +30,7 @@ struct BrothStyleSelectionView: View {
     }
 
     private var header: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 6) {
             Text("Wybierz profil rosołu")
                 .font(AppTypography.flowHeader)
                 .foregroundStyle(AppTheme.textPrimary)
@@ -44,12 +44,12 @@ struct BrothStyleSelectionView: View {
     }
 
     private var profileCards: some View {
-        VStack(spacing: 14) {
+        VStack(spacing: 10) {
             ForEach(BrothProfile.allCases) { profile in
                 ProfileChoiceCard(
                     profile: profile,
                     isSelected: selectedProfile == profile,
-                    imageHeight: 188
+                    imageHeight: 136
                 ) {
                     withAnimation(.spring(response: 0.28, dampingFraction: 0.82)) {
                         selectedProfile = profile
@@ -74,8 +74,8 @@ struct BrothStyleSelectionView: View {
             .disabled(selectedProfile == nil)
         }
         .padding(.horizontal, AppSpacing.screen)
-        .padding(.top, 10)
-        .padding(.bottom, 10)
+        .padding(.top, 8)
+        .padding(.bottom, 8)
         .background(
             AppTheme.background
                 .opacity(0.98)
@@ -106,17 +106,17 @@ private struct ProfileChoiceCard: View {
 
     private var chips: [String] {
         switch profile {
-        case .cleaner: return ["delikatny", "na co dzień", "większa ilość"]
-        case .richer:  return ["esencjonalny", "mocniejszy", "pełne body"]
+        case .cleaner: return ["delikatny", "na co dzień"]
+        case .richer:  return ["esencjonalny", "mocniejszy"]
         }
     }
 
     private var profileAudienceDescription: String {
         switch profile {
         case .cleaner:
-            return "Dla osób, które wolą lżejszy i delikatniejszy rosół."
+            return "Dla osób, które wolą lekki i delikatny rosół."
         case .richer:
-            return "Dla osób, które lubią intensywniejszy i bardziej esencjonalny smak."
+            return "Dla osób, które lubią mocniejszy, esencjonalny smak."
         }
     }
 
@@ -165,33 +165,33 @@ private struct ProfileChoiceCard: View {
                 }
                 .clipShape(RoundedRectangle(cornerRadius: AppRadius.card, style: .continuous))
 
-                VStack(alignment: .leading, spacing: 8) {
+                VStack(alignment: .leading, spacing: 6) {
                     HStack(spacing: 6) {
                         Image(systemName: icon)
-                            .font(.system(size: 13, weight: .bold))
+                            .font(.system(size: 12, weight: .bold))
                             .foregroundStyle(AppTheme.textSecondary)
                         Text(profile.title)
-                            .font(.system(size: 24, weight: .bold))
+                            .font(.system(size: 18, weight: .bold))
                             .foregroundStyle(AppTheme.textPrimary)
                     }
 
                     Text(profileAudienceDescription)
-                        .font(.system(size: 14, weight: .medium))
+                        .font(.system(size: 13, weight: .medium))
                         .foregroundStyle(AppTheme.textSecondary)
-                        .lineLimit(2)
+                        .lineLimit(1)
                         .fixedSize(horizontal: false, vertical: true)
 
                     LazyVGrid(
-                        columns: [GridItem(.adaptive(minimum: 110), spacing: 8)],
+                        columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 2),
                         alignment: .leading,
-                        spacing: 8
+                        spacing: 6
                     ) {
                         ForEach(chips, id: \.self) { chip in
                             ProfileChip(title: chip)
                         }
                     }
                 }
-                .padding(14)
+                .padding(12)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .background(AppTheme.surface)
             }
