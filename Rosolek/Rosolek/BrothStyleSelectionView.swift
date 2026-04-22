@@ -13,17 +13,34 @@ struct BrothStyleSelectionView: View {
     @State private var selectedProfile: BrothProfile? = .cleaner
 
     var body: some View {
-        ScrollView(showsIndicators: false) {
-            VStack(alignment: .leading, spacing: 16) {
+        GeometryReader { geometry in
+            let cardHeight = cardHeight(for: geometry)
+
+            VStack(alignment: .leading, spacing: 12) {
                 header
-                profileCards
+
+                VStack(spacing: 10) {
+                    ForEach(BrothProfile.allCases) { profile in
+                        ProfileChoiceCard(
+                            profile: profile,
+                            isSelected: selectedProfile == profile,
+                            imageHeight: cardHeight * 0.56
+                        ) {
+                            withAnimation(.spring(response: 0.28, dampingFraction: 0.82)) {
+                                selectedProfile = profile
+                            }
+                        }
+                        .frame(height: cardHeight)
+                    }
+                }
+                .frame(maxHeight: .infinity, alignment: .top)
             }
             .padding(AppSpacing.screen)
-            .padding(.bottom, 6)
-        }
-        .background(AppTheme.background)
-        .safeAreaInset(edge: .bottom) {
-            floatingBottomBar
+            .padding(.bottom, 8)
+            .background(AppTheme.background.ignoresSafeArea())
+            .safeAreaInset(edge: .bottom) {
+                floatingBottomBar
+            }
         }
         .navigationTitle("Własny rosół")
         .navigationBarTitleDisplayMode(.inline)
@@ -43,20 +60,15 @@ struct BrothStyleSelectionView: View {
         }
     }
 
-    private var profileCards: some View {
-        VStack(spacing: 10) {
-            ForEach(BrothProfile.allCases) { profile in
-                ProfileChoiceCard(
-                    profile: profile,
-                    isSelected: selectedProfile == profile,
-                    imageHeight: 136
-                ) {
-                    withAnimation(.spring(response: 0.28, dampingFraction: 0.82)) {
-                        selectedProfile = profile
-                    }
-                }
-            }
-        }
+    private func cardHeight(for geometry: GeometryProxy) -> CGFloat {
+        let containerHeight = geometry.size.height
+        let safeBottom = geometry.safeAreaInsets.bottom
+        let ctaZone: CGFloat = 56 + 8 + 8 + safeBottom
+        let headerZone: CGFloat = 126
+        let cardSpacing: CGFloat = 10
+        let verticalPadding = AppSpacing.screen * 2
+        let available = containerHeight - ctaZone - headerZone - verticalPadding - cardSpacing
+        return max(212, available / 2)
     }
 
     private var floatingBottomBar: some View {
@@ -106,8 +118,8 @@ private struct ProfileChoiceCard: View {
 
     private var chips: [String] {
         switch profile {
-        case .cleaner: return ["delikatny", "na co dzień"]
-        case .richer:  return ["esencjonalny", "mocniejszy"]
+        case .cleaner: return ["klarowny", "więcej bulionu", "na co dzień"]
+        case .richer:  return ["mocny aromat", "pełne body", "na bogato"]
         }
     }
 
@@ -151,7 +163,7 @@ private struct ProfileChoiceCard: View {
                         HStack(spacing: 4) {
                             Image(systemName: "checkmark")
                                 .font(.system(size: 10, weight: .bold))
-                            Text(profile.title)
+                            Text("Wybrany profil")
                                 .font(.system(size: 12, weight: .semibold))
                         }
                         .foregroundStyle(AppTheme.textPrimary)
@@ -182,7 +194,7 @@ private struct ProfileChoiceCard: View {
                         .fixedSize(horizontal: false, vertical: true)
 
                     LazyVGrid(
-                        columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 2),
+                        columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 3),
                         alignment: .leading,
                         spacing: 6
                     ) {
