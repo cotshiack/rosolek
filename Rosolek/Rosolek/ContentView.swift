@@ -409,56 +409,57 @@ private struct CalculatorEntryCard: View {
     private var cardHeight: CGFloat { compact ? 156 : 164 }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            Spacer()
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Własny rosół od podstaw")
-                    .font(.system(size: compact ? 17 : 18, weight: .bold))
-                    .foregroundStyle(.white)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.9)
-                Text("Dobierz składniki i proporcje do swojego garnka.")
-                    .font(.system(size: 13, weight: .medium))
-                    .foregroundStyle(.white.opacity(0.85))
-                    .lineLimit(1)
-            }
-            .padding(.horizontal, AppSpacing.card)
-            .padding(.bottom, 14)
-            .padding(.top, 28)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(
-                LinearGradient(
-                    colors: [.clear, .black.opacity(0.60)],
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
-            )
-        }
-        .frame(maxWidth: .infinity)
-        .background {
-            Group {
-                if heroArtwork.isAvailable {
-                    Image(heroArtwork.assetName)
-                        .resizable()
-                        .scaledToFill()
-                } else {
+        Color.clear
+            .frame(height: cardHeight)
+            .frame(maxWidth: .infinity)
+            .overlay(alignment: .bottom) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Własny rosół od podstaw")
+                        .font(.system(size: compact ? 17 : 18, weight: .bold))
+                        .foregroundStyle(.white)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.9)
+                    Text("Dobierz składniki i proporcje do swojego garnka.")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundStyle(.white.opacity(0.85))
+                        .lineLimit(1)
+                }
+                .padding(.horizontal, AppSpacing.card)
+                .padding(.bottom, 14)
+                .padding(.top, 28)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(
                     LinearGradient(
-                        colors: [AppTheme.accentSoft.opacity(0.92), AppTheme.surface],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
+                        colors: [.clear, .black.opacity(0.60)],
+                        startPoint: .top,
+                        endPoint: .bottom
                     )
+                )
+            }
+            .background {
+                Group {
+                    if heroArtwork.isAvailable {
+                        Image(heroArtwork.assetName)
+                            .resizable()
+                            .scaledToFill()
+                    } else {
+                        LinearGradient(
+                            colors: [AppTheme.accentSoft.opacity(0.92), AppTheme.surface],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    }
                 }
             }
-        }
-        .frame(height: cardHeight)
-        .overlay(alignment: .topLeading) {
-            AppPill(title: "Kreator", systemImage: "sparkles", filled: true)
-                .foregroundStyle(AppTheme.surface)
-                .padding(.top, 12)
-                .padding(.leading, 12)
-        }
-        .clipShape(RoundedRectangle(cornerRadius: AppRadius.card, style: .continuous))
-        .appSoftShadow()
+            .overlay(alignment: .topLeading) {
+                AppPill(title: "Kreator", systemImage: "sparkles", filled: true)
+                    .foregroundStyle(AppTheme.surface)
+                    .padding(.top, 12)
+                    .padding(.leading, 12)
+            }
+            .clipShape(RoundedRectangle(cornerRadius: AppRadius.card, style: .continuous))
+            .contentShape(RoundedRectangle(cornerRadius: AppRadius.card, style: .continuous))
+            .appSoftShadow()
     }
 }
 
