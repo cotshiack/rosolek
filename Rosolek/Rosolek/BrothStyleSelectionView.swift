@@ -25,7 +25,7 @@ struct BrothStyleSelectionView: View {
                             ProfileChoiceCard(
                                 profile: profile,
                                 isSelected: selectedProfile == profile,
-                                imageHeight: cardHeight * 0.50
+                                imageHeight: cardHeight * 0.62
                             ) {
                                 withAnimation(.spring(response: 0.28, dampingFraction: 0.82)) {
                                     selectedProfile = profile
@@ -107,6 +107,13 @@ private struct ProfileChoiceCard: View {
         }
     }
 
+    private var iconColor: Color {
+        switch profile {
+        case .cleaner: return isSelected ? Color(hex: "3D8FD4") : AppTheme.textSecondary
+        case .richer:  return isSelected ? Color(hex: "E07A35") : AppTheme.textSecondary
+        }
+    }
+
     private var chips: [String] {
         switch profile {
         case .cleaner: return ["klarowniejszy", "większy uzysk", "na co dzień"]
@@ -117,9 +124,23 @@ private struct ProfileChoiceCard: View {
     private var profileAudienceDescription: String {
         switch profile {
         case .cleaner:
-            return "Lżejszy profil i bardziej klarowny bulion."
+            return "Lżejszy profil z klarownym, delikatnym bulionem. Większy uzysk i krótszy czas gotowania — świetny na co dzień."
         case .richer:
-            return "Mocniejszy aromat i pełniejsze body."
+            return "Intensywny, ciemny rosół z głębokim aromatem i pełnym body. Wymaga cierpliwości, ale smakuje jak z babcinej kuchni."
+        }
+    }
+
+    private var cookTime: String {
+        switch profile {
+        case .cleaner: return "ok. 2–2.5h"
+        case .richer:  return "ok. 3–4h"
+        }
+    }
+
+    private var yieldHint: String {
+        switch profile {
+        case .cleaner: return "więcej płynu"
+        case .richer:  return "mniej płynu"
         }
     }
 
@@ -144,25 +165,25 @@ private struct ProfileChoiceCard: View {
                     .frame(height: imageHeight)
                     .overlay(
                         LinearGradient(
-                            colors: [.clear, .black.opacity(0.26)],
-                            startPoint: .center,
+                            colors: [.clear, .clear, .black.opacity(0.50)],
+                            startPoint: .top,
                             endPoint: .bottom
                         )
                     )
 
                     if isSelected {
-                        HStack(spacing: 4) {
+                        HStack(spacing: 5) {
                             Image(systemName: "checkmark")
-                                .font(.system(size: 10, weight: .bold))
+                                .font(.system(size: 11, weight: .black))
                             Text("Ten profil")
-                                .font(.system(size: 12, weight: .semibold))
+                                .font(.system(size: 13, weight: .bold))
                         }
                         .foregroundStyle(AppTheme.textPrimary)
-                        .padding(.horizontal, 8)
-                        .frame(height: 26)
+                        .padding(.horizontal, 12)
+                        .frame(height: 30)
                         .background(AppTheme.accent)
                         .clipShape(Capsule())
-                        .padding(12)
+                        .padding(14)
                         .transition(.scale(scale: 0.7).combined(with: .opacity))
                     }
                 }
@@ -171,18 +192,24 @@ private struct ProfileChoiceCard: View {
                 VStack(alignment: .leading, spacing: 6) {
                     HStack(spacing: 6) {
                         Image(systemName: icon)
-                            .font(.system(size: 12, weight: .bold))
-                            .foregroundStyle(AppTheme.textSecondary)
+                            .font(.system(size: 14, weight: .bold))
+                            .foregroundStyle(iconColor)
                         Text(profile.title)
-                            .font(.system(size: 17, weight: .semibold))
+                            .font(.system(size: 20, weight: .bold))
                             .foregroundStyle(AppTheme.textPrimary)
                     }
 
                     Text(profileAudienceDescription)
                         .font(.system(size: 13, weight: .medium))
                         .foregroundStyle(AppTheme.textSecondary)
-                        .lineLimit(1)
                         .fixedSize(horizontal: false, vertical: true)
+
+                    HStack(spacing: 14) {
+                        Label(cookTime, systemImage: "clock")
+                        Label(yieldHint, systemImage: "drop")
+                    }
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundStyle(AppTheme.textTertiary)
 
                     LazyVGrid(
                         columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 3),
@@ -190,14 +217,14 @@ private struct ProfileChoiceCard: View {
                         spacing: 6
                     ) {
                         ForEach(chips, id: \.self) { chip in
-                            ProfileChip(title: chip)
+                            ProfileChip(title: chip, isSelected: isSelected)
                         }
                     }
                 }
                 .padding(12)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .frame(maxHeight: .infinity, alignment: .top)
-                .background(AppTheme.surface)
+                .background(isSelected ? AppTheme.accentSoft.opacity(0.40) : AppTheme.surface)
             }
             .clipShape(RoundedRectangle(cornerRadius: AppRadius.card, style: .continuous))
             .contentShape(RoundedRectangle(cornerRadius: AppRadius.card, style: .continuous))
@@ -205,9 +232,14 @@ private struct ProfileChoiceCard: View {
                 RoundedRectangle(cornerRadius: AppRadius.card, style: .continuous)
                     .stroke(isSelected ? AppTheme.accent : AppTheme.border, lineWidth: isSelected ? 2 : 1)
             )
-            .opacity(isSelected ? 1 : 0.96)
-            .scaleEffect(isSelected ? 1.0 : 0.992)
-            .appSoftShadow()
+            .opacity(isSelected ? 1.0 : 0.70)
+            .scaleEffect(isSelected ? 1.0 : 0.975)
+            .shadow(
+                color: isSelected ? AppTheme.accent.opacity(0.28) : Color.black.opacity(0.05),
+                radius: isSelected ? 20 : 8,
+                x: 0,
+                y: isSelected ? 8 : 3
+            )
         }
         .buttonStyle(.plain)
         .animation(.spring(response: 0.28, dampingFraction: 0.82), value: isSelected)
@@ -216,6 +248,7 @@ private struct ProfileChoiceCard: View {
 
 private struct ProfileChip: View {
     let title: String
+    var isSelected: Bool = false
 
     var body: some View {
         Text(title)
@@ -226,9 +259,12 @@ private struct ProfileChip: View {
             .frame(maxWidth: .infinity)
             .padding(.horizontal, 9)
             .padding(.vertical, 5)
-            .background(AppTheme.surfaceMuted)
+            .background(isSelected ? AppTheme.accentSoft : AppTheme.surfaceMuted)
             .overlay(
-                Capsule().stroke(AppTheme.borderStrong, lineWidth: 1)
+                Capsule().stroke(
+                    isSelected ? AppTheme.accent.opacity(0.50) : AppTheme.borderStrong,
+                    lineWidth: 1
+                )
             )
             .clipShape(Capsule())
     }
