@@ -14,7 +14,7 @@ struct BrothStyleSelectionView: View {
 
     var body: some View {
         GeometryReader { _ in
-            VStack(alignment: .leading, spacing: 12) {
+            VStack(alignment: .leading, spacing: 10) {
                 header
 
                 GeometryReader { cardsGeometry in
@@ -25,7 +25,7 @@ struct BrothStyleSelectionView: View {
                             ProfileChoiceCard(
                                 profile: profile,
                                 isSelected: selectedProfile == profile,
-                                imageHeight: cardHeight * 0.62
+                                imageHeight: cardHeight * 0.54
                             ) {
                                 withAnimation(.spring(response: 0.28, dampingFraction: 0.82)) {
                                     selectedProfile = profile
@@ -49,7 +49,7 @@ struct BrothStyleSelectionView: View {
     }
 
     private var header: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: 4) {
             Text("Wybierz profil rosołu")
                 .font(AppTypography.flowHeader)
                 .foregroundStyle(AppTheme.textPrimary)
@@ -124,9 +124,9 @@ private struct ProfileChoiceCard: View {
     private var profileAudienceDescription: String {
         switch profile {
         case .cleaner:
-            return "Lżejszy profil z klarownym, delikatnym bulionem. Większy uzysk i krótszy czas gotowania — świetny na co dzień."
+            return "Lżejszy profil, klarowny bulion. Krótszy czas gotowania i większy uzysk płynu."
         case .richer:
-            return "Intensywny, ciemny rosół z głębokim aromatem i pełnym body. Wymaga cierpliwości, ale smakuje jak z babcinej kuchni."
+            return "Intensywny aromat i pełne body. Wymaga cierpliwości — smakuje wyjątkowo."
         }
     }
 
@@ -163,6 +163,7 @@ private struct ProfileChoiceCard: View {
                     }
                     .frame(maxWidth: .infinity)
                     .frame(height: imageHeight)
+                    .clipped()
                     .overlay(
                         LinearGradient(
                             colors: [.clear, .clear, .black.opacity(0.50)],
@@ -189,7 +190,7 @@ private struct ProfileChoiceCard: View {
                 }
                 .clipShape(RoundedRectangle(cornerRadius: AppRadius.card, style: .continuous))
 
-                VStack(alignment: .leading, spacing: 6) {
+                VStack(alignment: .leading, spacing: 5) {
                     HStack(spacing: 6) {
                         Image(systemName: icon)
                             .font(.system(size: 14, weight: .bold))
@@ -202,26 +203,27 @@ private struct ProfileChoiceCard: View {
                     Text(profileAudienceDescription)
                         .font(.system(size: 13, weight: .medium))
                         .foregroundStyle(AppTheme.textSecondary)
-                        .fixedSize(horizontal: false, vertical: true)
+                        .lineLimit(2)
 
-                    HStack(spacing: 14) {
+                    HStack(spacing: 12) {
                         Label(cookTime, systemImage: "clock")
                         Label(yieldHint, systemImage: "drop")
                     }
-                    .font(.system(size: 11, weight: .medium))
+                    .font(.system(size: 10, weight: .medium))
                     .foregroundStyle(AppTheme.textTertiary)
 
                     LazyVGrid(
-                        columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 3),
+                        columns: Array(repeating: GridItem(.flexible(), spacing: 6), count: 3),
                         alignment: .leading,
-                        spacing: 6
+                        spacing: 5
                     ) {
                         ForEach(chips, id: \.self) { chip in
                             ProfileChip(title: chip, isSelected: isSelected)
                         }
                     }
                 }
-                .padding(12)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 10)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .frame(maxHeight: .infinity, alignment: .top)
                 .background(isSelected ? AppTheme.accentSoft.opacity(0.40) : AppTheme.surface)
@@ -257,8 +259,8 @@ private struct ProfileChip: View {
             .lineLimit(1)
             .minimumScaleFactor(0.75)
             .frame(maxWidth: .infinity)
-            .padding(.horizontal, 9)
-            .padding(.vertical, 5)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
             .background(isSelected ? AppTheme.accentSoft : AppTheme.surfaceMuted)
             .overlay(
                 Capsule().stroke(
