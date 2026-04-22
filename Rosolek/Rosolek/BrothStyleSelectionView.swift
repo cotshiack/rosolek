@@ -18,14 +18,14 @@ struct BrothStyleSelectionView: View {
                 header
 
                 GeometryReader { cardsGeometry in
-                    let cardHeight = max(208, (cardsGeometry.size.height - 10) / 2)
+                    let cardHeight = max(0, (cardsGeometry.size.height - 10) / 2)
 
                     VStack(spacing: 10) {
                         ForEach(BrothProfile.allCases) { profile in
                             ProfileChoiceCard(
                                 profile: profile,
                                 isSelected: selectedProfile == profile,
-                                imageHeight: cardHeight * 0.56
+                                imageHeight: cardHeight * 0.54
                             ) {
                                 withAnimation(.spring(response: 0.28, dampingFraction: 0.82)) {
                                     selectedProfile = profile
@@ -35,9 +35,10 @@ struct BrothStyleSelectionView: View {
                         }
                     }
                 }
+                .layoutPriority(1)
             }
             .padding(AppSpacing.screen)
-            .padding(.bottom, 8)
+            .frame(maxHeight: .infinity, alignment: .top)
             .background(AppTheme.background.ignoresSafeArea())
             .safeAreaInset(edge: .bottom) {
                 floatingBottomBar
@@ -108,8 +109,8 @@ private struct ProfileChoiceCard: View {
 
     private var chips: [String] {
         switch profile {
-        case .cleaner: return ["klarowniejszy", "więcej bulionu", "lżejszy finisz"]
-        case .richer:  return ["mocny aromat", "pełniejsze body", "dłuższy finisz"]
+        case .cleaner: return ["klarowniejszy", "większy uzysk", "na co dzień"]
+        case .richer:  return ["mocniejszy aromat", "pełniejsze body", "dłuższe gotowanie"]
         }
     }
 
@@ -153,12 +154,12 @@ private struct ProfileChoiceCard: View {
                         HStack(spacing: 4) {
                             Image(systemName: "checkmark")
                                 .font(.system(size: 10, weight: .bold))
-                            Text("Twój wybór")
+                            Text("Wybrano")
                                 .font(.system(size: 12, weight: .semibold))
                         }
                         .foregroundStyle(AppTheme.textPrimary)
-                        .padding(.horizontal, 10)
-                        .frame(height: 28)
+                        .padding(.horizontal, 8)
+                        .frame(height: 26)
                         .background(AppTheme.accent)
                         .clipShape(Capsule())
                         .padding(12)
@@ -173,7 +174,7 @@ private struct ProfileChoiceCard: View {
                             .font(.system(size: 12, weight: .bold))
                             .foregroundStyle(AppTheme.textSecondary)
                         Text(profile.title)
-                            .font(.system(size: 18, weight: .bold))
+                            .font(.system(size: 17, weight: .semibold))
                             .foregroundStyle(AppTheme.textPrimary)
                     }
 
@@ -195,13 +196,14 @@ private struct ProfileChoiceCard: View {
                 }
                 .padding(12)
                 .frame(maxWidth: .infinity, alignment: .leading)
+                .frame(maxHeight: .infinity, alignment: .top)
                 .background(AppTheme.surface)
             }
             .clipShape(RoundedRectangle(cornerRadius: AppRadius.card, style: .continuous))
             .contentShape(RoundedRectangle(cornerRadius: AppRadius.card, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: AppRadius.card, style: .continuous)
-                    .stroke(isSelected ? AppTheme.accent : AppTheme.border, lineWidth: isSelected ? 2.5 : 1)
+                    .stroke(isSelected ? AppTheme.accent : AppTheme.border, lineWidth: isSelected ? 2 : 1)
             )
             .scaleEffect(isSelected ? 1.0 : 0.985)
             .appSoftShadow()
@@ -216,10 +218,10 @@ private struct ProfileChip: View {
 
     var body: some View {
         Text(title)
-            .font(.system(size: 11, weight: .semibold))
+            .font(.system(size: 10, weight: .semibold))
             .foregroundStyle(AppTheme.textSecondary)
             .lineLimit(1)
-            .minimumScaleFactor(0.9)
+            .minimumScaleFactor(0.75)
             .frame(maxWidth: .infinity)
             .padding(.horizontal, 9)
             .padding(.vertical, 5)
