@@ -73,7 +73,7 @@ struct BrothStyleSelectionView: View {
 
     private func ctaOverlaySpace(for safeBottomInset: CGFloat) -> CGFloat {
         let ctaHeight: CGFloat = 56
-        return ctaHeight + max(22, safeBottomInset + 12)
+        return ctaHeight + max(44, safeBottomInset + 24)
     }
 
     private var ctaButton: some View {
@@ -189,7 +189,7 @@ private struct ProfileChoiceCard: View {
                         .fixedSize(horizontal: false, vertical: true)
 
                     LazyVGrid(
-                        columns: [GridItem(.adaptive(minimum: 104), spacing: 8)],
+                        columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 3),
                         alignment: .leading,
                         spacing: 8
                     ) {
@@ -225,6 +225,7 @@ private struct ProfileChip: View {
             .foregroundStyle(AppTheme.textSecondary)
             .lineLimit(1)
             .minimumScaleFactor(0.9)
+            .frame(maxWidth: .infinity)
             .padding(.horizontal, 9)
             .padding(.vertical, 5)
             .background(AppTheme.surfaceMuted)
