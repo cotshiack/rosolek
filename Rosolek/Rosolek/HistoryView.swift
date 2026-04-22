@@ -74,6 +74,13 @@ struct HistoryView: View {
                         .tint(AppTheme.accentPressed)
                     }
                 }
+            } footer: {
+                Text("Przesuń kartę w lewo, aby zmienić nazwę albo usunąć wpis.")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundStyle(AppTheme.textSecondary)
+                    .textCase(nil)
+                    .padding(.top, 8)
+                    .padding(.horizontal, AppSpacing.screen)
             }
             .listSectionSeparator(.hidden)
         }
@@ -93,15 +100,6 @@ struct HistoryView: View {
                     .font(.system(size: 15, weight: .medium))
                     .foregroundStyle(AppTheme.textSecondary)
                     .fixedSize(horizontal: false, vertical: true)
-
-                HStack(spacing: 6) {
-                    Image(systemName: "hand.draw")
-                        .font(.system(size: 11, weight: .semibold))
-                    Text("Przesuń kartę w lewo, aby zmienić nazwę lub usunąć.")
-                        .font(.system(size: 12, weight: .medium))
-                }
-                .foregroundStyle(AppTheme.textSecondary)
-                .padding(.top, 2)
             }
             .padding(.horizontal, AppSpacing.screen)
             .padding(.top, 10)
@@ -127,7 +125,7 @@ struct HistoryView: View {
 
                 AppCard {
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("Brak zapisanych partii")
+                        Text("Brak zapisanych batchy")
                             .font(.system(size: 16, weight: .bold))
                             .foregroundStyle(AppTheme.textPrimary)
 
@@ -178,16 +176,16 @@ private struct BatchHistoryCompactCard: View {
 
                     Spacer(minLength: 8)
 
-                    SharedRatingBadge(
+                    HistoryRatingBadge(
                         text: batch.ratingBadgeText,
                         hasRating: batch.overallRating != nil
                     )
                 }
 
                 HStack(spacing: 8) {
-                    AppMetaChip(metric: AppMetaMetric(kind: .time, title: batch.timeDisplayText))
-                    AppMetaChip(metric: AppMetaMetric(kind: .yield, title: batch.yieldDisplayText))
-                    AppMetaChip(metric: AppMetaMetric(kind: .profile, title: batch.profileTitle))
+                    HistoryMetaChip(kind: .time, title: batch.timeDisplayText)
+                    HistoryMetaChip(kind: .yield, title: batch.yieldDisplayText)
+                    HistoryMetaChip(kind: .profile, title: batch.profileTitle)
                 }
 
                 if !batch.notes.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
@@ -206,20 +204,112 @@ private struct BatchHistoryCompactCard: View {
     }
 }
 
+private struct HistoryRatingBadge: View {
+    let text: String
+    let hasRating: Bool
+
+    var body: some View {
+        Text(text)
+            .font(.system(size: 12, weight: .bold))
+            .foregroundStyle(hasRating ? AppTheme.textPrimary : AppTheme.textSecondary)
+            .padding(.horizontal, 10)
+            .frame(height: 30)
+            .background(hasRating ? AppTheme.accent : AppTheme.surfaceMuted)
+            .overlay(
+                Capsule()
+                    .stroke(hasRating ? AppTheme.accent : AppTheme.border, lineWidth: 1)
+            )
+            .clipShape(Capsule())
+    }
+}
+
+private enum HistoryMetaKind {
+    case time
+    case yield
+    case profile
+}
+
+private struct HistoryMetaChip: View {
+    let kind: HistoryMetaKind
+    let title: String
+
+    var body: some View {
+        HStack(spacing: 6) {
+            HistoryMetaGlyph(kind: kind)
+
+            Text(title)
+                .font(.system(size: 11, weight: .semibold))
+                .lineLimit(1)
+                .minimumScaleFactor(0.82)
+        }
+        .foregroundStyle(AppTheme.textPrimary.opacity(0.86))
+        .padding(.horizontal, 10)
+        .frame(height: 28)
+        .background(
+            Capsule()
+                .fill(AppTheme.surfaceMuted)
+        )
+        .overlay(
+            Capsule()
+                .stroke(AppTheme.border, lineWidth: 1)
+        )
+    }
+}
+
+private struct HistoryMetaGlyph: View {
+    let kind: HistoryMetaKind
+
+    var body: some View {
+        Group {
+            switch kind {
+            case .time:
+                Image(systemName: "clock")
+                    .font(.system(size: 10, weight: .semibold))
+            case .yield:
+                AppYieldGlyph()
+            case .profile:
+                AppProfileGlyph()
+            }
+        }
+        .frame(width: 12, height: 12)
+    }
+}
+
 struct BatchRenameSheet: View {
     let defaultTitle: String
     @Binding var renameText: String
     let onSave: () -> Void
 
     @Environment(\.dismiss) private var dismiss
-    @FocusState private var fieldFocused: Bool
+
+    private var previewName: String {
+        let trimmed = renameText.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmed.isEmpty ? defaultTitle : trimmed
+    }
 
     var body: some View {
         NavigationStack {
-            VStack(alignment: .leading, spacing: 12) {
+            VStack(alignment: .leading, spacing: 20) {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Podgląd")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(AppTheme.textSecondary)
+                    Text(previewName)
+                        .font(.system(size: 22, weight: .bold))
+                        .foregroundStyle(AppTheme.textPrimary)
+                        .animation(.easeInOut(duration: 0.12), value: previewName)
+                }
+                .padding(AppSpacing.card)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(AppTheme.accentSoft)
+                .clipShape(RoundedRectangle(cornerRadius: AppRadius.card, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: AppRadius.card, style: .continuous)
+                        .stroke(AppTheme.accent.opacity(0.4), lineWidth: 1)
+                )
+
                 TextField(defaultTitle, text: $renameText)
-                    .focused($fieldFocused)
-                    .font(.system(size: 19, weight: .bold))
+                    .font(.system(size: 17, weight: .semibold))
                     .foregroundStyle(AppTheme.textPrimary)
                     .padding(.horizontal, 16)
                     .frame(height: 54)
@@ -257,6 +347,5 @@ struct BatchRenameSheet: View {
         }
         .presentationDetents([.medium])
         .presentationDragIndicator(.visible)
-        .onAppear { fieldFocused = true }
     }
 }

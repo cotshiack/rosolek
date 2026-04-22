@@ -41,6 +41,7 @@ private struct HomeView: View {
     @AppStorage("hasThermometer") private var hasThermometer = true
     @AppStorage("returnToHomeTrigger") private var returnToHomeTrigger = 0
 
+    @State private var selectedPresetFilter: HomeRecipeFilter = .all
     @State private var activeCookingSession: CookingSession?
 
     private var latestBatch: BatchRecord? {
@@ -66,6 +67,27 @@ private struct HomeView: View {
         )
     }
 
+    private var presetItems: [HomePresetItem] {
+        [
+            HomePresetItem(
+                recipe: poultryPresetRecipe,
+                artwork: .asset("HomeRecipePoultry"),
+                fallbackStyle: .light,
+                filter: .poultry
+            ),
+            HomePresetItem(
+                recipe: poultryBeefPresetRecipe,
+                artwork: .asset("HomeRecipePoultryBeef"),
+                fallbackStyle: .intense,
+                filter: .poultryBeef
+            )
+        ]
+    }
+
+    private var filteredPresetItems: [HomePresetItem] {
+        presetItems.filter { selectedPresetFilter.matches($0.filter) }
+    }
+
     var body: some View {
         GeometryReader { geo in
             let compact = geo.size.height < 860
@@ -81,8 +103,9 @@ private struct HomeView: View {
                             activeCookingBanner
                         }
                         greetingSection(compact: compact)
-                        presetCardsSection(compact: compact)
                         calculatorSection(compact: compact)
+                        readyRecipesSection(compact: compact)
+                        chefRecipesSection(compact: compact)
                         lastCookingSection(compact: compact)
                     }
                     .padding(.horizontal, 16)
@@ -146,52 +169,9 @@ private struct HomeView: View {
 
     private func greetingSection(compact: Bool) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Cześć, \(displayName)")
+            Text("Co dzisiaj gotujemy \(displayName)?")
                 .font(.system(size: compact ? 24 : 26, weight: .bold))
                 .foregroundStyle(AppTheme.textPrimary)
-
-            Text("Wybierz gotowy przepis albo zbuduj własny rosół na podstawie mięsa, które masz pod ręką.")
-                .font(.system(size: compact ? 15 : 16, weight: .medium))
-                .foregroundStyle(AppTheme.textSecondary)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-    }
-
-    private func presetCardsSection(compact: Bool) -> some View {
-        HStack(alignment: .top, spacing: 14) {
-            NavigationLink {
-                BrothResultView(preset: .poultryReady, potSizeLiters: potSizeLiters)
-            } label: {
-                HomePresetCard(
-                    title: poultryPresetRecipe.title,
-                    subtitle: poultryPresetRecipe.subtitle,
-                    illustrationStyle: .light,
-                    metrics: [
-                        HomeMetric(kind: .time, title: poultryPresetRecipe.cookingDurationText),
-                        HomeMetric(kind: .yield, title: poultryPresetRecipe.estimatedYieldText)
-                    ],
-                    compact: compact
-                )
-            }
-            .buttonStyle(.plain)
-            .frame(maxWidth: .infinity)
-
-            NavigationLink {
-                BrothResultView(preset: .poultryBeefReady, potSizeLiters: potSizeLiters)
-            } label: {
-                HomePresetCard(
-                    title: poultryBeefPresetRecipe.title,
-                    subtitle: poultryBeefPresetRecipe.subtitle,
-                    illustrationStyle: .intense,
-                    metrics: [
-                        HomeMetric(kind: .time, title: poultryBeefPresetRecipe.cookingDurationText),
-                        HomeMetric(kind: .yield, title: poultryBeefPresetRecipe.estimatedYieldText)
-                    ],
-                    compact: compact
-                )
-            }
-            .buttonStyle(.plain)
-            .frame(maxWidth: .infinity)
         }
     }
 
@@ -202,6 +182,91 @@ private struct HomeView: View {
             CalculatorEntryCard(compact: compact)
         }
         .buttonStyle(.plain)
+    }
+
+    private func readyRecipesSection(compact: Bool) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Gotowe przepisy")
+                .font(.system(size: compact ? 22 : 23, weight: .bold))
+                .foregroundStyle(AppTheme.textPrimary)
+
+            recipeFilterPills
+
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(alignment: .top, spacing: 14) {
+                    ForEach(filteredPresetItems) { item in
+                        NavigationLink {
+                            BrothResultView(
+                                preset: item.recipe.preset,
+                                potSizeLiters: potSizeLiters
+                            )
+                        } label: {
+                            HomePresetCard(
+                                title: item.recipe.title,
+                                subtitle: item.recipe.subtitle,
+                                artwork: item.artwork,
+                                fallbackStyle: item.fallbackStyle,
+                                metrics: [
+                                    HomeMetric(kind: .time, title: item.recipe.cookingDurationText),
+                                    HomeMetric(kind: .yield, title: item.recipe.estimatedYieldText)
+                                ],
+                                compact: compact
+                            )
+                        }
+                        .buttonStyle(.plain)
+                        .frame(width: compact ? 206 : 216)
+                    }
+                }
+                .padding(.vertical, 2)
+            }
+        }
+    }
+
+    private var recipeFilterPills: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8) {
+                ForEach(HomeRecipeFilter.allCases) { filter in
+                    Button {
+                        selectedPresetFilter = filter
+                    } label: {
+                        RecipeFilterPill(
+                            title: filter.title,
+                            isSelected: selectedPresetFilter == filter
+                        )
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+        }
+    }
+
+    private func chefRecipesSection(compact: Bool) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Przepisy szefów kuchni")
+                .font(.system(size: compact ? 22 : 23, weight: .bold))
+                .foregroundStyle(AppTheme.textPrimary)
+
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 14) {
+                    LockedChefRecipeCard(
+                        compact: compact,
+                        title: "Klasyczny ramen shoyu",
+                        subtitle: "Autorski przepis premium z prowadzeniem krok po kroku.",
+                        artwork: .asset("HomeChefRamen")
+                    )
+                    .frame(width: compact ? 206 : 216)
+
+                    LockedChefRecipeCard(
+                        compact: compact,
+                        title: "Bulion wołowy demi-glace",
+                        subtitle: "Koncentrat o głębokim smaku, idealny do sosów i redukcji.",
+                        artwork: .asset("HomeChefDemiGlace")
+                    )
+                    .frame(width: compact ? 206 : 216)
+                }
+                .padding(.vertical, 2)
+            }
+        }
     }
 
     private func lastCookingSection(compact: Bool) -> some View {
@@ -288,7 +353,8 @@ private struct SecondaryActionPill: View {
 private struct HomePresetCard: View {
     let title: String
     let subtitle: String
-    let illustrationStyle: BrothIllustrationStyle
+    let artwork: HomeCardArtwork
+    let fallbackStyle: BrothIllustrationStyle
     let metrics: [HomeMetric]
     let compact: Bool
 
@@ -302,10 +368,11 @@ private struct HomePresetCard: View {
             border: AppTheme.border
         ) {
             VStack(alignment: .leading, spacing: compact ? 16 : 18) {
-                HStack(alignment: .top) {
-                    PresetIngredientIllustration(style: illustrationStyle, compact: compact)
-                    Spacer(minLength: 0)
-                }
+                HomeRecipeArtwork(
+                    artwork: artwork,
+                    fallbackStyle: fallbackStyle,
+                    compact: compact
+                )
 
                 VStack(alignment: .leading, spacing: 8) {
                     Text(title)
@@ -325,7 +392,7 @@ private struct HomePresetCard: View {
 
                 HStack(spacing: 8) {
                     ForEach(metrics) { metric in
-                        AppMetaChip(metric: AppMetaMetric(kind: metric.kind == .time ? .time : .yield, title: metric.title))
+                        HomeMetricChip(metric: metric)
                     }
                 }
             }
@@ -338,30 +405,185 @@ private struct HomePresetCard: View {
 private struct CalculatorEntryCard: View {
     let compact: Bool
 
-    var body: some View {
-        AppCard(
-            background: AppTheme.surface,
-            border: AppTheme.border
-        ) {
-            HStack(alignment: .center, spacing: 16) {
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Własny rosół")
-                        .font(.system(size: compact ? 18 : 19, weight: .bold))
-                        .foregroundStyle(AppTheme.textPrimary)
+    private let heroArtwork = HomeCardArtwork.asset("HomeHeroCustomBroth")
+    private var cardHeight: CGFloat { compact ? 156 : 164 }
 
-                    Text("Wybierzesz profil wywaru, dodasz mięso i od razu zobaczysz, czy wszystko mieści się w garnku.")
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundStyle(AppTheme.textSecondary)
-                        .fixedSize(horizontal: false, vertical: true)
+    var body: some View {
+        Color.clear
+            .frame(height: cardHeight)
+            .frame(maxWidth: .infinity)
+            .overlay(alignment: .bottom) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Własny rosół od podstaw")
+                        .font(.system(size: compact ? 17 : 18, weight: .bold))
+                        .foregroundStyle(.white)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.9)
+                    Text("Dobierz składniki i proporcje do swojego garnka.")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundStyle(.white.opacity(0.85))
+                        .lineLimit(1)
+                }
+                .padding(.horizontal, AppSpacing.card)
+                .padding(.bottom, 14)
+                .padding(.top, 28)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(
+                    LinearGradient(
+                        colors: [.clear, .black.opacity(0.60)],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                )
+            }
+            .background {
+                Group {
+                    if heroArtwork.isAvailable {
+                        Image(heroArtwork.assetName)
+                            .resizable()
+                            .scaledToFill()
+                    } else {
+                        LinearGradient(
+                            colors: [AppTheme.accentSoft.opacity(0.92), AppTheme.surface],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    }
+                }
+            }
+            .overlay(alignment: .topLeading) {
+                AppPill(title: "Kreator", systemImage: "sparkles", filled: true)
+                    .foregroundStyle(AppTheme.surface)
+                    .padding(.top, 12)
+                    .padding(.leading, 12)
+            }
+            .clipShape(RoundedRectangle(cornerRadius: AppRadius.card, style: .continuous))
+            .contentShape(RoundedRectangle(cornerRadius: AppRadius.card, style: .continuous))
+            .appSoftShadow()
+    }
+}
+
+private struct HeroBrothGlyph: View {
+    var body: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                .fill(AppTheme.surface)
+                .frame(width: 96, height: 96)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 24, style: .continuous)
+                        .stroke(AppTheme.border, lineWidth: 1)
+                )
+
+            VStack(spacing: 10) {
+                HStack(spacing: 6) {
+                    Capsule().fill(AppTheme.textPrimary.opacity(0.28)).frame(width: 20, height: 5)
+                    Capsule().fill(AppTheme.textPrimary.opacity(0.22)).frame(width: 14, height: 5)
                 }
 
-                Spacer(minLength: 12)
+                ZStack(alignment: .bottom) {
+                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        .fill(AppTheme.surfaceMuted)
+                        .frame(width: 52, height: 38)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                .stroke(AppTheme.border, lineWidth: 1)
+                        )
 
-                PresetIngredientIllustration(style: .custom, compact: false)
+                    RoundedRectangle(cornerRadius: 6, style: .continuous)
+                        .fill(AppTheme.accent.opacity(0.5))
+                        .frame(width: 38, height: 12)
+                        .offset(y: -5)
+                }
             }
-            .frame(maxWidth: .infinity, minHeight: compact ? 116 : 122, alignment: .leading)
         }
+    }
+}
+
+private struct LockedChefRecipeCard: View {
+    let compact: Bool
+    let title: String
+    let subtitle: String
+    let artwork: HomeCardArtwork
+
+    var body: some View {
+        AppCard(
+            background: AppTheme.surfaceMuted,
+            border: AppTheme.border
+        ) {
+            VStack(alignment: .leading, spacing: compact ? 14 : 16) {
+                HomeRecipeArtwork(
+                    artwork: artwork,
+                    fallbackStyle: .intense,
+                    compact: compact
+                )
+
+                HStack {
+                    PremiumBadge()
+                    Spacer(minLength: 0)
+                    Image(systemName: "lock.fill")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(AppTheme.textSecondary)
+                }
+
+                Spacer(minLength: 0)
+
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(title)
+                        .font(.system(size: compact ? 17 : 18, weight: .bold))
+                        .foregroundStyle(AppTheme.textPrimary.opacity(0.92))
+                        .lineLimit(2)
+                        .minimumScaleFactor(0.82)
+
+                    Text(subtitle)
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundStyle(AppTheme.textSecondary)
+                        .lineLimit(3)
+                }
+            }
+            .frame(maxWidth: .infinity, minHeight: compact ? 198 : 210, alignment: .topLeading)
+        }
+        .saturation(0.45)
+        .opacity(0.9)
         .appSoftShadow()
+    }
+}
+
+private struct PremiumBadge: View {
+    var body: some View {
+        Text("Premium")
+            .font(.system(size: 11, weight: .bold))
+            .foregroundStyle(AppTheme.textPrimary)
+            .padding(.horizontal, 10)
+            .frame(height: 24)
+            .background(
+                Capsule()
+                    .fill(AppTheme.accentSoft)
+            )
+            .overlay(
+                Capsule()
+                    .stroke(AppTheme.accent.opacity(0.38), lineWidth: 1)
+            )
+    }
+}
+
+private struct RecipeFilterPill: View {
+    let title: String
+    let isSelected: Bool
+
+    var body: some View {
+        Text(title)
+            .font(.system(size: 13, weight: .semibold))
+            .foregroundStyle(isSelected ? AppTheme.textPrimary : AppTheme.textSecondary)
+            .padding(.horizontal, 12)
+            .frame(height: 32)
+            .background(
+                Capsule()
+                    .fill(isSelected ? AppTheme.accentSoft : AppTheme.surface)
+            )
+            .overlay(
+                Capsule()
+                    .stroke(isSelected ? AppTheme.accent.opacity(0.45) : AppTheme.border, lineWidth: 1)
+            )
     }
 }
 
@@ -389,18 +611,37 @@ private struct RecentBrothCompactCard: View {
 
                     Spacer(minLength: 8)
 
-                    SharedRatingBadge(text: batch.ratingBadgeText, hasRating: batch.overallRating != nil)
+                    RecentRatingBadge(text: batch.ratingBadgeText, hasRating: batch.overallRating != nil)
                 }
 
                 HStack(spacing: 8) {
-                    AppMetaChip(metric: AppMetaMetric(kind: .time, title: batch.timeDisplayText))
-                    AppMetaChip(metric: AppMetaMetric(kind: .yield, title: batch.yieldDisplayText))
-                    AppMetaChip(metric: AppMetaMetric(kind: .profile, title: batch.profileTitle))
+                    HistoryInfoChip(kind: .time, title: batch.timeDisplayText)
+                    HistoryInfoChip(kind: .yield, title: batch.yieldDisplayText)
+                    HistoryInfoChip(kind: .profile, title: batch.profileTitle)
                 }
             }
             .frame(maxWidth: .infinity, minHeight: compact ? 112 : 118, alignment: .leading)
         }
         .appSoftShadow()
+    }
+}
+
+private struct RecentRatingBadge: View {
+    let text: String
+    let hasRating: Bool
+
+    var body: some View {
+        Text(text)
+            .font(.system(size: 12, weight: .bold))
+            .foregroundStyle(hasRating ? AppTheme.textPrimary : AppTheme.textSecondary)
+            .padding(.horizontal, 10)
+            .frame(height: 30)
+            .background(hasRating ? AppTheme.accent : AppTheme.surfaceMuted)
+            .overlay(
+                Capsule()
+                    .stroke(hasRating ? AppTheme.accent : AppTheme.border, lineWidth: 1)
+            )
+            .clipShape(Capsule())
     }
 }
 
@@ -454,9 +695,219 @@ private struct HomeMetric: Identifiable {
     let title: String
 }
 
+private struct HomePresetItem: Identifiable {
+    let id = UUID()
+    let recipe: HomePresetRecipe
+    let artwork: HomeCardArtwork
+    let fallbackStyle: BrothIllustrationStyle
+    let filter: HomeRecipeFilter
+}
+
+private enum HomeCardArtwork {
+    case asset(String)
+    case systemDefault
+
+    var assetName: String {
+        switch self {
+        case .asset(let name):
+            return name
+        case .systemDefault:
+            return "OnboardingHeroRosolek"
+        }
+    }
+
+    var isAvailable: Bool {
+        UIImage(named: assetName) != nil
+    }
+}
+
+private enum HomeRecipeFilter: String, CaseIterable, Identifiable {
+    case all
+    case poultry
+    case poultryBeef
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .all:
+            return "Wszystkie"
+        case .poultry:
+            return "Drobiowy"
+        case .poultryBeef:
+            return "Drobiowo-wołowy"
+        }
+    }
+
+    func matches(_ filter: HomeRecipeFilter) -> Bool {
+        self == .all || self == filter
+    }
+}
+
 private enum HomeMetricKind {
     case time
     case yield
+}
+
+private struct HomeMetricChip: View {
+    let metric: HomeMetric
+
+    var body: some View {
+        HStack(spacing: 6) {
+            HomeMetricGlyph(kind: metric.kind)
+
+            Text(metric.title)
+                .font(.system(size: 11, weight: .semibold))
+                .lineLimit(1)
+                .minimumScaleFactor(0.82)
+        }
+        .foregroundStyle(AppTheme.textPrimary.opacity(0.86))
+        .padding(.horizontal, 10)
+        .frame(height: 28)
+        .background(
+            Capsule()
+                .fill(AppTheme.surfaceMuted)
+        )
+        .overlay(
+            Capsule()
+                .stroke(AppTheme.border, lineWidth: 1)
+        )
+    }
+}
+
+private struct HomeMetricGlyph: View {
+    let kind: HomeMetricKind
+
+    var body: some View {
+        Group {
+            switch kind {
+            case .time:
+                Image(systemName: "clock")
+                    .font(.system(size: 10, weight: .semibold))
+            case .yield:
+                AppYieldGlyph()
+            }
+        }
+        .frame(width: 12, height: 12)
+    }
+}
+
+private enum HistoryInfoKind {
+    case time
+    case yield
+    case profile
+}
+
+private struct HistoryInfoChip: View {
+    let kind: HistoryInfoKind
+    let title: String
+
+    var body: some View {
+        HStack(spacing: 6) {
+            HistoryInfoGlyph(kind: kind)
+
+            Text(title)
+                .font(.system(size: 11, weight: .semibold))
+                .lineLimit(1)
+                .minimumScaleFactor(0.82)
+        }
+        .foregroundStyle(AppTheme.textPrimary.opacity(0.86))
+        .padding(.horizontal, 10)
+        .frame(height: 28)
+        .background(
+            Capsule()
+                .fill(AppTheme.surfaceMuted)
+        )
+        .overlay(
+            Capsule()
+                .stroke(AppTheme.border, lineWidth: 1)
+        )
+    }
+}
+
+private struct HistoryInfoGlyph: View {
+    let kind: HistoryInfoKind
+
+    var body: some View {
+        Group {
+            switch kind {
+            case .time:
+                Image(systemName: "clock")
+                    .font(.system(size: 10, weight: .semibold))
+            case .yield:
+                AppYieldGlyph()
+            case .profile:
+                AppProfileGlyph()
+            }
+        }
+        .frame(width: 12, height: 12)
+    }
+}
+
+private struct HomeRecipeArtwork: View {
+    let artwork: HomeCardArtwork
+    let fallbackStyle: BrothIllustrationStyle
+    let compact: Bool
+
+    var body: some View {
+        Group {
+            if artwork.isAvailable {
+                Image(artwork.assetName)
+                    .resizable()
+                    .scaledToFill()
+                    .frame(height: compact ? 120 : 128)
+                    .frame(maxWidth: .infinity)
+                    .clipShape(RoundedRectangle(cornerRadius: compact ? 18 : 20, style: .continuous))
+            } else if HomeCardArtwork.systemDefault.isAvailable {
+                Image(HomeCardArtwork.systemDefault.assetName)
+                    .resizable()
+                    .scaledToFill()
+                    .frame(height: compact ? 120 : 128)
+                    .frame(maxWidth: .infinity)
+                    .clipShape(RoundedRectangle(cornerRadius: compact ? 18 : 20, style: .continuous))
+            } else {
+                HStack(alignment: .top) {
+                    PresetIngredientIllustration(style: fallbackStyle, compact: compact)
+                    Spacer(minLength: 0)
+                }
+            }
+        }
+    }
+}
+
+private struct HomeHeroArtwork: View {
+    let compact: Bool
+
+    private var size: CGFloat {
+        compact ? 118 : 126
+    }
+
+    private let heroArtwork = HomeCardArtwork.asset("HomeHeroCustomBroth")
+
+    var body: some View {
+        ZStack {
+            Circle()
+                .fill(AppTheme.surface.opacity(0.84))
+                .frame(width: size, height: size)
+
+            if heroArtwork.isAvailable {
+                Image(heroArtwork.assetName)
+                    .resizable()
+                    .scaledToFill()
+                    .frame(width: size - 10, height: size - 10)
+                    .clipShape(Circle())
+            } else if HomeCardArtwork.systemDefault.isAvailable {
+                Image(HomeCardArtwork.systemDefault.assetName)
+                    .resizable()
+                    .scaledToFill()
+                    .frame(width: size - 10, height: size - 10)
+                    .clipShape(Circle())
+            } else {
+                HeroBrothGlyph()
+                    .scaleEffect(compact ? 0.96 : 1)
+            }
+        }
+    }
 }
 
 private enum BrothIllustrationStyle {
@@ -874,7 +1325,12 @@ private struct HomePresetRecipe {
     }
 
     var title: String {
-        preset.title
+        switch preset {
+        case .poultryReady:
+            return "Rosół drobiowy"
+        case .poultryBeefReady:
+            return "Rosół drobiowo-wołowy"
+        }
     }
 
     var subtitle: String {

@@ -1,0 +1,6 @@
+# macOS
+.DS_Store
+
+# Xcode user-local UI state
+*.xcuserstate
+xcuserdata/
