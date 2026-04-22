@@ -409,7 +409,33 @@ private struct CalculatorEntryCard: View {
     private var cardHeight: CGFloat { compact ? 156 : 164 }
 
     var body: some View {
-        ZStack(alignment: .bottom) {
+        VStack(alignment: .leading, spacing: 0) {
+            Spacer()
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Własny rosół od podstaw")
+                    .font(.system(size: compact ? 17 : 18, weight: .bold))
+                    .foregroundStyle(.white)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.9)
+                Text("Dobierz składniki i proporcje do swojego garnka.")
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundStyle(.white.opacity(0.85))
+                    .lineLimit(1)
+            }
+            .padding(.horizontal, AppSpacing.card)
+            .padding(.bottom, 14)
+            .padding(.top, 28)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(
+                LinearGradient(
+                    colors: [.clear, .black.opacity(0.60)],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+            )
+        }
+        .frame(maxWidth: .infinity)
+        .background {
             Group {
                 if heroArtwork.isAvailable {
                     Image(heroArtwork.assetName)
@@ -423,29 +449,10 @@ private struct CalculatorEntryCard: View {
                     )
                 }
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Własny rosół od podstaw")
-                    .font(.system(size: compact ? 17 : 18, weight: .bold))
-                    .foregroundStyle(.primary)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.9)
-
-                Text("Dobierz składniki i proporcje do swojego garnka.")
-                    .font(.system(size: 13, weight: .medium))
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
-            }
-            .padding(.horizontal, AppSpacing.card)
-            .padding(.vertical, 12)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(.ultraThinMaterial)
         }
         .frame(height: cardHeight)
-        .frame(maxWidth: .infinity)
         .overlay(alignment: .topLeading) {
-            AppPill(title: "Tryb własny", systemImage: "sparkles", filled: true)
+            AppPill(title: "Kreator", systemImage: "sparkles", filled: true)
                 .foregroundStyle(AppTheme.surface)
                 .padding(.top, 12)
                 .padding(.leading, 12)
