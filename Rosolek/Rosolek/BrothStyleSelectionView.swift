@@ -63,6 +63,15 @@ struct BrothStyleSelectionView: View {
             Text("Wpływa na smak i ilość rosołu.")
                 .font(.system(size: 15, weight: .medium))
                 .foregroundStyle(AppTheme.textSecondary)
+
+            Text("działa")
+                .font(.system(size: 28, weight: .black))
+                .foregroundStyle(Color.white)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 14)
+                .background(Color.red)
+                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                .padding(.top, 4)
         }
     }
 
