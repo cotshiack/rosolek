@@ -35,17 +35,17 @@ struct BrothStyleSelectionView: View {
                         .frame(height: cardHeight)
                     }
                 }
-                .padding(.horizontal, AppSpacing.screen)
-                .padding(.top, 14)
+                .padding(.horizontal, 0)
+                .padding(.top, 10)
 
                 Spacer(minLength: 0)
             }
             .background(AppTheme.background.ignoresSafeArea())
             .safeAreaInset(edge: .bottom, spacing: 0) {
                 ctaButton
-                    .padding(.horizontal, AppSpacing.screen)
-                    .padding(.top, 12)
-                    .padding(.bottom, max(8, geometry.safeAreaInsets.bottom))
+                    .padding(.horizontal, 0)
+                    .padding(.top, 10)
+                    .padding(.bottom, geometry.safeAreaInsets.bottom)
                     .background(
                         AppTheme.background
                             .opacity(0.98)
@@ -73,9 +73,9 @@ struct BrothStyleSelectionView: View {
 
     private func cardHeight(for geometry: GeometryProxy) -> CGFloat {
         let screenHeight = geometry.size.height
-        let ctaBlockHeight = 56 + 12 + max(8, geometry.safeAreaInsets.bottom)
+        let ctaBlockHeight = 56 + 10 + geometry.safeAreaInsets.bottom
         let headerBlockHeight: CGFloat = 110
-        let verticalChrome: CGFloat = 12 + 14 + 12
+        let verticalChrome: CGFloat = 12 + 10 + 10
         let cardSpacing: CGFloat = 12
         let available = screenHeight - ctaBlockHeight - headerBlockHeight - verticalChrome - cardSpacing
         return max(248, min(available / 2, 332))
@@ -119,7 +119,7 @@ private struct ProfileChoiceCard: View {
     private var chips: [String] {
         switch profile {
         case .cleaner: return ["delikatny", "na co dzień", "większa ilość"]
-        case .richer:  return ["esencjonalny", "mocniejszy", "pełniejsze body"]
+        case .richer:  return ["esencjonalny", "mocniejszy", "pełne body"]
         }
     }
 
@@ -194,7 +194,7 @@ private struct ProfileChoiceCard: View {
                         .fixedSize(horizontal: false, vertical: true)
 
                     LazyVGrid(
-                        columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 3),
+                        columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 2),
                         alignment: .leading,
                         spacing: 8
                     ) {
