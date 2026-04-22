@@ -18,14 +18,14 @@ struct BrothStyleSelectionView: View {
                 header
 
                 GeometryReader { cardsGeometry in
-                    let cardHeight = max(0, (cardsGeometry.size.height - 10) / 2)
+                    let cardHeight = max(0, (cardsGeometry.size.height - 8) / 2)
 
-                    VStack(spacing: 10) {
+                    VStack(spacing: 8) {
                         ForEach(BrothProfile.allCases) { profile in
                             ProfileChoiceCard(
                                 profile: profile,
                                 isSelected: selectedProfile == profile,
-                                imageHeight: cardHeight * 0.54
+                                imageHeight: cardHeight * 0.50
                             ) {
                                 withAnimation(.spring(response: 0.28, dampingFraction: 0.82)) {
                                     selectedProfile = profile
@@ -117,9 +117,9 @@ private struct ProfileChoiceCard: View {
     private var profileAudienceDescription: String {
         switch profile {
         case .cleaner:
-            return "Dla osób, które wolą lekki i delikatny rosół."
+            return "Lżejszy profil i bardziej klarowny bulion."
         case .richer:
-            return "Dla osób, które lubią mocniejszy, esencjonalny smak."
+            return "Mocniejszy aromat i pełniejsze body."
         }
     }
 
@@ -154,7 +154,7 @@ private struct ProfileChoiceCard: View {
                         HStack(spacing: 4) {
                             Image(systemName: "checkmark")
                                 .font(.system(size: 10, weight: .bold))
-                            Text("Wybrano")
+                            Text("Ten profil")
                                 .font(.system(size: 12, weight: .semibold))
                         }
                         .foregroundStyle(AppTheme.textPrimary)
@@ -205,7 +205,8 @@ private struct ProfileChoiceCard: View {
                 RoundedRectangle(cornerRadius: AppRadius.card, style: .continuous)
                     .stroke(isSelected ? AppTheme.accent : AppTheme.border, lineWidth: isSelected ? 2 : 1)
             )
-            .scaleEffect(isSelected ? 1.0 : 0.985)
+            .opacity(isSelected ? 1 : 0.96)
+            .scaleEffect(isSelected ? 1.0 : 0.992)
             .appSoftShadow()
         }
         .buttonStyle(.plain)
