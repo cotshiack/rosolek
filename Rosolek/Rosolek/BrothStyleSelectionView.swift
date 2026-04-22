@@ -13,27 +13,28 @@ struct BrothStyleSelectionView: View {
     @State private var selectedProfile: BrothProfile? = .cleaner
 
     var body: some View {
-        GeometryReader { geometry in
-            let cardHeight = cardHeight(for: geometry)
-
+        GeometryReader { _ in
             VStack(alignment: .leading, spacing: 12) {
                 header
 
-                VStack(spacing: 10) {
-                    ForEach(BrothProfile.allCases) { profile in
-                        ProfileChoiceCard(
-                            profile: profile,
-                            isSelected: selectedProfile == profile,
-                            imageHeight: cardHeight * 0.56
-                        ) {
-                            withAnimation(.spring(response: 0.28, dampingFraction: 0.82)) {
-                                selectedProfile = profile
+                GeometryReader { cardsGeometry in
+                    let cardHeight = max(208, (cardsGeometry.size.height - 10) / 2)
+
+                    VStack(spacing: 10) {
+                        ForEach(BrothProfile.allCases) { profile in
+                            ProfileChoiceCard(
+                                profile: profile,
+                                isSelected: selectedProfile == profile,
+                                imageHeight: cardHeight * 0.56
+                            ) {
+                                withAnimation(.spring(response: 0.28, dampingFraction: 0.82)) {
+                                    selectedProfile = profile
+                                }
                             }
+                            .frame(height: cardHeight)
                         }
-                        .frame(height: cardHeight)
                     }
                 }
-                .frame(maxHeight: .infinity, alignment: .top)
             }
             .padding(AppSpacing.screen)
             .padding(.bottom, 8)
@@ -58,18 +59,6 @@ struct BrothStyleSelectionView: View {
                 .font(.system(size: 15, weight: .medium))
                 .foregroundStyle(AppTheme.textSecondary)
         }
-    }
-
-    private func cardHeight(for geometry: GeometryProxy) -> CGFloat {
-        let containerHeight = geometry.size.height
-        let safeBottom = geometry.safeAreaInsets.bottom
-        let ctaZone: CGFloat = 56 + 8 + safeBottom
-        let headerZone: CGFloat = 90
-        let topAndBottomPadding: CGFloat = AppSpacing.screen + 8
-        let headerToCardsSpacing: CGFloat = 12
-        let cardSpacing: CGFloat = 10
-        let available = containerHeight - ctaZone - headerZone - topAndBottomPadding - headerToCardsSpacing - cardSpacing
-        return max(212, available / 2)
     }
 
     private var floatingBottomBar: some View {
@@ -119,8 +108,8 @@ private struct ProfileChoiceCard: View {
 
     private var chips: [String] {
         switch profile {
-        case .cleaner: return ["klarowny", "więcej bulionu", "na co dzień"]
-        case .richer:  return ["mocny aromat", "pełne body", "na bogato"]
+        case .cleaner: return ["klarowniejszy", "więcej bulionu", "lżejszy finisz"]
+        case .richer:  return ["mocny aromat", "pełniejsze body", "dłuższy finisz"]
         }
     }
 
@@ -164,7 +153,7 @@ private struct ProfileChoiceCard: View {
                         HStack(spacing: 4) {
                             Image(systemName: "checkmark")
                                 .font(.system(size: 10, weight: .bold))
-                            Text("Wybrany profil")
+                            Text("Twój wybór")
                                 .font(.system(size: 12, weight: .semibold))
                         }
                         .foregroundStyle(AppTheme.textPrimary)
