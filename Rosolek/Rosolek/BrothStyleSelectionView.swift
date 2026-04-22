@@ -123,10 +123,8 @@ private struct ProfileChoiceCard: View {
 
     private var profileAudienceDescription: String {
         switch profile {
-        case .cleaner:
-            return "Lżejszy profil, klarowny bulion. Krótszy czas gotowania i większy uzysk płynu."
-        case .richer:
-            return "Intensywny aromat i pełne body. Wymaga cierpliwości — smakuje wyjątkowo."
+        case .cleaner: return "Lżejszy profil, klarowny bulion."
+        case .richer:  return "Intensywny aromat i pełne body."
         }
     }
 
@@ -203,14 +201,14 @@ private struct ProfileChoiceCard: View {
                     Text(profileAudienceDescription)
                         .font(.system(size: 13, weight: .medium))
                         .foregroundStyle(AppTheme.textSecondary)
-                        .lineLimit(2)
+                        .lineLimit(1)
 
                     HStack(spacing: 12) {
                         Label(cookTime, systemImage: "clock")
                         Label(yieldHint, systemImage: "drop")
                     }
                     .font(.system(size: 10, weight: .medium))
-                    .foregroundStyle(AppTheme.textTertiary)
+                    .foregroundStyle(AppTheme.textSecondary)
 
                     LazyVGrid(
                         columns: Array(repeating: GridItem(.flexible(), spacing: 6), count: 3),
