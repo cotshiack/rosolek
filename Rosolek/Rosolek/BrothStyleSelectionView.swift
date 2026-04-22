@@ -13,45 +13,17 @@ struct BrothStyleSelectionView: View {
     @State private var selectedProfile: BrothProfile? = .cleaner
 
     var body: some View {
-        GeometryReader { geometry in
-            let cardHeight = cardHeight(for: geometry)
-
-            VStack(alignment: .leading, spacing: 0) {
+        ScrollView(showsIndicators: false) {
+            VStack(alignment: .leading, spacing: 22) {
                 header
-                    .padding(.horizontal, AppSpacing.screen)
-                    .padding(.top, 12)
-
-                VStack(spacing: 12) {
-                    ForEach(BrothProfile.allCases) { profile in
-                        ProfileChoiceCard(
-                            profile: profile,
-                            isSelected: selectedProfile == profile,
-                            imageHeight: cardHeight * 0.56
-                        ) {
-                            withAnimation(.spring(response: 0.28, dampingFraction: 0.82)) {
-                                selectedProfile = profile
-                            }
-                        }
-                        .frame(height: cardHeight)
-                    }
-                }
-                .padding(.horizontal, 0)
-                .padding(.top, 10)
-
-                Spacer(minLength: 0)
+                profileCards
             }
-            .background(AppTheme.background.ignoresSafeArea())
-            .safeAreaInset(edge: .bottom, spacing: 0) {
-                ctaButton
-                    .padding(.horizontal, 0)
-                    .padding(.top, 10)
-                    .padding(.bottom, geometry.safeAreaInsets.bottom)
-                    .background(
-                        AppTheme.background
-                            .opacity(0.98)
-                            .ignoresSafeArea(edges: .bottom)
-                    )
-            }
+            .padding(AppSpacing.screen)
+            .padding(.bottom, 8)
+        }
+        .background(AppTheme.background)
+        .safeAreaInset(edge: .bottom) {
+            floatingBottomBar
         }
         .navigationTitle("Własny rosół")
         .navigationBarTitleDisplayMode(.inline)
@@ -71,28 +43,44 @@ struct BrothStyleSelectionView: View {
         }
     }
 
-    private func cardHeight(for geometry: GeometryProxy) -> CGFloat {
-        let screenHeight = geometry.size.height
-        let ctaBlockHeight = 56 + 10 + geometry.safeAreaInsets.bottom
-        let headerBlockHeight: CGFloat = 110
-        let verticalChrome: CGFloat = 12 + 10 + 10
-        let cardSpacing: CGFloat = 12
-        let available = screenHeight - ctaBlockHeight - headerBlockHeight - verticalChrome - cardSpacing
-        return max(248, min(available / 2, 332))
+    private var profileCards: some View {
+        VStack(spacing: 14) {
+            ForEach(BrothProfile.allCases) { profile in
+                ProfileChoiceCard(
+                    profile: profile,
+                    isSelected: selectedProfile == profile,
+                    imageHeight: 188
+                ) {
+                    withAnimation(.spring(response: 0.28, dampingFraction: 0.82)) {
+                        selectedProfile = profile
+                    }
+                }
+            }
+        }
     }
 
-    private var ctaButton: some View {
-        NavigationLink {
-            IngredientSelectionView(
-                selectedProfile: selectedProfile ?? .cleaner
-            )
-        } label: {
-            AppPrimaryButtonLabel(
-                title: "Wybierz składniki",
-                disabled: selectedProfile == nil
-            )
+    private var floatingBottomBar: some View {
+        VStack(spacing: 10) {
+            NavigationLink {
+                IngredientSelectionView(
+                    selectedProfile: selectedProfile ?? .cleaner
+                )
+            } label: {
+                AppPrimaryButtonLabel(
+                    title: "Wybierz składniki",
+                    disabled: selectedProfile == nil
+                )
+            }
+            .disabled(selectedProfile == nil)
         }
-        .disabled(selectedProfile == nil)
+        .padding(.horizontal, AppSpacing.screen)
+        .padding(.top, 10)
+        .padding(.bottom, 10)
+        .background(
+            AppTheme.background
+                .opacity(0.98)
+                .ignoresSafeArea(edges: .bottom)
+        )
     }
 }
 
@@ -194,7 +182,7 @@ private struct ProfileChoiceCard: View {
                         .fixedSize(horizontal: false, vertical: true)
 
                     LazyVGrid(
-                        columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 2),
+                        columns: [GridItem(.adaptive(minimum: 110), spacing: 8)],
                         alignment: .leading,
                         spacing: 8
                     ) {
