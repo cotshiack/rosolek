@@ -14,7 +14,7 @@ struct BrothStyleSelectionView: View {
 
     var body: some View {
         GeometryReader { geometry in
-            let layout = layoutMetrics(for: geometry)
+            let cardHeight = cardHeight(for: geometry)
 
             VStack(alignment: .leading, spacing: 0) {
                 header
@@ -26,13 +26,13 @@ struct BrothStyleSelectionView: View {
                         ProfileChoiceCard(
                             profile: profile,
                             isSelected: selectedProfile == profile,
-                            imageHeight: layout.cardHeight * 0.56
+                            imageHeight: cardHeight * 0.56
                         ) {
                             withAnimation(.spring(response: 0.28, dampingFraction: 0.82)) {
                                 selectedProfile = profile
                             }
                         }
-                        .frame(height: layout.cardHeight)
+                        .frame(height: cardHeight)
                     }
                 }
                 .padding(.horizontal, AppSpacing.screen)
@@ -71,15 +71,14 @@ struct BrothStyleSelectionView: View {
         }
     }
 
-    private func layoutMetrics(for geometry: GeometryProxy) -> (cardHeight: CGFloat) {
+    private func cardHeight(for geometry: GeometryProxy) -> CGFloat {
         let screenHeight = geometry.size.height
         let ctaBlockHeight = 56 + 12 + max(8, geometry.safeAreaInsets.bottom)
         let headerBlockHeight: CGFloat = 110
         let verticalChrome: CGFloat = 12 + 14 + 12
         let cardSpacing: CGFloat = 12
         let available = screenHeight - ctaBlockHeight - headerBlockHeight - verticalChrome - cardSpacing
-        let cardHeight = max(248, min(available / 2, 332))
-        return (cardHeight: cardHeight)
+        return max(248, min(available / 2, 332))
     }
 
     private var ctaButton: some View {
