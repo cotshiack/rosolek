@@ -117,7 +117,7 @@ private struct ProfileChoiceCard: View {
         }
     }
 
-    private var audienceDescription: String {
+    private var profileAudienceDescription: String {
         switch profile {
         case .cleaner:
             return "Dla osób, które wolą lżejszy i delikatniejszy rosół."
@@ -181,7 +181,7 @@ private struct ProfileChoiceCard: View {
                             .foregroundStyle(AppTheme.textPrimary)
                     }
 
-                    Text(audienceDescription)
+                    Text(profileAudienceDescription)
                         .font(.system(size: 15, weight: .medium))
                         .foregroundStyle(AppTheme.textSecondary)
                         .fixedSize(horizontal: false, vertical: true)
