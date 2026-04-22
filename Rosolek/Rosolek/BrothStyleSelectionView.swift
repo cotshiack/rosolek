@@ -14,33 +14,38 @@ struct BrothStyleSelectionView: View {
 
     var body: some View {
         GeometryReader { geometry in
-            ScrollView(showsIndicators: false) {
-                VStack(alignment: .leading, spacing: 16) {
-                    header
+            let layout = layoutMetrics(for: geometry)
 
-                    VStack(spacing: 14) {
-                        ForEach(BrothProfile.allCases) { profile in
-                            ProfileChoiceCard(
-                                profile: profile,
-                                isSelected: selectedProfile == profile,
-                                imageHeight: cardImageHeight(for: geometry.size.height)
-                            ) {
-                                withAnimation(.spring(response: 0.28, dampingFraction: 0.82)) {
-                                    selectedProfile = profile
-                                }
+            VStack(alignment: .leading, spacing: 0) {
+                header
+                    .padding(.horizontal, AppSpacing.screen)
+                    .padding(.top, 12)
+
+                VStack(spacing: 12) {
+                    ForEach(BrothProfile.allCases) { profile in
+                        ProfileChoiceCard(
+                            profile: profile,
+                            isSelected: selectedProfile == profile,
+                            imageHeight: layout.cardHeight * 0.56
+                        ) {
+                            withAnimation(.spring(response: 0.28, dampingFraction: 0.82)) {
+                                selectedProfile = profile
                             }
                         }
+                        .frame(height: layout.cardHeight)
                     }
                 }
                 .padding(.horizontal, AppSpacing.screen)
-                .padding(.top, 12)
-                .padding(.bottom, ctaOverlaySpace(for: geometry.safeAreaInsets.bottom))
+                .padding(.top, 14)
+
+                Spacer(minLength: 0)
             }
             .background(AppTheme.background.ignoresSafeArea())
-            .overlay(alignment: .bottom) {
+            .safeAreaInset(edge: .bottom, spacing: 0) {
                 ctaButton
                     .padding(.horizontal, AppSpacing.screen)
-                    .padding(.bottom, max(12, geometry.safeAreaInsets.bottom))
+                    .padding(.top, 12)
+                    .padding(.bottom, max(8, geometry.safeAreaInsets.bottom))
                     .background(
                         AppTheme.background
                             .opacity(0.98)
@@ -63,26 +68,18 @@ struct BrothStyleSelectionView: View {
             Text("Wpływa na smak i ilość rosołu.")
                 .font(.system(size: 15, weight: .medium))
                 .foregroundStyle(AppTheme.textSecondary)
-
-            Text("działa")
-                .font(.system(size: 28, weight: .black))
-                .foregroundStyle(Color.white)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 14)
-                .background(Color.red)
-                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-                .padding(.top, 4)
         }
     }
 
-    private func cardImageHeight(for screenHeight: CGFloat) -> CGFloat {
-        let compact = screenHeight < 820
-        return compact ? 142 : 158
-    }
-
-    private func ctaOverlaySpace(for safeBottomInset: CGFloat) -> CGFloat {
-        let ctaHeight: CGFloat = 56
-        return ctaHeight + max(44, safeBottomInset + 24)
+    private func layoutMetrics(for geometry: GeometryProxy) -> (cardHeight: CGFloat) {
+        let screenHeight = geometry.size.height
+        let ctaBlockHeight = 56 + 12 + max(8, geometry.safeAreaInsets.bottom)
+        let headerBlockHeight: CGFloat = 110
+        let verticalChrome: CGFloat = 12 + 14 + 12
+        let cardSpacing: CGFloat = 12
+        let available = screenHeight - ctaBlockHeight - headerBlockHeight - verticalChrome - cardSpacing
+        let cardHeight = max(248, min(available / 2, 332))
+        return (cardHeight: cardHeight)
     }
 
     private var ctaButton: some View {
