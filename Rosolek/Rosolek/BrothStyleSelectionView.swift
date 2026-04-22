@@ -130,8 +130,8 @@ private struct ProfileChoiceCard: View {
 
     private var cookTime: String {
         switch profile {
-        case .cleaner: return "ok. 2–2.5h"
-        case .richer:  return "ok. 3–4h"
+        case .cleaner: return "ok. 5h 15 min"
+        case .richer:  return "ok. 5h 45 min"
         }
     }
 
@@ -174,7 +174,7 @@ private struct ProfileChoiceCard: View {
                         HStack(spacing: 5) {
                             Image(systemName: "checkmark")
                                 .font(.system(size: 11, weight: .black))
-                            Text("Ten profil")
+                            Text("Twój wybór")
                                 .font(.system(size: 13, weight: .bold))
                         }
                         .foregroundStyle(AppTheme.textPrimary)
@@ -188,7 +188,7 @@ private struct ProfileChoiceCard: View {
                 }
                 .clipShape(RoundedRectangle(cornerRadius: AppRadius.card, style: .continuous))
 
-                VStack(alignment: .leading, spacing: 5) {
+                VStack(alignment: .leading, spacing: 0) {
                     HStack(spacing: 6) {
                         Image(systemName: icon)
                             .font(.system(size: 14, weight: .bold))
@@ -202,6 +202,7 @@ private struct ProfileChoiceCard: View {
                         .font(.system(size: 13, weight: .medium))
                         .foregroundStyle(AppTheme.textSecondary)
                         .lineLimit(1)
+                        .padding(.top, 4)
 
                     HStack(spacing: 12) {
                         Label(cookTime, systemImage: "clock")
@@ -209,6 +210,7 @@ private struct ProfileChoiceCard: View {
                     }
                     .font(.system(size: 10, weight: .medium))
                     .foregroundStyle(AppTheme.textSecondary)
+                    .padding(.top, 8)
 
                     LazyVGrid(
                         columns: Array(repeating: GridItem(.flexible(), spacing: 6), count: 3),
@@ -219,6 +221,7 @@ private struct ProfileChoiceCard: View {
                             ProfileChip(title: chip, isSelected: isSelected)
                         }
                     }
+                    .padding(.top, 8)
                 }
                 .padding(.horizontal, 12)
                 .padding(.vertical, 10)
@@ -232,7 +235,7 @@ private struct ProfileChoiceCard: View {
                 RoundedRectangle(cornerRadius: AppRadius.card, style: .continuous)
                     .stroke(isSelected ? AppTheme.accent : AppTheme.border, lineWidth: isSelected ? 2 : 1)
             )
-            .opacity(isSelected ? 1.0 : 0.70)
+            .opacity(isSelected ? 1.0 : 0.82)
             .scaleEffect(isSelected ? 1.0 : 0.975)
             .shadow(
                 color: isSelected ? AppTheme.accent.opacity(0.28) : Color.black.opacity(0.05),
@@ -262,7 +265,7 @@ private struct ProfileChip: View {
             .background(isSelected ? AppTheme.accentSoft : AppTheme.surfaceMuted)
             .overlay(
                 Capsule().stroke(
-                    isSelected ? AppTheme.accent.opacity(0.50) : AppTheme.borderStrong,
+                    isSelected ? AppTheme.accent.opacity(0.50) : Color(hex: "A0A0A0"),
                     lineWidth: 1
                 )
             )
