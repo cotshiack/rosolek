@@ -442,7 +442,8 @@ private struct CalculatorEntryCard: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(.ultraThinMaterial)
         }
-        .frame(maxWidth: .infinity, height: cardHeight)
+        .frame(height: cardHeight)
+        .frame(maxWidth: .infinity)
         .overlay(alignment: .topLeading) {
             AppPill(title: "Tryb własny", systemImage: "sparkles", filled: true)
                 .foregroundStyle(AppTheme.surface)
