@@ -32,7 +32,8 @@ struct BrothStyleSelectionView: View {
                         }
                     }
                 }
-                .padding(AppSpacing.screen)
+                .padding(.horizontal, AppSpacing.screen)
+                .padding(.top, 12)
                 .padding(.bottom, ctaOverlaySpace(for: geometry.safeAreaInsets.bottom))
             }
             .background(AppTheme.background.ignoresSafeArea())
@@ -67,7 +68,7 @@ struct BrothStyleSelectionView: View {
 
     private func cardImageHeight(for screenHeight: CGFloat) -> CGFloat {
         let compact = screenHeight < 820
-        return compact ? 158 : 176
+        return compact ? 142 : 158
     }
 
     private func ctaOverlaySpace(for safeBottomInset: CGFloat) -> CGFloat {
@@ -112,8 +113,8 @@ private struct ProfileChoiceCard: View {
 
     private var chips: [String] {
         switch profile {
-        case .cleaner: return ["delikatny start", "codzienny rosół", "łagodny finisz"]
-        case .richer:  return ["niedzielny styl", "mocny aromat", "dłuższy finisz"]
+        case .cleaner: return ["delikatny", "na co dzień", "większa ilość"]
+        case .richer:  return ["esencjonalny", "mocniejszy", "pełniejsze body"]
         }
     }
 
@@ -171,28 +172,33 @@ private struct ProfileChoiceCard: View {
                 }
                 .clipShape(RoundedRectangle(cornerRadius: AppRadius.card, style: .continuous))
 
-                VStack(alignment: .leading, spacing: 10) {
+                VStack(alignment: .leading, spacing: 8) {
                     HStack(spacing: 6) {
                         Image(systemName: icon)
                             .font(.system(size: 13, weight: .bold))
                             .foregroundStyle(AppTheme.textSecondary)
                         Text(profile.title)
-                            .font(.system(size: 29, weight: .bold))
+                            .font(.system(size: 24, weight: .bold))
                             .foregroundStyle(AppTheme.textPrimary)
                     }
 
                     Text(profileAudienceDescription)
-                        .font(.system(size: 15, weight: .medium))
+                        .font(.system(size: 14, weight: .medium))
                         .foregroundStyle(AppTheme.textSecondary)
+                        .lineLimit(2)
                         .fixedSize(horizontal: false, vertical: true)
 
-                    HStack(spacing: 6) {
+                    LazyVGrid(
+                        columns: [GridItem(.adaptive(minimum: 104), spacing: 8)],
+                        alignment: .leading,
+                        spacing: 8
+                    ) {
                         ForEach(chips, id: \.self) { chip in
                             ProfileChip(title: chip)
                         }
                     }
                 }
-                .padding(16)
+                .padding(14)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .background(AppTheme.surface)
             }
@@ -218,6 +224,7 @@ private struct ProfileChip: View {
             .font(.system(size: 11, weight: .semibold))
             .foregroundStyle(AppTheme.textSecondary)
             .lineLimit(1)
+            .minimumScaleFactor(0.9)
             .padding(.horizontal, 9)
             .padding(.vertical, 5)
             .background(AppTheme.surfaceMuted)
