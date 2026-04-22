@@ -63,11 +63,12 @@ struct BrothStyleSelectionView: View {
     private func cardHeight(for geometry: GeometryProxy) -> CGFloat {
         let containerHeight = geometry.size.height
         let safeBottom = geometry.safeAreaInsets.bottom
-        let ctaZone: CGFloat = 56 + 8 + 8 + safeBottom
-        let headerZone: CGFloat = 126
+        let ctaZone: CGFloat = 56 + 8 + safeBottom
+        let headerZone: CGFloat = 90
+        let topAndBottomPadding: CGFloat = AppSpacing.screen + 8
+        let headerToCardsSpacing: CGFloat = 12
         let cardSpacing: CGFloat = 10
-        let verticalPadding = AppSpacing.screen * 2
-        let available = containerHeight - ctaZone - headerZone - verticalPadding - cardSpacing
+        let available = containerHeight - ctaZone - headerZone - topAndBottomPadding - headerToCardsSpacing - cardSpacing
         return max(212, available / 2)
     }
 
