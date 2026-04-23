@@ -15,6 +15,8 @@ struct BrothResultView: View {
     @State private var savedBatch: BatchRecord?
     @State private var navigateToCooking = false
     @State private var isStartingCooking = false
+    @State private var showActiveCookingConflictAlert = false
+    @State private var activeCookingTitleForConflict = ""
     @State private var clarityMode: BrothClarityMode = .normal
     @State private var useVinegar = false
 
@@ -234,7 +236,7 @@ struct BrothResultView: View {
         .navigationBarTitleDisplayMode(.inline)
         .safeAreaInset(edge: .bottom) {
             Button {
-                startCooking()
+                attemptStartCooking()
             } label: {
                 AppPrimaryButtonLabel(
                     title: "Przejdź do gotowania",
@@ -261,6 +263,14 @@ struct BrothResultView: View {
                     hasThermometer: hasThermometer
                 )
             }
+        }
+        .alert("Trwa już gotowanie", isPresented: $showActiveCookingConflictAlert) {
+            Button("Zachowaj obecne", role: .cancel) { }
+            Button("Rozpocznij nowe", role: .destructive) {
+                startCooking(replacingExistingSession: true)
+            }
+        } message: {
+            Text("Aktywne gotowanie „\(activeCookingTitleForConflict)” zostanie przerwane i zapisane w historii jako przerwane.")
         }
     }
 
@@ -895,9 +905,25 @@ extension BrothResultView {
         return "\(grams) g"
     }
 
-    private func startCooking() {
+    private func attemptStartCooking() {
+        guard !hasBlockingFailure, !isStartingCooking else { return }
+
+        if let conflict = CookingSessionCoordinator.activeConflict(in: batchStore) {
+            activeCookingTitleForConflict = conflict.title
+            showActiveCookingConflictAlert = true
+            return
+        }
+
+        startCooking(replacingExistingSession: false)
+    }
+
+    private func startCooking(replacingExistingSession: Bool) {
         guard !hasBlockingFailure, !isStartingCooking else { return }
         isStartingCooking = true
+
+        if replacingExistingSession {
+            CookingSessionCoordinator.interruptActiveCookingAndCleanup(in: batchStore)
+        }
 
         let ingredientSnapshots = resolvedSelections.map { selection in
             BatchIngredientSnapshot(

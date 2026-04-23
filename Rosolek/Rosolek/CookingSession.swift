@@ -1,4 +1,5 @@
 import Foundation
+import ActivityKit
 
 struct CookingSession: Codable {
     let batchID: UUID
@@ -32,5 +33,61 @@ struct CookingSession: Codable {
 
     static func clear() {
         UserDefaults.standard.removeObject(forKey: storageKey)
+    }
+}
+
+struct ActiveCookingConflict {
+    let batchID: UUID
+    let title: String
+}
+
+enum CookingSessionCoordinator {
+    static func activeConflict(in batchStore: BatchStore) -> ActiveCookingConflict? {
+        guard let session = CookingSession.load(),
+              let batch = batchStore.batch(for: session.batchID)
+        else {
+            return nil
+        }
+
+        return ActiveCookingConflict(batchID: batch.id, title: batch.displayTitle)
+    }
+
+    static func clearOrphanedSessionIfNeeded(in batchStore: BatchStore) {
+        guard let session = CookingSession.load() else { return }
+        guard batchStore.batch(for: session.batchID) == nil else { return }
+        CookingSession.clear()
+        CookingNotificationService.shared.cancelAll()
+    }
+
+    static func interruptActiveCookingAndCleanup(in batchStore: BatchStore) {
+        if let conflict = activeConflict(in: batchStore) {
+            batchStore.markBatchInterruptedByNewCooking(batchID: conflict.batchID)
+        }
+        CookingSession.clear()
+        CookingNotificationService.shared.cancelAll()
+        endAllLiveActivities()
+    }
+
+    static func activeBatch(in batchStore: BatchStore) -> BatchRecord? {
+        guard let session = CookingSession.load() else { return nil }
+        return batchStore.batch(for: session.batchID)
+    }
+
+    private static func endAllLiveActivities() {
+        guard ActivityAuthorizationInfo().areActivitiesEnabled else { return }
+        let finalState = CookingActivityAttributes.ContentState(
+            stepName: "Gotowanie przerwane",
+            stepNumber: 0,
+            totalSteps: 1,
+            stepEndDate: nil,
+            totalEndDate: nil,
+            isRunning: false
+        )
+
+        Task {
+            for activity in Activity<CookingActivityAttributes>.activities {
+                await activity.end(.init(state: finalState, staleDate: nil), dismissalPolicy: .immediate)
+            }
+        }
     }
 }
