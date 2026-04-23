@@ -6,7 +6,18 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		A788B20D2F76898100E3424A /* RosolekWidgets.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = A788B2022F76898100E3424A /* RosolekWidgets.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
+		A788B20A2F76898100E3424A /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = E788B2012F76897F00E3424A /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = A788B2012F76898100E3424A;
+			remoteInfo = RosolekWidgets;
+		};
 		E788B2192F76898100E3424A /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = E788B2012F76897F00E3424A /* Project object */;
@@ -24,12 +35,20 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		A788B2022F76898100E3424A /* RosolekWidgets.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = RosolekWidgets.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		E788B2092F76897F00E3424A /* Rosolek.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Rosolek.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		E788B2182F76898100E3424A /* RosolekTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RosolekTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		E788B2222F76898100E3424A /* RosolekUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RosolekUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		A788B20E2F76898100E3424A /* Exceptions for "RosolekWidgets" folder in "RosolekWidgets" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = A788B2012F76898100E3424A /* RosolekWidgets */;
+		};
 		E788B2622F77D35100E3424A /* Exceptions for "Rosolek" folder in "Rosolek" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
@@ -40,6 +59,14 @@
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
+		A788B2032F76898100E3424A /* RosolekWidgets */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				A788B20E2F76898100E3424A /* Exceptions for "RosolekWidgets" folder in "RosolekWidgets" target */,
+			);
+			path = RosolekWidgets;
+			sourceTree = "<group>";
+		};
 		E788B20B2F76897F00E3424A /* Rosolek */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
@@ -60,7 +87,28 @@
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
+/* Begin PBXCopyFilesBuildPhase section */
+		A788B20C2F76898100E3424A /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				A788B20D2F76898100E3424A /* RosolekWidgets.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFrameworksBuildPhase section */
+		A788B2052F76898100E3424A /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		E788B2062F76897F00E3424A /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -91,6 +139,7 @@
 				E788B20B2F76897F00E3424A /* Rosolek */,
 				E788B21B2F76898100E3424A /* RosolekTests */,
 				E788B2252F76898100E3424A /* RosolekUITests */,
+				A788B2032F76898100E3424A /* RosolekWidgets */,
 				E788B20A2F76897F00E3424A /* Products */,
 			);
 			sourceTree = "<group>";
@@ -101,6 +150,7 @@
 				E788B2092F76897F00E3424A /* Rosolek.app */,
 				E788B2182F76898100E3424A /* RosolekTests.xctest */,
 				E788B2222F76898100E3424A /* RosolekUITests.xctest */,
+				A788B2022F76898100E3424A /* RosolekWidgets.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -108,6 +158,28 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		A788B2012F76898100E3424A /* RosolekWidgets */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A788B2072F76898100E3424A /* Build configuration list for PBXNativeTarget "RosolekWidgets" */;
+			buildPhases = (
+				A788B2042F76898100E3424A /* Sources */,
+				A788B2052F76898100E3424A /* Frameworks */,
+				A788B2062F76898100E3424A /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				A788B2032F76898100E3424A /* RosolekWidgets */,
+			);
+			name = RosolekWidgets;
+			packageProductDependencies = (
+			);
+			productName = RosolekWidgets;
+			productReference = A788B2022F76898100E3424A /* RosolekWidgets.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 		E788B2082F76897F00E3424A /* Rosolek */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = E788B22C2F76898100E3424A /* Build configuration list for PBXNativeTarget "Rosolek" */;
@@ -115,10 +187,12 @@
 				E788B2052F76897F00E3424A /* Sources */,
 				E788B2062F76897F00E3424A /* Frameworks */,
 				E788B2072F76897F00E3424A /* Resources */,
+				A788B20C2F76898100E3424A /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				A788B20B2F76898100E3424A /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				E788B20B2F76897F00E3424A /* Rosolek */,
@@ -186,6 +260,9 @@
 				LastSwiftUpdateCheck = 2630;
 				LastUpgradeCheck = 2630;
 				TargetAttributes = {
+					A788B2012F76898100E3424A = {
+						CreatedOnToolsVersion = 26.3;
+					};
 					E788B2082F76897F00E3424A = {
 						CreatedOnToolsVersion = 26.3;
 					};
@@ -216,11 +293,19 @@
 				E788B2082F76897F00E3424A /* Rosolek */,
 				E788B2172F76898100E3424A /* RosolekTests */,
 				E788B2212F76898100E3424A /* RosolekUITests */,
+				A788B2012F76898100E3424A /* RosolekWidgets */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		A788B2062F76898100E3424A /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		E788B2072F76897F00E3424A /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -245,6 +330,13 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		A788B2042F76898100E3424A /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		E788B2052F76897F00E3424A /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -269,6 +361,11 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
+		A788B20B2F76898100E3424A /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = A788B2012F76898100E3424A /* RosolekWidgets */;
+			targetProxy = A788B20A2F76898100E3424A /* PBXContainerItemProxy */;
+		};
 		E788B21A2F76898100E3424A /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = E788B2082F76897F00E3424A /* Rosolek */;
@@ -282,6 +379,61 @@
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
+		A788B2082F76898100E3424A /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = RosolekWidgets/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = pl.pawel.Rosolek.RosolekWidgets;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		A788B2092F76898100E3424A /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = RosolekWidgets/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = pl.pawel.Rosolek.RosolekWidgets;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
 		E788B22A2F76898100E3424A /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -548,6 +700,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		A788B2072F76898100E3424A /* Build configuration list for PBXNativeTarget "RosolekWidgets" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A788B2082F76898100E3424A /* Debug */,
+				A788B2092F76898100E3424A /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		E788B2042F76897F00E3424A /* Build configuration list for PBXProject "Rosolek" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
