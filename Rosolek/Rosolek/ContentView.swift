@@ -40,9 +40,12 @@ private struct HomeView: View {
     @AppStorage("potSizeLiters") private var potSizeLiters = 7
     @AppStorage("hasThermometer") private var hasThermometer = true
     @AppStorage("returnToHomeTrigger") private var returnToHomeTrigger = 0
+    @AppStorage("openActiveCookingTrigger") private var openActiveCookingTrigger = 0
 
     @State private var selectedPresetFilter: HomeRecipeFilter = .all
     @State private var activeCookingSession: CookingSession?
+    @State private var deepLinkBatch: BatchRecord?
+    @State private var navigateToDeepLinkedCooking = false
 
     private var latestBatch: BatchRecord? {
         batchStore.batches.first
@@ -119,7 +122,22 @@ private struct HomeView: View {
         .toolbar(.hidden, for: .navigationBar)
         .onAppear {
             returnToHomeTrigger = 0
+            CookingSessionCoordinator.clearOrphanedSessionIfNeeded(in: batchStore)
             activeCookingSession = CookingSession.load()
+        }
+        .onChange(of: openActiveCookingTrigger) { _, _ in
+            openActiveCookingFromDeepLink()
+        }
+        .navigationDestination(isPresented: $navigateToDeepLinkedCooking) {
+            if let deepLinkBatch {
+                CookingModeView(
+                    batch: deepLinkBatch,
+                    result: deepLinkBatch.calculationResult(potSizeLiters: potSizeLiters),
+                    totalWeightGrams: deepLinkBatch.totalWeightGrams,
+                    selectedIngredientCount: deepLinkBatch.selectedIngredientCount,
+                    hasThermometer: deepLinkBatch.hasThermometer
+                )
+            }
         }
     }
 
@@ -238,6 +256,12 @@ private struct HomeView: View {
                 }
             }
         }
+    }
+
+    private func openActiveCookingFromDeepLink() {
+        guard let batch = CookingSessionCoordinator.activeBatch(in: batchStore) else { return }
+        deepLinkBatch = batch
+        navigateToDeepLinkedCooking = true
     }
 
     private func chefRecipesSection(compact: Bool) -> some View {
