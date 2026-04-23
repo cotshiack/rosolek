@@ -678,6 +678,7 @@ struct CookingModeView: View {
             prepThermometerReady = !hasThermometer
             prepVinegarReady = !batchUsesVinegar
             restoreSessionIfNeeded()
+            updateLiveActivity()
         }
         .onDisappear {
             UIApplication.shared.isIdleTimerDisabled = false
@@ -1278,6 +1279,7 @@ struct CookingModeView: View {
             overheatMessage = nil
         }
         schedulePhaseNotification()
+        updateLiveActivity()
         UIImpactFeedbackGenerator(style: .light).impactOccurred()
         playTapSignal()
     }
