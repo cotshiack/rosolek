@@ -1231,18 +1231,10 @@ private struct ActiveCookingBannerLabel: View {
 
     @State private var isPulsing = false
 
-    private var elapsedPhaseSeconds: Int {
-        let base = session.phaseElapsedSeconds
-        guard let bg = session.backgroundedAt else { return base }
-        return base + Int(Date().timeIntervalSince(bg))
-    }
-
-    private var timeText: String? {
-        if let total = session.currentPhaseTotalSeconds {
-            let remaining = max(0, total - elapsedPhaseSeconds)
-            return formatSeconds(remaining)
-        }
-        return nil
+    private func overallRemaining(at now: Date) -> Int? {
+        guard let total = session.overallRemainingSeconds else { return nil }
+        guard let bg = session.backgroundedAt else { return total }
+        return max(0, total - Int(now.timeIntervalSince(bg)))
     }
 
     private func formatSeconds(_ s: Int) -> String {
@@ -1255,60 +1247,63 @@ private struct ActiveCookingBannerLabel: View {
     }
 
     var body: some View {
-        HStack(alignment: .center, spacing: 14) {
-            ZStack {
-                Circle()
-                    .stroke(AppTheme.accent, lineWidth: 2)
-                    .frame(width: 48, height: 48)
-                    .opacity(isPulsing ? 0.15 : 0.85)
-                    .animation(
-                        .easeInOut(duration: 0.9).repeatForever(autoreverses: true),
-                        value: isPulsing
-                    )
+        TimelineView(.periodic(from: .now, by: 1.0)) { context in
+            let remaining = overallRemaining(at: context.date)
+            HStack(alignment: .center, spacing: 14) {
+                ZStack {
+                    Circle()
+                        .stroke(AppTheme.accent, lineWidth: 2)
+                        .frame(width: 48, height: 48)
+                        .opacity(isPulsing ? 0.15 : 0.85)
+                        .animation(
+                            .easeInOut(duration: 0.9).repeatForever(autoreverses: true),
+                            value: isPulsing
+                        )
 
-                Circle()
-                    .fill(AppTheme.accent)
-                    .frame(width: 38, height: 38)
+                    Circle()
+                        .fill(AppTheme.accent)
+                        .frame(width: 38, height: 38)
 
-                Image(systemName: "flame.fill")
-                    .font(.system(size: 15, weight: .semibold))
-                    .foregroundStyle(AppTheme.textPrimary)
-            }
-            .onAppear { isPulsing = true }
+                    Image(systemName: "flame.fill")
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(AppTheme.textPrimary)
+                }
+                .onAppear { isPulsing = true }
 
-            VStack(alignment: .leading, spacing: 3) {
-                Text("Wróć do ekranu gotowania")
-                    .font(.system(size: 15, weight: .bold))
-                    .foregroundStyle(AppTheme.textPrimary)
-                    .lineLimit(1)
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("Wróć do ekranu gotowania")
+                        .font(.system(size: 15, weight: .bold))
+                        .foregroundStyle(AppTheme.textPrimary)
+                        .lineLimit(1)
 
-                if let time = timeText {
-                    HStack(spacing: 4) {
-                        Image(systemName: "clock")
-                            .font(.system(size: 11, weight: .semibold))
-                            .foregroundStyle(AppTheme.textSecondary)
-                        Text("Pozostało \(time)")
-                            .font(.system(size: 13, weight: .medium))
-                            .foregroundStyle(AppTheme.textSecondary)
-                            .lineLimit(1)
+                    if let remaining, remaining > 0 {
+                        HStack(spacing: 4) {
+                            Image(systemName: "clock")
+                                .font(.system(size: 11, weight: .semibold))
+                                .foregroundStyle(AppTheme.textSecondary)
+                            Text("Pozostało \(formatSeconds(remaining))")
+                                .font(.system(size: 13, weight: .medium))
+                                .foregroundStyle(AppTheme.textSecondary)
+                                .lineLimit(1)
+                        }
                     }
                 }
+
+                Spacer(minLength: 8)
+
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(AppTheme.textSecondary)
             }
-
-            Spacer(minLength: 8)
-
-            Image(systemName: "chevron.right")
-                .font(.system(size: 13, weight: .semibold))
-                .foregroundStyle(AppTheme.textSecondary)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 14)
+            .background(AppTheme.accentSoft)
+            .overlay(
+                RoundedRectangle(cornerRadius: AppRadius.card, style: .continuous)
+                    .stroke(AppTheme.accent.opacity(0.5), lineWidth: 1)
+            )
+            .clipShape(RoundedRectangle(cornerRadius: AppRadius.card, style: .continuous))
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 14)
-        .background(AppTheme.accentSoft)
-        .overlay(
-            RoundedRectangle(cornerRadius: AppRadius.card, style: .continuous)
-                .stroke(AppTheme.accent.opacity(0.5), lineWidth: 1)
-        )
-        .clipShape(RoundedRectangle(cornerRadius: AppRadius.card, style: .continuous))
     }
 }
 

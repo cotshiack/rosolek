@@ -2,6 +2,8 @@ import SwiftUI
 import Combine
 import AudioToolbox
 import UIKit
+import UserNotifications
+import ActivityKit
 
 private enum TimelineStepState {
     case done
@@ -159,6 +161,8 @@ struct CookingModeView: View {
     @State private var prepPotReady = false
     @State private var prepThermometerReady = false
     @State private var prepVinegarReady = false
+
+    @State private var liveActivity: Activity<CookingActivityAttributes>?
 
     private let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
 
@@ -661,6 +665,8 @@ struct CookingModeView: View {
                 finalStepCompleted = true
                 isStageRunning = false
                 CookingSession.clear()
+                CookingNotificationService.shared.cancelAll()
+                endLiveActivity()
                 playFinishSignal()
                 UINotificationFeedbackGenerator().notificationOccurred(.success)
             }
@@ -675,13 +681,15 @@ struct CookingModeView: View {
         }
         .onDisappear {
             UIApplication.shared.isIdleTimerDisabled = false
-            saveSession(backgrounded: false)
+            saveSession(backgrounded: isStageRunning)
         }
         .onChange(of: scenePhase) { _, newPhase in
             if newPhase == .background {
                 saveSession(backgrounded: true)
+                updateLiveActivity()
             } else if newPhase == .active {
                 resumeFromBackground()
+                updateLiveActivity()
             }
         }
         .onReceive(timer) { _ in
@@ -1189,6 +1197,17 @@ struct CookingModeView: View {
         }
     }
 
+    private func schedulePhaseNotification() {
+        guard currentPhaseHasTimer, isStageRunning else {
+            CookingNotificationService.shared.cancelAll()
+            return
+        }
+        CookingNotificationService.shared.schedulePhaseEnd(
+            stepTitle: currentPhase.title,
+            inSeconds: currentPhaseRemainingSeconds
+        )
+    }
+
     private func handleCenterAction() {
         guard !isFinished else { return }
 
@@ -1198,6 +1217,12 @@ struct CookingModeView: View {
         }
 
         isStageRunning.toggle()
+        if isStageRunning {
+            schedulePhaseNotification()
+        } else {
+            CookingNotificationService.shared.cancelAll()
+        }
+        updateLiveActivity()
         UIImpactFeedbackGenerator(style: .light).impactOccurred()
         playTapSignal()
     }
@@ -1205,12 +1230,16 @@ struct CookingModeView: View {
     private func startCookingFromPrep() {
         guard canStartCooking else { return }
 
+        CookingNotificationService.shared.requestPermission()
+
         withAnimation(.easeInOut(duration: 0.3)) {
             sessionStarted = true
             phaseIndex = 1
             phaseElapsedSeconds = 0
             isStageRunning = true
         }
+        schedulePhaseNotification()
+        startLiveActivity()
         playStartSignal()
         UINotificationFeedbackGenerator().notificationOccurred(.success)
     }
@@ -1235,6 +1264,8 @@ struct CookingModeView: View {
             phaseElapsedSeconds = 0
             overheatMessage = nil
         }
+        schedulePhaseNotification()
+        updateLiveActivity()
         UINotificationFeedbackGenerator().notificationOccurred(.warning)
     }
 
@@ -1246,6 +1277,7 @@ struct CookingModeView: View {
             phaseElapsedSeconds = 0
             overheatMessage = nil
         }
+        schedulePhaseNotification()
         UIImpactFeedbackGenerator(style: .light).impactOccurred()
         playTapSignal()
     }
@@ -1344,6 +1376,50 @@ struct CookingModeView: View {
         return .generic
     }
 
+    private func liveActivityState() -> CookingActivityAttributes.ContentState {
+        let stepEnd: Date? = currentPhaseHasTimer && isStageRunning
+            ? Date().addingTimeInterval(TimeInterval(currentPhaseRemainingSeconds))
+            : nil
+        let totalEnd: Date? = isStageRunning && overallRemainingSeconds > 0
+            ? Date().addingTimeInterval(TimeInterval(overallRemainingSeconds))
+            : nil
+        return CookingActivityAttributes.ContentState(
+            stepName: currentPhase.title,
+            stepNumber: max(0, phaseIndex),
+            totalSteps: max(1, phases.count - 1),
+            stepEndDate: stepEnd,
+            totalEndDate: totalEnd,
+            isRunning: isStageRunning
+        )
+    }
+
+    private func startLiveActivity() {
+        guard ActivityAuthorizationInfo().areActivitiesEnabled else { return }
+        let attributes = CookingActivityAttributes(batchTitle: currentBatch.displayTitle)
+        let state = liveActivityState()
+        liveActivity = try? Activity.request(
+            attributes: attributes,
+            content: .init(state: state, staleDate: nil)
+        )
+    }
+
+    private func updateLiveActivity() {
+        guard let activity = liveActivity else { return }
+        let state = liveActivityState()
+        Task {
+            await activity.update(.init(state: state, staleDate: nil))
+        }
+    }
+
+    private func endLiveActivity() {
+        guard let activity = liveActivity else { return }
+        let state = liveActivityState()
+        Task {
+            await activity.end(.init(state: state, staleDate: nil), dismissalPolicy: .immediate)
+        }
+        liveActivity = nil
+    }
+
     private func saveSession(backgrounded: Bool) {
         guard sessionStarted, !isFinished else {
             CookingSession.clear()
@@ -1362,9 +1438,27 @@ struct CookingModeView: View {
             prepVinegarReady: prepVinegarReady,
             backgroundedAt: backgrounded ? Date() : nil,
             currentPhaseTitle: currentPhase.timelineLabel,
-            currentPhaseTotalSeconds: currentPhase.durationSeconds
+            currentPhaseTotalSeconds: currentPhase.durationSeconds,
+            overallRemainingSeconds: overallRemainingSeconds
         )
         session.save()
+    }
+
+    private func advanceElapsedThroughPhases(_ elapsed: Int) {
+        var remaining = elapsed
+        processElapsedSeconds += elapsed
+        while remaining > 0 && phaseIndex < phases.count - 1 {
+            guard currentPhaseHasTimer else { break }
+            let timeLeft = currentPhaseTotalSeconds - phaseElapsedSeconds
+            if remaining >= timeLeft {
+                remaining -= timeLeft
+                phaseIndex += 1
+                phaseElapsedSeconds = 0
+            } else {
+                phaseElapsedSeconds += remaining
+                remaining = 0
+            }
+        }
     }
 
     private func restoreSessionIfNeeded() {
@@ -1387,10 +1481,7 @@ struct CookingModeView: View {
         if let backgroundedAt = session.backgroundedAt, session.isStageRunning {
             let elapsed = Int(Date().timeIntervalSince(backgroundedAt))
             if elapsed > 0 {
-                processElapsedSeconds += elapsed
-                if currentPhaseHasTimer {
-                    phaseElapsedSeconds = min(phaseElapsedSeconds + elapsed, currentPhaseTotalSeconds)
-                }
+                advanceElapsedThroughPhases(elapsed)
             }
         }
     }
@@ -1406,10 +1497,7 @@ struct CookingModeView: View {
         let elapsed = Int(Date().timeIntervalSince(backgroundedAt))
         guard elapsed > 0 else { return }
 
-        processElapsedSeconds += elapsed
-        if currentPhaseHasTimer {
-            phaseElapsedSeconds = min(phaseElapsedSeconds + elapsed, currentPhaseTotalSeconds)
-        }
+        advanceElapsedThroughPhases(elapsed)
         saveSession(backgrounded: false)
     }
 }

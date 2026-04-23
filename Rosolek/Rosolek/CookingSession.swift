@@ -14,6 +14,7 @@ struct CookingSession: Codable {
     var backgroundedAt: Date?
     var currentPhaseTitle: String?
     var currentPhaseTotalSeconds: Int?
+    var overallRemainingSeconds: Int?
 
     private static let storageKey = "cooking_session_active_v1"
 
