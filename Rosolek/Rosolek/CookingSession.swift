@@ -81,6 +81,7 @@ enum CookingSessionCoordinator {
             totalSteps: 1,
             stepEndDate: nil,
             totalEndDate: nil,
+            totalProgress: 0,
             isRunning: false
         )
 

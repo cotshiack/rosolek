@@ -1391,6 +1391,7 @@ struct CookingModeView: View {
             totalSteps: max(1, phases.count - 1),
             stepEndDate: stepEnd,
             totalEndDate: totalEnd,
+            totalProgress: progress,
             isRunning: isStageRunning
         )
     }
