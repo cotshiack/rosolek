@@ -1,5 +1,29 @@
 import Foundation
 
+enum CookingOutcome: String, Codable {
+    case unknown
+    case completed
+    case interruptedByNewCooking
+
+    var badgeTitle: String? {
+        switch self {
+        case .interruptedByNewCooking:
+            return "Przerwane"
+        case .unknown, .completed:
+            return nil
+        }
+    }
+
+    var detailsText: String? {
+        switch self {
+        case .interruptedByNewCooking:
+            return "Przerwano po uruchomieniu nowego gotowania."
+        case .unknown, .completed:
+            return nil
+        }
+    }
+}
+
 struct BatchIngredientSnapshot: Identifiable, Codable, Hashable {
     let ingredientID: String
     let ingredientName: String
@@ -52,6 +76,8 @@ struct BatchRecord: Identifiable, Codable, Hashable {
     var selectedIngredientIDs: [String]?
     var selectedIngredientsSnapshot: [BatchIngredientSnapshot]?
     var customTitle: String?
+    var cookingOutcomeRawValue: String
+    var interruptedAt: Date?
 
     var overallRating: Int?
     var strengthFeedbackRawValue: String?
@@ -78,6 +104,8 @@ struct BatchRecord: Identifiable, Codable, Hashable {
         selectedIngredientIDs: [String]? = nil,
         selectedIngredientsSnapshot: [BatchIngredientSnapshot]? = nil,
         customTitle: String? = nil,
+        cookingOutcomeRawValue: String = CookingOutcome.completed.rawValue,
+        interruptedAt: Date? = nil,
         overallRating: Int? = nil,
         strengthFeedbackRawValue: String? = nil,
         fatFeedbackRawValue: String? = nil,
@@ -102,6 +130,8 @@ struct BatchRecord: Identifiable, Codable, Hashable {
         self.selectedIngredientIDs = selectedIngredientIDs
         self.selectedIngredientsSnapshot = selectedIngredientsSnapshot
         self.customTitle = customTitle
+        self.cookingOutcomeRawValue = cookingOutcomeRawValue
+        self.interruptedAt = interruptedAt
         self.overallRating = overallRating
         self.strengthFeedbackRawValue = strengthFeedbackRawValue
         self.fatFeedbackRawValue = fatFeedbackRawValue
@@ -128,6 +158,8 @@ struct BatchRecord: Identifiable, Codable, Hashable {
         case selectedIngredientIDs
         case selectedIngredientsSnapshot
         case customTitle
+        case cookingOutcomeRawValue
+        case interruptedAt
         case overallRating
         case strengthFeedbackRawValue
         case fatFeedbackRawValue
@@ -172,6 +204,8 @@ struct BatchRecord: Identifiable, Codable, Hashable {
         self.selectedIngredientIDs = decodedSelectedIngredientIDs
         self.selectedIngredientsSnapshot = try container.decodeIfPresent([BatchIngredientSnapshot].self, forKey: .selectedIngredientsSnapshot)
         self.customTitle = try container.decodeIfPresent(String.self, forKey: .customTitle)
+        self.cookingOutcomeRawValue = try container.decodeIfPresent(String.self, forKey: .cookingOutcomeRawValue) ?? CookingOutcome.completed.rawValue
+        self.interruptedAt = try container.decodeIfPresent(Date.self, forKey: .interruptedAt)
         self.overallRating = try container.decodeIfPresent(Int.self, forKey: .overallRating)
         self.strengthFeedbackRawValue = try container.decodeIfPresent(String.self, forKey: .strengthFeedbackRawValue)
         self.fatFeedbackRawValue = try container.decodeIfPresent(String.self, forKey: .fatFeedbackRawValue)
@@ -200,6 +234,8 @@ struct BatchRecord: Identifiable, Codable, Hashable {
         try container.encodeIfPresent(selectedIngredientIDs, forKey: .selectedIngredientIDs)
         try container.encodeIfPresent(selectedIngredientsSnapshot, forKey: .selectedIngredientsSnapshot)
         try container.encodeIfPresent(customTitle, forKey: .customTitle)
+        try container.encode(cookingOutcomeRawValue, forKey: .cookingOutcomeRawValue)
+        try container.encodeIfPresent(interruptedAt, forKey: .interruptedAt)
         try container.encodeIfPresent(overallRating, forKey: .overallRating)
         try container.encodeIfPresent(strengthFeedbackRawValue, forKey: .strengthFeedbackRawValue)
         try container.encodeIfPresent(fatFeedbackRawValue, forKey: .fatFeedbackRawValue)
@@ -273,6 +309,16 @@ extension BatchRecord {
             return "\(overallRating)/10"
         }
         return "—"
+    }
+
+    var cookingOutcome: CookingOutcome {
+        CookingOutcome(rawValue: cookingOutcomeRawValue) ?? .unknown
+    }
+
+    var interruptionDisplayText: String? {
+        guard cookingOutcome == .interruptedByNewCooking else { return nil }
+        guard let interruptedAt else { return cookingOutcome.detailsText }
+        return "Przerwane \(Self.historyDateFormatter.string(from: interruptedAt).lowercased())."
     }
 
     var createdAtDisplayText: String {

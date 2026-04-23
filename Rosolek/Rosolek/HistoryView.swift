@@ -172,6 +172,16 @@ private struct BatchHistoryCompactCard: View {
                         Text(batch.createdAtDisplayText)
                             .font(.system(size: 13, weight: .medium))
                             .foregroundStyle(AppTheme.textSecondary)
+
+                        if let outcomeBadge = batch.cookingOutcome.badgeTitle {
+                            Text(outcomeBadge)
+                                .font(.system(size: 11, weight: .bold))
+                                .foregroundStyle(AppTheme.textPrimary)
+                                .padding(.horizontal, 8)
+                                .frame(height: 22)
+                                .background(AppTheme.warning)
+                                .clipShape(Capsule())
+                        }
                     }
 
                     Spacer(minLength: 8)
@@ -196,6 +206,16 @@ private struct BatchHistoryCompactCard: View {
                         .font(.system(size: 13, weight: .medium))
                         .foregroundStyle(AppTheme.textSecondary)
                         .lineLimit(2)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+
+                if let interruption = batch.interruptionDisplayText {
+                    Divider()
+                        .overlay(AppTheme.border)
+
+                    Text(interruption)
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(AppTheme.warning)
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }
