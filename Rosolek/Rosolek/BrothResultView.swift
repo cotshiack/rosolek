@@ -1,4 +1,5 @@
 import SwiftUI
+import ActivityKit
 
 struct BrothResultView: View {
     let mode: BrothMode
@@ -15,6 +16,8 @@ struct BrothResultView: View {
     @State private var savedBatch: BatchRecord?
     @State private var navigateToCooking = false
     @State private var isStartingCooking = false
+    @State private var showActiveCookingConflictAlert = false
+    @State private var activeCookingTitleForConflict = ""
     @State private var clarityMode: BrothClarityMode = .normal
     @State private var useVinegar = false
 
@@ -234,7 +237,7 @@ struct BrothResultView: View {
         .navigationBarTitleDisplayMode(.inline)
         .safeAreaInset(edge: .bottom) {
             Button {
-                startCooking()
+                attemptStartCooking()
             } label: {
                 AppPrimaryButtonLabel(
                     title: "Przejdź do gotowania",
@@ -261,6 +264,14 @@ struct BrothResultView: View {
                     hasThermometer: hasThermometer
                 )
             }
+        }
+        .alert("Trwa już gotowanie", isPresented: $showActiveCookingConflictAlert) {
+            Button("Zachowaj obecne", role: .cancel) { }
+            Button("Rozpocznij nowe", role: .destructive) {
+                startCooking(replacingExistingSession: true)
+            }
+        } message: {
+            Text("Aktywne gotowanie „\(activeCookingTitleForConflict)” zostanie przerwane i zapisane w historii jako przerwane.")
         }
     }
 
@@ -895,9 +906,29 @@ extension BrothResultView {
         return "\(grams) g"
     }
 
-    private func startCooking() {
+    private func attemptStartCooking() {
+        guard !hasBlockingFailure, !isStartingCooking else { return }
+
+        if let existingSession = CookingSession.load(),
+           let existingBatch = batchStore.batch(for: existingSession.batchID) {
+            activeCookingTitleForConflict = existingBatch.displayTitle
+            showActiveCookingConflictAlert = true
+            return
+        }
+
+        startCooking(replacingExistingSession: false)
+    }
+
+    private func startCooking(replacingExistingSession: Bool) {
         guard !hasBlockingFailure, !isStartingCooking else { return }
         isStartingCooking = true
+
+        if replacingExistingSession, let existingSession = CookingSession.load() {
+            batchStore.markBatchInterruptedByNewCooking(batchID: existingSession.batchID)
+            CookingSession.clear()
+            CookingNotificationService.shared.cancelAll()
+            endAllLiveActivities()
+        }
 
         let ingredientSnapshots = resolvedSelections.map { selection in
             BatchIngredientSnapshot(
@@ -944,6 +975,23 @@ extension BrothResultView {
 
         savedBatch = batch
         navigateToCooking = true
+    }
+
+    private func endAllLiveActivities() {
+        guard ActivityAuthorizationInfo().areActivitiesEnabled else { return }
+        let finalState = CookingActivityAttributes.ContentState(
+            stepName: "Gotowanie przerwane",
+            stepNumber: 0,
+            totalSteps: 1,
+            stepEndDate: nil,
+            totalEndDate: nil,
+            isRunning: false
+        )
+        Task {
+            for activity in Activity<CookingActivityAttributes>.activities {
+                await activity.end(.init(state: finalState, staleDate: nil), dismissalPolicy: .immediate)
+            }
+        }
     }
 
     private var formattedWeight: String {
