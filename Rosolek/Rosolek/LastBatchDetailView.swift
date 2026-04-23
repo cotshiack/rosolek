@@ -141,6 +141,10 @@ struct LastBatchDetailView: View {
                     AppInfoRow(title: "Liczba składników", value: batch.ingredientCountDisplayText)
                     AppInfoRow(title: "Termometr", value: batch.thermometerDisplayText)
 
+                    if let interruption = batch.interruptionDisplayText {
+                        AppInfoRow(title: "Status", value: interruption)
+                    }
+
                     if batch.warningCount > 0 {
                         AppInfoRow(title: "Uwagi kalkulatora", value: "\(batch.warningCount)")
                     }
