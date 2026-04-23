@@ -118,7 +118,7 @@ private struct HomeView: View {
                             }
                             .padding(.horizontal, 16)
                             .padding(.top, compact ? 12 : 16)
-                            .padding(.bottom, keyboard.isVisible ? 28 : 128)
+                            .padding(.bottom, keyboard.isVisible ? 28 : 24)
                         }
                     case .recipes:
                         RecipesHubView(

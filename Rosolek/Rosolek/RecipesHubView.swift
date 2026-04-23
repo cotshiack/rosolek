@@ -23,7 +23,7 @@ struct RecipesHubView: View {
             }
             .padding(.horizontal, 16)
             .padding(.top, compact ? 12 : 16)
-            .padding(.bottom, 128)
+            .padding(.bottom, 32)
         }
         .background(AppTheme.background)
     }
