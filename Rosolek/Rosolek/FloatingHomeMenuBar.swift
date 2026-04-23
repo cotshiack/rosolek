@@ -26,16 +26,24 @@ struct FloatingHomeMenuBar: View {
     @State private var animatePulse = false
 
     var body: some View {
-        HStack(spacing: 18) {
-            ForEach([HomeMenuTab.home, .recipes]) { tab in
-                iconButton(for: tab)
+        ZStack {
+            HStack {
+                HStack(spacing: 22) {
+                    ForEach([HomeMenuTab.home, .recipes]) { tab in
+                        iconButton(for: tab)
+                    }
+                }
+
+                Spacer(minLength: 0)
+
+                HStack(spacing: 22) {
+                    ForEach([HomeMenuTab.history, .settings]) { tab in
+                        iconButton(for: tab)
+                    }
+                }
             }
 
             liveButton
-
-            ForEach([HomeMenuTab.history, .settings]) { tab in
-                iconButton(for: tab)
-            }
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 10)

@@ -147,7 +147,7 @@ private struct HomeView: View {
                         openActiveCookingFromMenu()
                     }
                     .padding(.horizontal, 16)
-                    .padding(.bottom, -4)
+                    .padding(.bottom, -8)
                 }
             }
         }
