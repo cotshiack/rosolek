@@ -47,7 +47,6 @@ private struct HomeView: View {
     @State private var deepLinkBatch: BatchRecord?
     @State private var navigateToDeepLinkedCooking = false
     @State private var selectedMenuTab: HomeMenuTab = .home
-    @State private var selectedMenuDestination: HomeMenuTab?
     @StateObject private var keyboard = KeyboardObserver()
 
     private var latestBatch: BatchRecord? {
@@ -102,42 +101,57 @@ private struct HomeView: View {
                 AppTheme.background
                     .ignoresSafeArea()
 
-                ScrollView(showsIndicators: false) {
-                    VStack(alignment: .leading, spacing: compact ? 22 : 26) {
-                        topBar
-                        if activeCookingSession != nil {
-                            activeCookingBanner
+                Group {
+                    switch selectedMenuTab {
+                    case .home:
+                        ScrollView(showsIndicators: false) {
+                            VStack(alignment: .leading, spacing: compact ? 22 : 26) {
+                                topBar
+                                if activeCookingSession != nil {
+                                    activeCookingBanner
+                                }
+                                greetingSection(compact: compact)
+                                calculatorSection(compact: compact)
+                                readyRecipesSection(compact: compact)
+                                chefRecipesSection(compact: compact)
+                                lastCookingSection(compact: compact)
+                            }
+                            .padding(.horizontal, 16)
+                            .padding(.top, compact ? 12 : 16)
+                            .padding(.bottom, keyboard.isVisible ? 28 : 128)
                         }
-                        greetingSection(compact: compact)
-                        calculatorSection(compact: compact)
-                        readyRecipesSection(compact: compact)
-                        chefRecipesSection(compact: compact)
-                        lastCookingSection(compact: compact)
+                    case .recipes:
+                        RecipesHubView(
+                            compact: compact,
+                            selectedPresetFilter: $selectedPresetFilter
+                        )
+                    case .history:
+                        HistoryView()
+                            .padding(.bottom, keyboard.isVisible ? 0 : 112)
+                    case .settings:
+                        SettingsView()
+                            .padding(.bottom, keyboard.isVisible ? 0 : 112)
+                    case .live:
+                        Color.clear
                     }
-                    .padding(.horizontal, 16)
-                    .padding(.top, compact ? 12 : 16)
-                    .padding(.bottom, keyboard.isVisible ? 28 : 128)
-                }
-
-                if !keyboard.isVisible {
-                    VStack {
-                        Spacer()
-                        FloatingHomeMenuBar(
-                            selectedTab: $selectedMenuTab,
-                            isLiveActive: activeCookingSession != nil
-                        ) { tab in
-                            handleMenuTabTap(tab)
-                        } onLiveTap: {
-                            openActiveCookingFromMenu()
-                        }
-                        .padding(.horizontal, 16)
-                        .padding(.bottom, max(geo.safeAreaInsets.bottom - 20, 0))
-                    }
-                    .transition(.move(edge: .bottom).combined(with: .opacity))
                 }
             }
             .animation(.easeInOut(duration: 0.2), value: keyboard.isVisible)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                if !keyboard.isVisible {
+                    FloatingHomeMenuBar(
+                        selectedTab: $selectedMenuTab,
+                        isLiveActive: activeCookingSession != nil
+                    ) { tab in
+                        handleMenuTabTap(tab)
+                    } onLiveTap: {
+                        openActiveCookingFromMenu()
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.bottom, max(geo.safeAreaInsets.bottom - 28, 0))
+                }
+            }
         }
         .navigationBarTitleDisplayMode(.inline)
         .toolbar(.hidden, for: .navigationBar)
@@ -163,21 +177,6 @@ private struct HomeView: View {
                     selectedIngredientCount: deepLinkBatch.selectedIngredientCount,
                     hasThermometer: deepLinkBatch.hasThermometer
                 )
-            }
-        }
-        .navigationDestination(item: $selectedMenuDestination) { destination in
-            switch destination {
-            case .recipes:
-                RecipesHubView(
-                    compact: false,
-                    selectedPresetFilter: $selectedPresetFilter
-                )
-            case .history:
-                HistoryView()
-            case .settings:
-                SettingsView()
-            case .home, .live:
-                Color.clear
             }
         }
         .onChange(of: returnToHomeTrigger) { _, _ in
@@ -210,9 +209,13 @@ private struct HomeView: View {
     private func handleMenuTabTap(_ tab: HomeMenuTab) {
         switch tab {
         case .home:
-            returnToHomeTrigger += 1
+            if selectedMenuTab == .home {
+                returnToHomeTrigger += 1
+            } else {
+                selectedMenuTab = .home
+            }
         case .recipes, .history, .settings:
-            selectedMenuDestination = tab
+            selectedMenuTab = tab
         case .live:
             break
         }
