@@ -59,13 +59,15 @@ struct SettingsView: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItemGroup(placement: .keyboard) {
-                Spacer()
+                if focusedField == .customPot {
+                    Spacer()
 
-                Button("Gotowe") {
-                    focusedField = nil
+                    Button("Gotowe") {
+                        focusedField = nil
+                    }
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(AppTheme.textPrimary)
                 }
-                .font(.system(size: 15, weight: .semibold))
-                .foregroundStyle(AppTheme.textPrimary)
             }
         }
         .onAppear {
@@ -166,6 +168,9 @@ struct SettingsView: View {
                 .textInputAutocapitalization(.words)
                 .autocorrectionDisabled(true)
                 .submitLabel(.done)
+                .onSubmit {
+                    focusedField = nil
+                }
                 .focused($focusedField, equals: .name)
                 .font(.system(size: 17, weight: .semibold))
                 .foregroundStyle(AppTheme.textPrimary)

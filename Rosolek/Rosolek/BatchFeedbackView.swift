@@ -125,12 +125,13 @@ struct BatchFeedbackView: View {
         }
         .toolbar {
             ToolbarItemGroup(placement: .keyboard) {
-                Spacer()
-                Button("Gotowe") {
-                    notesFieldFocused = false
-                    focusedField = nil
+                if notesFieldFocused {
+                    Spacer()
+                    Button("Gotowe") {
+                        notesFieldFocused = false
+                    }
+                    .font(.system(size: 15, weight: .semibold))
                 }
-                .font(.system(size: 15, weight: .semibold))
             }
         }
     }
@@ -167,6 +168,9 @@ struct BatchFeedbackView: View {
                     .textInputAutocapitalization(.words)
                     .autocorrectionDisabled(true)
                     .submitLabel(.done)
+                    .onSubmit {
+                        focusedField = nil
+                    }
                     .font(.system(size: 15, weight: .medium))
                     .foregroundStyle(AppTheme.textPrimary)
                     .padding(.horizontal, 14)

@@ -334,6 +334,9 @@ struct BatchRenameSheet: View {
                     .textInputAutocapitalization(.words)
                     .autocorrectionDisabled(true)
                     .submitLabel(.done)
+                    .onSubmit {
+                        renameFieldFocused = false
+                    }
                     .font(.system(size: 17, weight: .semibold))
                     .foregroundStyle(AppTheme.textPrimary)
                     .padding(.horizontal, 16)
@@ -367,13 +370,6 @@ struct BatchRenameSheet: View {
                     }
                     .font(.system(size: 16, weight: .bold))
                     .foregroundStyle(AppTheme.textPrimary)
-                }
-                ToolbarItemGroup(placement: .keyboard) {
-                    Spacer()
-                    Button("Gotowe") {
-                        renameFieldFocused = false
-                    }
-                    .font(.system(size: 15, weight: .semibold))
                 }
             }
             .onAppear {

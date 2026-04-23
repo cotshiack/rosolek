@@ -121,9 +121,11 @@ struct IngredientSelectionView: View {
         .scrollDismissesKeyboard(.interactively)
         .toolbar {
             ToolbarItemGroup(placement: .keyboard) {
-                Spacer()
-                Button("Gotowe") {
-                    focusedFieldID = nil
+                if focusedFieldID != nil {
+                    Spacer()
+                    Button("Gotowe") {
+                        focusedFieldID = nil
+                    }
                 }
             }
         }
