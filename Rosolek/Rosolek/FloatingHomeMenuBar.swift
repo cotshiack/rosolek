@@ -42,9 +42,11 @@ struct FloatingHomeMenuBar: View {
                     }
                 }
             }
+            .frame(maxWidth: .infinity)
 
             liveButton
         }
+        .frame(maxWidth: .infinity)
         .padding(.horizontal, 16)
         .padding(.vertical, 10)
         .background(
@@ -94,7 +96,7 @@ struct FloatingHomeMenuBar: View {
             Image(systemName: HomeMenuTab.live.systemImage)
                 .font(.system(size: 24, weight: .bold))
                 .foregroundStyle(isLiveActive ? AppTheme.textPrimary : AppTheme.textTertiary)
-                .frame(width: 62, height: 62)
+                .frame(width: 66, height: 66)
                 .background(
                     Circle()
                         .fill(isLiveActive ? AppTheme.accent : AppTheme.surfaceMuted)
@@ -105,7 +107,6 @@ struct FloatingHomeMenuBar: View {
                 )
                 .shadow(color: Color.black.opacity(isLiveActive ? 0.18 : 0.05), radius: isLiveActive ? 12 : 4, x: 0, y: isLiveActive ? 6 : 2)
                 .scaleEffect(isLiveActive && animatePulse ? 1.06 : (isLiveActive ? 1.02 : 1))
-                .offset(y: -6)
         }
         .buttonStyle(.plain)
         .accessibilityLabel("Live cooking")
