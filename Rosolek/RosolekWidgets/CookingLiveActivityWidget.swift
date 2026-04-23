@@ -70,7 +70,7 @@ struct CookingLiveActivityWidget: Widget {
                                 Text("Koniec za ")
                                     .font(.system(size: 12, weight: .medium))
                                     .foregroundStyle(textSecondary)
-                                + Text(endDate, style: .relative)
+                                Text(endDate, style: .relative)
                                     .font(.system(size: 12, weight: .semibold))
                                     .foregroundStyle(textSecondary)
                             }
