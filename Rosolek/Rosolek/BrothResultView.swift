@@ -1,5 +1,4 @@
 import SwiftUI
-import ActivityKit
 
 struct BrothResultView: View {
     let mode: BrothMode
@@ -909,9 +908,8 @@ extension BrothResultView {
     private func attemptStartCooking() {
         guard !hasBlockingFailure, !isStartingCooking else { return }
 
-        if let existingSession = CookingSession.load(),
-           let existingBatch = batchStore.batch(for: existingSession.batchID) {
-            activeCookingTitleForConflict = existingBatch.displayTitle
+        if let conflict = CookingSessionCoordinator.activeConflict(in: batchStore) {
+            activeCookingTitleForConflict = conflict.title
             showActiveCookingConflictAlert = true
             return
         }
@@ -923,11 +921,8 @@ extension BrothResultView {
         guard !hasBlockingFailure, !isStartingCooking else { return }
         isStartingCooking = true
 
-        if replacingExistingSession, let existingSession = CookingSession.load() {
-            batchStore.markBatchInterruptedByNewCooking(batchID: existingSession.batchID)
-            CookingSession.clear()
-            CookingNotificationService.shared.cancelAll()
-            endAllLiveActivities()
+        if replacingExistingSession {
+            CookingSessionCoordinator.interruptActiveCookingAndCleanup(in: batchStore)
         }
 
         let ingredientSnapshots = resolvedSelections.map { selection in
@@ -975,23 +970,6 @@ extension BrothResultView {
 
         savedBatch = batch
         navigateToCooking = true
-    }
-
-    private func endAllLiveActivities() {
-        guard ActivityAuthorizationInfo().areActivitiesEnabled else { return }
-        let finalState = CookingActivityAttributes.ContentState(
-            stepName: "Gotowanie przerwane",
-            stepNumber: 0,
-            totalSteps: 1,
-            stepEndDate: nil,
-            totalEndDate: nil,
-            isRunning: false
-        )
-        Task {
-            for activity in Activity<CookingActivityAttributes>.activities {
-                await activity.end(.init(state: finalState, staleDate: nil), dismissalPolicy: .immediate)
-            }
-        }
     }
 
     private var formattedWeight: String {
