@@ -127,10 +127,8 @@ private struct HomeView: View {
                         )
                     case .history:
                         HistoryView()
-                            .padding(.bottom, keyboard.isVisible ? 0 : 112)
                     case .settings:
                         SettingsView()
-                            .padding(.bottom, keyboard.isVisible ? 0 : 112)
                     case .live:
                         Color.clear
                     }
@@ -149,7 +147,7 @@ private struct HomeView: View {
                         openActiveCookingFromMenu()
                     }
                     .padding(.horizontal, 16)
-                    .padding(.bottom, max(geo.safeAreaInsets.bottom - 34, 0))
+                    .padding(.bottom, -4)
                 }
             }
         }
