@@ -165,6 +165,7 @@ struct SettingsView: View {
             TextField("Np. Paweł", text: $draftName)
                 .textInputAutocapitalization(.words)
                 .autocorrectionDisabled(true)
+                .submitLabel(.done)
                 .focused($focusedField, equals: .name)
                 .font(.system(size: 17, weight: .semibold))
                 .foregroundStyle(AppTheme.textPrimary)
@@ -227,6 +228,8 @@ struct SettingsView: View {
                 HStack(spacing: 10) {
                     TextField("Np. 8", text: $customPotSize)
                         .keyboardType(.numberPad)
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled(true)
                         .focused($focusedField, equals: .customPot)
                         .font(.system(size: 19, weight: .bold))
                         .foregroundStyle(AppTheme.textPrimary)
