@@ -50,7 +50,7 @@ struct CookingLiveActivityWidget: Widget {
                         Text("Etap \(context.state.stepNumber)/\(context.state.totalSteps)")
                             .font(.system(size: 12, weight: .semibold))
                             .foregroundStyle(WidgetTheme.textSecondary)
-                        if let endDate = context.state.stepEndDate, context.state.isRunning {
+                        if let endDate = context.state.stepEndDate, context.state.isRunning, endDate > .now {
                             Text(timerInterval: Date.now...endDate, countsDown: true)
                                 .font(.system(size: 20, weight: .bold).monospacedDigit())
                                 .foregroundStyle(WidgetTheme.textPrimary)
@@ -86,7 +86,7 @@ struct CookingLiveActivityWidget: Widget {
                     .font(.system(size: 12, weight: .semibold))
                     .foregroundStyle(WidgetTheme.accent)
             } compactTrailing: {
-                if let endDate = context.state.stepEndDate, context.state.isRunning {
+                if let endDate = context.state.stepEndDate, context.state.isRunning, endDate > .now {
                     Text(timerInterval: Date.now...endDate, countsDown: true)
                         .font(.system(size: 12, weight: .bold).monospacedDigit())
                         .foregroundStyle(WidgetTheme.textPrimary)
@@ -135,7 +135,7 @@ private struct LockScreenView: View {
             Spacer(minLength: 8)
 
             VStack(alignment: .trailing, spacing: 2) {
-                if let endDate = state.stepEndDate, state.isRunning {
+                if let endDate = state.stepEndDate, state.isRunning, endDate > .now {
                     Text(timerInterval: Date.now...endDate, countsDown: true)
                         .font(.system(size: 22, weight: .bold).monospacedDigit())
                         .foregroundStyle(WidgetTheme.textPrimary)
