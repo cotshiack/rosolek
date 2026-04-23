@@ -65,7 +65,11 @@ struct FloatingHomeMenuBar: View {
                 .frame(width: 44, height: 44)
                 .background {
                     Circle()
-                        .fill(selectedTab == tab ? AppTheme.surfaceMuted : .clear)
+                        .fill(selectedTab == tab ? Color.black.opacity(0.08) : .clear)
+                }
+                .overlay {
+                    Circle()
+                        .stroke(selectedTab == tab ? AppTheme.borderStrong : .clear, lineWidth: 1)
                 }
         }
         .buttonStyle(.plain)

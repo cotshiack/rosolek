@@ -131,7 +131,7 @@ private struct HomeView: View {
                             openActiveCookingFromMenu()
                         }
                         .padding(.horizontal, 16)
-                        .padding(.bottom, max(geo.safeAreaInsets.bottom - 6, 0))
+                        .padding(.bottom, max(geo.safeAreaInsets.bottom - 20, 0))
                     }
                     .transition(.move(edge: .bottom).combined(with: .opacity))
                 }
