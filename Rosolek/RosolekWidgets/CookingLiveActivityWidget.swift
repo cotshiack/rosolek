@@ -22,7 +22,6 @@ private enum WidgetTheme {
     static let textPrimary: Color = Color(red: 0.10, green: 0.10, blue: 0.10)
     static let textSecondary: Color = Color(red: 0.50, green: 0.50, blue: 0.50)
     static let surface: Color = Color(red: 0.98, green: 0.97, blue: 0.96)
-    static let statusRunning: Color = Color(red: 0.18, green: 0.62, blue: 0.38)
 }
 
 struct CookingLiveActivityWidget: Widget {
@@ -64,7 +63,7 @@ struct CookingLiveActivityWidget: Widget {
                     VStack(alignment: .leading, spacing: 8) {
                         Text(context.state.isRunning ? "Gotowanie trwa" : "Gotowanie wstrzymane")
                             .font(.system(size: 12, weight: .bold))
-                            .foregroundStyle(context.state.isRunning ? WidgetTheme.statusRunning : WidgetTheme.textSecondary)
+                            .foregroundStyle(context.state.isRunning ? WidgetTheme.accent : WidgetTheme.textSecondary)
                         Text(context.state.stepName)
                             .font(.system(size: 14, weight: .semibold))
                             .foregroundStyle(WidgetTheme.textPrimary)
@@ -114,7 +113,7 @@ private struct LockScreenView: View {
                     Text(state.isRunning ? "Gotowanie trwa" : "Gotowanie wstrzymane")
                         .font(.system(size: 12, weight: .bold))
                 }
-                .foregroundStyle(state.isRunning ? WidgetTheme.statusRunning : WidgetTheme.textSecondary)
+                .foregroundStyle(state.isRunning ? WidgetTheme.accent : WidgetTheme.textSecondary)
 
                 Spacer(minLength: 8)
 
