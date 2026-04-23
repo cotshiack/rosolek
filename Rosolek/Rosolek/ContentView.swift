@@ -35,12 +35,12 @@ struct ContentView: View {
 
 private struct HomeView: View {
     @EnvironmentObject private var batchStore: BatchStore
+    @EnvironmentObject private var router: AppRouter
 
     @AppStorage("userFirstName") private var userFirstName = "Paweł"
     @AppStorage("potSizeLiters") private var potSizeLiters = 7
     @AppStorage("hasThermometer") private var hasThermometer = true
     @AppStorage("returnToHomeTrigger") private var returnToHomeTrigger = 0
-    @AppStorage("openActiveCookingTrigger") private var openActiveCookingTrigger = 0
 
     @State private var selectedPresetFilter: HomeRecipeFilter = .all
     @State private var activeCookingSession: CookingSession?
@@ -124,9 +124,10 @@ private struct HomeView: View {
             returnToHomeTrigger = 0
             CookingSessionCoordinator.clearOrphanedSessionIfNeeded(in: batchStore)
             activeCookingSession = CookingSession.load()
+            handlePendingHomeRoute()
         }
-        .onChange(of: openActiveCookingTrigger) { _, _ in
-            openActiveCookingFromDeepLink()
+        .onChange(of: router.pendingHomeRoute) { _, _ in
+            handlePendingHomeRoute()
         }
         .navigationDestination(isPresented: $navigateToDeepLinkedCooking) {
             if let deepLinkBatch {
@@ -258,10 +259,18 @@ private struct HomeView: View {
         }
     }
 
-    private func openActiveCookingFromDeepLink() {
-        guard let batch = CookingSessionCoordinator.activeBatch(in: batchStore) else { return }
-        deepLinkBatch = batch
-        navigateToDeepLinkedCooking = true
+    private func handlePendingHomeRoute() {
+        guard let route = router.pendingHomeRoute else { return }
+
+        switch route {
+        case .openActiveCooking:
+            if let batch = CookingSessionCoordinator.activeBatch(in: batchStore) {
+                deepLinkBatch = batch
+                navigateToDeepLinkedCooking = true
+            }
+        }
+
+        router.consumeHomeRoute()
     }
 
     private func chefRecipesSection(compact: Bool) -> some View {
