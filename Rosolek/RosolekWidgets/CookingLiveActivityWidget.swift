@@ -16,10 +16,10 @@ struct CookingActivityAttributes: ActivityAttributes {
     let batchTitle: String
 }
 
-private let accentColor = Color(red: 0.914, green: 0.827, blue: 0.220)
-private let textPrimary = Color(red: 0.10, green: 0.10, blue: 0.10)
-private let textSecondary = Color(red: 0.50, green: 0.50, blue: 0.50)
-private let surface = Color(red: 0.98, green: 0.97, blue: 0.96)
+private let accentColor: Color = Color(red: 0.914, green: 0.827, blue: 0.220)
+private let textPrimary: Color = Color(red: 0.10, green: 0.10, blue: 0.10)
+private let textSecondary: Color = Color(red: 0.50, green: 0.50, blue: 0.50)
+private let surface: Color = Color(red: 0.98, green: 0.97, blue: 0.96)
 
 struct CookingLiveActivityWidget: Widget {
     var body: some WidgetConfiguration {
