@@ -123,6 +123,23 @@ final class BatchStore: ObservableObject {
         save()
     }
 
+    func markBatchInterruptedByNewCooking(batchID: UUID, at date: Date = Date()) {
+        guard let index = batches.firstIndex(where: { $0.id == batchID }) else { return }
+
+        batches[index].cookingOutcomeRawValue = CookingOutcome.interruptedByNewCooking.rawValue
+        batches[index].interruptedAt = date
+
+        let interruptionNote = "Gotowanie przerwane po uruchomieniu nowego przepisu."
+        let currentNotes = batches[index].notes.trimmingCharacters(in: .whitespacesAndNewlines)
+        if currentNotes.isEmpty {
+            batches[index].notes = interruptionNote
+        } else if !currentNotes.localizedCaseInsensitiveContains("przerwane") {
+            batches[index].notes = currentNotes + "\n\n" + interruptionNote
+        }
+
+        save()
+    }
+
     func deleteBatch(id: UUID) {
         batches.removeAll { $0.id == id }
         save()
