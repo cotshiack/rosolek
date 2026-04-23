@@ -111,32 +111,42 @@ private struct LockScreenView: View {
     let state: CookingActivityAttributes.ContentState
 
     var body: some View {
-        HStack(alignment: .center, spacing: 12) {
-            Image(systemName: "flame.fill")
-                .font(.system(size: 24, weight: .semibold))
-                .foregroundStyle(WidgetTheme.accent)
-
-            VStack(alignment: .leading, spacing: 3) {
-                Text(state.stepName)
-                    .font(.system(size: 15, weight: .semibold))
+        HStack(alignment: .center, spacing: 14) {
+            ZStack {
+                Circle()
+                    .fill(WidgetTheme.accent)
+                    .frame(width: 44, height: 44)
+                Image(systemName: "flame.fill")
+                    .font(.system(size: 18, weight: .semibold))
                     .foregroundStyle(WidgetTheme.textPrimary)
-                    .lineLimit(2)
-                    .fixedSize(horizontal: false, vertical: true)
-                Text("Etap \(state.stepNumber) z \(state.totalSteps)")
+            }
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Gotowanie na żywo")
+                    .font(.system(size: 13, weight: .bold))
+                    .foregroundStyle(WidgetTheme.textPrimary)
+                    .lineLimit(1)
+                Text(state.stepName)
                     .font(.system(size: 12, weight: .medium))
                     .foregroundStyle(WidgetTheme.textSecondary)
+                    .lineLimit(1)
             }
 
             Spacer(minLength: 8)
 
-            if let endDate = state.stepEndDate, state.isRunning {
-                Text(timerInterval: Date.now...endDate, countsDown: true)
-                    .font(.system(size: 26, weight: .bold).monospacedDigit())
-                    .foregroundStyle(WidgetTheme.textPrimary)
-                    .multilineTextAlignment(.trailing)
-            } else {
-                Text("Pauza")
-                    .font(.system(size: 15, weight: .semibold))
+            VStack(alignment: .trailing, spacing: 2) {
+                if let endDate = state.stepEndDate, state.isRunning {
+                    Text(timerInterval: Date.now...endDate, countsDown: true)
+                        .font(.system(size: 22, weight: .bold).monospacedDigit())
+                        .foregroundStyle(WidgetTheme.textPrimary)
+                        .multilineTextAlignment(.trailing)
+                } else {
+                    Text("Pauza")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(WidgetTheme.textSecondary)
+                }
+                Text("Etap \(state.stepNumber)/\(state.totalSteps)")
+                    .font(.system(size: 11, weight: .semibold))
                     .foregroundStyle(WidgetTheme.textSecondary)
             }
         }
