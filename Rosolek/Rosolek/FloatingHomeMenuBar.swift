@@ -26,7 +26,7 @@ struct FloatingHomeMenuBar: View {
     @State private var animatePulse = false
 
     var body: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: 18) {
             ForEach([HomeMenuTab.home, .recipes]) { tab in
                 iconButton(for: tab)
             }
@@ -37,7 +37,7 @@ struct FloatingHomeMenuBar: View {
                 iconButton(for: tab)
             }
         }
-        .padding(.horizontal, 14)
+        .padding(.horizontal, 16)
         .padding(.vertical, 10)
         .background(
             Capsule(style: .continuous)
@@ -62,7 +62,7 @@ struct FloatingHomeMenuBar: View {
             Image(systemName: tab.systemImage)
                 .font(.system(size: 18, weight: .semibold))
                 .foregroundStyle(selectedTab == tab ? AppTheme.textPrimary : AppTheme.textSecondary)
-                .frame(width: 44, height: 44)
+                .frame(width: 48, height: 48)
                 .background {
                     Circle()
                         .fill(selectedTab == tab ? Color.black.opacity(0.08) : .clear)
