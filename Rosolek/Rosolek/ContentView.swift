@@ -35,6 +35,7 @@ struct ContentView: View {
 
 private struct HomeView: View {
     @EnvironmentObject private var batchStore: BatchStore
+    @EnvironmentObject private var router: AppRouter
 
     @AppStorage("userFirstName") private var userFirstName = "Paweł"
     @AppStorage("potSizeLiters") private var potSizeLiters = 7
@@ -43,6 +44,8 @@ private struct HomeView: View {
 
     @State private var selectedPresetFilter: HomeRecipeFilter = .all
     @State private var activeCookingSession: CookingSession?
+    @State private var deepLinkBatch: BatchRecord?
+    @State private var navigateToDeepLinkedCooking = false
 
     private var latestBatch: BatchRecord? {
         batchStore.batches.first
@@ -119,7 +122,23 @@ private struct HomeView: View {
         .toolbar(.hidden, for: .navigationBar)
         .onAppear {
             returnToHomeTrigger = 0
+            CookingSessionCoordinator.clearOrphanedSessionIfNeeded(in: batchStore)
             activeCookingSession = CookingSession.load()
+            handlePendingHomeRoute()
+        }
+        .onChange(of: router.pendingHomeRoute) { _, _ in
+            handlePendingHomeRoute()
+        }
+        .navigationDestination(isPresented: $navigateToDeepLinkedCooking) {
+            if let deepLinkBatch {
+                CookingModeView(
+                    batch: deepLinkBatch,
+                    result: deepLinkBatch.calculationResult(potSizeLiters: potSizeLiters),
+                    totalWeightGrams: deepLinkBatch.totalWeightGrams,
+                    selectedIngredientCount: deepLinkBatch.selectedIngredientCount,
+                    hasThermometer: deepLinkBatch.hasThermometer
+                )
+            }
         }
     }
 
@@ -238,6 +257,20 @@ private struct HomeView: View {
                 }
             }
         }
+    }
+
+    private func handlePendingHomeRoute() {
+        guard let route = router.pendingHomeRoute else { return }
+
+        switch route {
+        case .openActiveCooking:
+            if let batch = CookingSessionCoordinator.activeBatch(in: batchStore) {
+                deepLinkBatch = batch
+                navigateToDeepLinkedCooking = true
+            }
+        }
+
+        router.consumeHomeRoute()
     }
 
     private func chefRecipesSection(compact: Bool) -> some View {
