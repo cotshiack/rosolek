@@ -46,6 +46,9 @@ private struct HomeView: View {
     @State private var activeCookingSession: CookingSession?
     @State private var deepLinkBatch: BatchRecord?
     @State private var navigateToDeepLinkedCooking = false
+    @State private var selectedMenuTab: HomeMenuTab = .home
+    @State private var selectedMenuDestination: HomeMenuTab?
+    @StateObject private var keyboard = KeyboardObserver()
 
     private var latestBatch: BatchRecord? {
         batchStore.batches.first
@@ -113,18 +116,40 @@ private struct HomeView: View {
                     }
                     .padding(.horizontal, 16)
                     .padding(.top, compact ? 12 : 16)
-                    .padding(.bottom, 28)
+                    .padding(.bottom, keyboard.isVisible ? 28 : 128)
+                }
+
+                if !keyboard.isVisible {
+                    VStack {
+                        Spacer()
+                        FloatingHomeMenuBar(
+                            selectedTab: $selectedMenuTab,
+                            isLiveActive: activeCookingSession != nil
+                        ) { tab in
+                            handleMenuTabTap(tab)
+                        } onLiveTap: {
+                            openActiveCookingFromMenu()
+                        }
+                        .padding(.horizontal, 16)
+                        .padding(.bottom, max(geo.safeAreaInsets.bottom, 8))
+                    }
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
                 }
             }
+            .animation(.easeInOut(duration: 0.2), value: keyboard.isVisible)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         }
         .navigationBarTitleDisplayMode(.inline)
         .toolbar(.hidden, for: .navigationBar)
         .onAppear {
             returnToHomeTrigger = 0
+            selectedMenuTab = .home
             CookingSessionCoordinator.clearOrphanedSessionIfNeeded(in: batchStore)
             activeCookingSession = CookingSession.load()
             handlePendingHomeRoute()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
+            activeCookingSession = CookingSession.load()
         }
         .onChange(of: router.pendingHomeRoute) { _, _ in
             handlePendingHomeRoute()
@@ -139,6 +164,24 @@ private struct HomeView: View {
                     hasThermometer: deepLinkBatch.hasThermometer
                 )
             }
+        }
+        .navigationDestination(item: $selectedMenuDestination) { destination in
+            switch destination {
+            case .recipes:
+                RecipesHubView(
+                    compact: false,
+                    selectedPresetFilter: $selectedPresetFilter
+                )
+            case .history:
+                HistoryView()
+            case .settings:
+                SettingsView()
+            case .home, .live:
+                Color.clear
+            }
+        }
+        .onChange(of: returnToHomeTrigger) { _, _ in
+            selectedMenuTab = .home
         }
     }
 
@@ -155,13 +198,23 @@ private struct HomeView: View {
                 systemImage: "thermometer",
                 title: hasThermometer ? "tak" : "nie"
             )
+        }
+    }
 
-            NavigationLink {
-                SettingsView()
-            } label: {
-                AppIconCircleButton(systemName: "gearshape")
-            }
-            .buttonStyle(.plain)
+    private func openActiveCookingFromMenu() {
+        guard let batch = CookingSessionCoordinator.activeBatch(in: batchStore) else { return }
+        deepLinkBatch = batch
+        navigateToDeepLinkedCooking = true
+    }
+
+    private func handleMenuTabTap(_ tab: HomeMenuTab) {
+        switch tab {
+        case .home:
+            returnToHomeTrigger += 1
+        case .recipes, .history, .settings:
+            selectedMenuDestination = tab
+        case .live:
+            break
         }
     }
 
@@ -754,7 +807,7 @@ private enum HomeCardArtwork {
     }
 }
 
-private enum HomeRecipeFilter: String, CaseIterable, Identifiable {
+enum HomeRecipeFilter: String, CaseIterable, Identifiable {
     case all
     case poultry
     case poultryBeef
