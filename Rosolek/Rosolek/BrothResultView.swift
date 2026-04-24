@@ -1102,7 +1102,6 @@ private struct ResultMetricCard: View {
     let subtitle: String
     let tooltip: String
     @State private var showTooltip = false
-    @State private var tooltipToken: UUID?
 
     var body: some View {
         ZStack(alignment: .topTrailing) {
@@ -1116,7 +1115,9 @@ private struct ResultMetricCard: View {
                     Spacer(minLength: 0)
 
                     Button {
-                        showTooltipTemporarily()
+                        withAnimation(.easeInOut(duration: 0.18)) {
+                            showTooltip.toggle()
+                        }
                     } label: {
                         Image(systemName: "info.circle")
                             .font(.system(size: 14, weight: .semibold))
@@ -1148,38 +1149,39 @@ private struct ResultMetricCard: View {
             .appSoftShadow()
 
             if showTooltip {
+                Color.clear
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                        withAnimation(.easeInOut(duration: 0.18)) {
+                            showTooltip = false
+                        }
+                    }
+                    .zIndex(0)
+            }
+
+            if showTooltip {
                 Text(tooltip)
-                    .font(.system(size: 11, weight: .medium))
-                    .foregroundStyle(AppTheme.textPrimary)
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundStyle(Color.white)
                     .multilineTextAlignment(.leading)
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 8)
-                    .frame(maxWidth: 180, alignment: .leading)
-                    .background(AppTheme.surface)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 12)
+                    .frame(maxWidth: 210, alignment: .leading)
+                    .background(Color.black.opacity(0.88))
                     .overlay(
                         RoundedRectangle(cornerRadius: 10, style: .continuous)
-                            .stroke(AppTheme.border, lineWidth: 1)
+                            .stroke(Color.white.opacity(0.16), lineWidth: 1)
                     )
                     .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-                    .shadow(color: Color.black.opacity(0.08), radius: 6, x: 0, y: 2)
+                    .shadow(color: Color.black.opacity(0.24), radius: 8, x: 0, y: 3)
                     .padding(.top, 28)
                     .padding(.trailing, 10)
                     .transition(.opacity.combined(with: .scale(scale: 0.96, anchor: .topTrailing)))
+                    .onTapGesture { }
                     .zIndex(1)
             }
         }
         .animation(.easeInOut(duration: 0.18), value: showTooltip)
-    }
-
-    private func showTooltipTemporarily() {
-        let token = UUID()
-        tooltipToken = token
-        showTooltip = true
-
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2.4) {
-            guard tooltipToken == token else { return }
-            showTooltip = false
-        }
     }
 }
 
