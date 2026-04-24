@@ -416,8 +416,8 @@ struct BrothResultView: View {
 
             ResultMetricCard(
                 title: "Temperatura",
-                value: hasThermometer ? "\(result.temperatureMin)–\(result.temperatureMax)°C" : "bez wrzenia",
-                subtitle: "zakres",
+                value: hasThermometer ? "\(result.temperatureMin)–\(result.temperatureMax)°C" : "bez term.",
+                subtitle: hasThermometer ? "zakres" : "tryb",
                 tooltipKey: .temperature,
                 onInfoTap: {
                     withAnimation(.easeInOut(duration: 0.18)) {
