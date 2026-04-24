@@ -153,7 +153,10 @@ private struct RecipeListCard: View {
     var badgeTitle: String? = nil
 
     var body: some View {
-        AppCard {
+        AppCard(
+            background: isLocked ? AppTheme.surfaceMuted : AppTheme.surface,
+            border: AppTheme.border
+        ) {
             HStack(spacing: 14) {
                 Image(assetName)
                     .resizable()
@@ -162,22 +165,31 @@ private struct RecipeListCard: View {
                     .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
 
                 VStack(alignment: .leading, spacing: 8) {
-                    if let badgeTitle {
-                        HStack(spacing: 0) {
-                            Text(badgeTitle)
-                                .font(.system(size: 10, weight: .bold))
-                                .foregroundStyle(AppTheme.textPrimary)
-                                .padding(.horizontal, 8)
-                                .frame(height: 20)
-                                .background(
-                                    Capsule()
-                                        .fill(AppTheme.accentSoft)
-                                )
-                                .overlay(
-                                    Capsule()
-                                        .stroke(AppTheme.accent.opacity(0.4), lineWidth: 1)
-                                )
+                    if badgeTitle != nil || isLocked {
+                        HStack(spacing: 8) {
                             Spacer(minLength: 0)
+
+                            if let badgeTitle {
+                                Text(badgeTitle)
+                                    .font(.system(size: 10, weight: .bold))
+                                    .foregroundStyle(AppTheme.textPrimary)
+                                    .padding(.horizontal, 8)
+                                    .frame(height: 20)
+                                    .background(
+                                        Capsule()
+                                            .fill(AppTheme.accentSoft)
+                                    )
+                                    .overlay(
+                                        Capsule()
+                                            .stroke(AppTheme.accent.opacity(0.4), lineWidth: 1)
+                                    )
+                            }
+
+                            if isLocked {
+                                Image(systemName: "lock.fill")
+                                    .font(.system(size: 12, weight: .semibold))
+                                    .foregroundStyle(AppTheme.textSecondary)
+                            }
                         }
                     }
 
@@ -186,12 +198,6 @@ private struct RecipeListCard: View {
                             .font(.system(size: 17, weight: .bold))
                             .foregroundStyle(AppTheme.textPrimary)
                             .lineLimit(2)
-
-                        if isLocked {
-                            Image(systemName: "lock.fill")
-                                .font(.system(size: 12, weight: .semibold))
-                                .foregroundStyle(AppTheme.textSecondary)
-                        }
                     }
 
                     Text(subtitle)
@@ -202,13 +208,15 @@ private struct RecipeListCard: View {
 
                 Spacer(minLength: 0)
 
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 13, weight: .bold))
-                    .foregroundStyle(AppTheme.textTertiary)
+                if !isLocked {
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 13, weight: .bold))
+                        .foregroundStyle(AppTheme.textTertiary)
+                }
             }
         }
-        .opacity(isLocked ? 0.85 : 1)
-        .saturation(isLocked ? 0.5 : 1)
+        .opacity(isLocked ? 0.9 : 1)
+        .saturation(isLocked ? 0.45 : 1)
         .appSoftShadow()
     }
 }
