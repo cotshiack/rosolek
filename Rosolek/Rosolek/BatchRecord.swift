@@ -282,12 +282,34 @@ extension BatchRecord {
     }
 
     var defaultTitle: String {
+        if let preset = selectedPreset {
+            switch preset {
+            case .poultryReady:
+                return "Rosół drobiowy"
+            case .poultryBeefReady:
+                return "Rosół drobiowo-wołowy"
+            case .grandmaReady:
+                return "Szybki domowy rosół"
+            }
+        }
+
         switch brothProfile {
         case .cleaner:
             return "Rosół czystszy"
         case .richer:
             return "Rosół głębszy"
         }
+    }
+
+    private var selectedPreset: BrothPreset? {
+        guard modeRawValue == "preset" else { return nil }
+
+        if let presetRawValue,
+           let preset = BrothPreset(rawValue: presetRawValue) {
+            return preset
+        }
+
+        return Self.legacyPresetFromStyle(styleRawValue)
     }
 
     var displayTitle: String {
