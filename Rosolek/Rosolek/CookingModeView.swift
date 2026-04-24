@@ -27,6 +27,7 @@ private enum LivePhaseKind {
     case beginRest
     case rest
     case strainAndSeason
+    case optionalClarityTip
 }
 
 private struct LivePhase: Identifiable {
@@ -49,6 +50,7 @@ private struct InstructionSheetContent: Identifiable {
     let useVinegar: Bool
     let hasPoultry: Bool
     let hasLiver: Bool
+    let isGrandmaStyle: Bool
 }
 
 private struct TemperatureSheetContent: Identifiable {
@@ -188,6 +190,16 @@ struct CookingModeView: View {
         currentBatch.brothProfile
     }
 
+    private var activePreset: BrothPreset? {
+        guard currentBatch.modeRawValue == "preset",
+              let raw = currentBatch.presetRawValue else { return nil }
+        return BrothPreset(rawValue: raw)
+    }
+
+    private var isGrandmaPreset: Bool {
+        activePreset == .grandmaReady
+    }
+
     private var clarityMode: BrothClarityMode {
         currentBatch.clarityMode
     }
@@ -240,32 +252,45 @@ struct CookingModeView: View {
     }
 
     private var spiceReminderRows: [LiveIngredientReminderRowData] {
-        [
-            LiveIngredientReminderRowData(
-                icon: .salt,
-                title: "Sól",
-                subtitle: "Dodaj porcję startową na tym etapie.",
-                value: "\(numberString(result.startSaltGrams)) g"
-            ),
+        var rows: [LiveIngredientReminderRowData] = []
+
+        if !isGrandmaPreset {
+            rows.append(
+                LiveIngredientReminderRowData(
+                    icon: .salt,
+                    title: "Sól",
+                    subtitle: "Dodaj porcję startową na tym etapie.",
+                    value: "\(numberString(result.startSaltGrams)) g"
+                )
+            )
+        }
+
+        rows.append(
             LiveIngredientReminderRowData(
                 icon: .pepper,
                 title: "Pieprz czarny ziarnisty",
                 subtitle: "Czysty aromat.",
                 value: "\(result.peppercornCount) \(result.peppercornCount == 1 ? "ziarno" : "ziaren")"
-            ),
+            )
+        )
+        rows.append(
             LiveIngredientReminderRowData(
                 icon: .allspice,
                 title: "Ziele angielskie",
                 subtitle: "Głębia smaku.",
                 value: "\(result.allspiceCount) \(result.allspiceCount == 1 ? "ziarno" : "ziaren")"
-            ),
+            )
+        )
+        rows.append(
             LiveIngredientReminderRowData(
                 icon: .bayLeaf,
                 title: "Liść laurowy",
                 subtitle: "Tło aromatu.",
                 value: result.bayLeafCount == 1 ? "1 liść" : "\(result.bayLeafCount) liście"
             )
-        ]
+        )
+
+        return rows
     }
 
     private var poultrySimmerSeconds: Int {
@@ -293,6 +318,92 @@ struct CookingModeView: View {
     }
 
     private var phases: [LivePhase] {
+        if isGrandmaPreset {
+            return [
+                LivePhase(
+                    kind: .prep,
+                    title: "Start od zimnej wody",
+                    shortText: "Włóż mięso, zalej zimną wodą i grzej prawie do wrzenia.",
+                    detailText: "Zbieraj szumowiny tylko z powierzchni i nie mieszaj wywaru.",
+                    durationSeconds: nil,
+                    timelineLabel: "Start",
+                    bottomActionTitle: nil
+                ),
+                LivePhase(
+                    kind: .heatUp,
+                    title: "Zmniejsz ogień",
+                    shortText: "Gdy wywar zaczyna pracować, ustaw minimalny ogień.",
+                    detailText: "Rosół ma lekko pyrkać przy brzegu, nie bulgotać.",
+                    durationSeconds: nil,
+                    timelineLabel: "Uspokój",
+                    bottomActionTitle: "Gotowe"
+                ),
+                LivePhase(
+                    kind: .stabilization,
+                    title: "Gotuj samo mięso",
+                    shortText: "Utrzymuj spokojną pracę przez 30 minut.",
+                    detailText: "To etap budowania mięsnej bazy przed dodaniem warzyw.",
+                    durationSeconds: 30 * 60,
+                    timelineLabel: "30 min",
+                    bottomActionTitle: nil
+                ),
+                LivePhase(
+                    kind: .addVegetables,
+                    title: "Dodaj warzywa i przyprawy",
+                    shortText: "Dodaj warzywa, cebulę opalaną i przyprawy (bez soli).",
+                    detailText: "Po dodaniu wróć do spokojnego pyrkania i kontynuuj 60–75 minut.",
+                    durationSeconds: nil,
+                    timelineLabel: "Dodaj",
+                    bottomActionTitle: "Dodałem"
+                ),
+                LivePhase(
+                    kind: .simmerToPoultryOut,
+                    title: "Prowadź rosół dalej",
+                    shortText: "Gotuj spokojnie przez 60–75 minut po dodaniu warzyw.",
+                    detailText: "Nie mieszaj i nie dopuszczaj do wrzenia.",
+                    durationSeconds: 70 * 60,
+                    timelineLabel: "70 min",
+                    bottomActionTitle: nil
+                ),
+                LivePhase(
+                    kind: .beginRest,
+                    title: "Wyłącz i odstaw",
+                    shortText: "Wyłącz ogień i odstaw rosół na 10 minut.",
+                    detailText: "Dzięki temu osad opadnie i łatwiej przecedzisz klarowny płyn.",
+                    durationSeconds: nil,
+                    timelineLabel: "Wyłącz",
+                    bottomActionTitle: "Gotowe"
+                ),
+                LivePhase(
+                    kind: .rest,
+                    title: "Odstawienie",
+                    shortText: "Pozwól wywarowi odstać przez 10 minut bez poruszania garnka.",
+                    detailText: "Nie mieszaj i nie przenoś garnka bez potrzeby.",
+                    durationSeconds: 10 * 60,
+                    timelineLabel: "10 min",
+                    bottomActionTitle: nil
+                ),
+                LivePhase(
+                    kind: .strainAndSeason,
+                    title: "Cedzenie i doprawianie",
+                    shortText: "Przecedź rosół i dopraw sól dopiero po cedzeniu.",
+                    detailText: "Przelewaj powoli przez sito i nie wyciskaj składników.",
+                    durationSeconds: nil,
+                    timelineLabel: "Cedzenie",
+                    bottomActionTitle: "Dalej"
+                ),
+                LivePhase(
+                    kind: .optionalClarityTip,
+                    title: "Opcjonalnie: klarowniejszy finisz",
+                    shortText: "Zostaw w garnku ostatnie 200–300 ml z osadem.",
+                    detailText: "To prosty sposób na klarowniejszy efekt bez dodatkowych działań.",
+                    durationSeconds: nil,
+                    timelineLabel: "Opcjonalnie",
+                    bottomActionTitle: "Zakończ"
+                )
+            ]
+        }
+
         var items: [LivePhase] = [
             LivePhase(
                 kind: .prep,
@@ -1041,7 +1152,8 @@ struct CookingModeView: View {
                 clarityMode: clarityMode,
                 useVinegar: batchUsesVinegar,
                 hasPoultry: hasPoultry,
-                hasLiver: hasLiver
+                hasLiver: hasLiver,
+                isGrandmaStyle: isGrandmaPreset
             )
         )
     }
@@ -1069,6 +1181,13 @@ struct CookingModeView: View {
     private func miniSteps(for kind: LivePhaseKind) -> [String] {
         switch kind {
         case .prep:
+            if isGrandmaPreset {
+                return [
+                    "Włóż mięso do garnka.",
+                    "Zalej mięso zimną wodą.",
+                    "Podgrzewaj i zbieraj tylko to, co wypływa na górę."
+                ]
+            }
             var steps = [
                 "Włóż mięso do garnka.",
                 "Dolej wodę do poziomu z wyliczeń.",
@@ -1082,6 +1201,13 @@ struct CookingModeView: View {
             return steps
 
         case .heatUp:
+            if isGrandmaPreset {
+                return [
+                    "Doprowadź wywar prawie do wrzenia.",
+                    "Gdy pojawią się bąble, zmniejsz ogień do minimum.",
+                    "Rosół ma pyrkać przy brzegu, bez bulgotania."
+                ]
+            }
             return [
                 "Grzej powoli i zbieraj szumowiny.",
                 "Nie mieszaj wywaru i nie dopuszczaj do wrzenia.",
@@ -1091,6 +1217,13 @@ struct CookingModeView: View {
             ]
 
         case .stabilization:
+            if isGrandmaPreset {
+                return [
+                    "Utrzymuj spokojną pracę przez 30 minut.",
+                    "Gotujesz jeszcze samo mięso.",
+                    "Nie mieszaj wywaru."
+                ]
+            }
             return [
                 "Przez pełne 60 minut utrzymuj spokojną temperaturę.",
                 "Nie dodawaj jeszcze warzyw.",
@@ -1098,6 +1231,13 @@ struct CookingModeView: View {
             ]
 
         case .addVegetables:
+            if isGrandmaPreset {
+                return [
+                    "Dodaj warzywa i cebulę opalaną.",
+                    "Dodaj pieprz, ziele angielskie i liść laurowy.",
+                    "Sól zostaw na etap po cedzeniu."
+                ]
+            }
             return [
                 "Dodaj warzywa z obliczonej listy.",
                 "Dodaj przyprawy w podanych ilościach.",
@@ -1105,6 +1245,13 @@ struct CookingModeView: View {
             ]
 
         case .simmerToPoultryOut:
+            if isGrandmaPreset {
+                return [
+                    "Gotuj spokojnie 60–75 minut.",
+                    "Nie dopuszczaj do mocnego wrzenia.",
+                    "Jeśli zaczyna bulgotać, zmniejsz ogień."
+                ]
+            }
             return [
                 "Nie mieszaj wywaru.",
                 "Utrzymuj spokojną temperaturę.",
@@ -1161,6 +1308,13 @@ struct CookingModeView: View {
             ]
 
         case .rest:
+            if isGrandmaPreset {
+                return [
+                    "Odstaw garnek na pełne 10 minut.",
+                    "Nie mieszaj i nie poruszaj wywaru.",
+                    "Przygotuj sito do cedzenia."
+                ]
+            }
             return [
                 "Nie mieszaj wywaru.",
                 "Przygotuj sito i naczynie.",
@@ -1168,6 +1322,13 @@ struct CookingModeView: View {
             ]
 
         case .strainAndSeason:
+            if isGrandmaPreset {
+                return [
+                    "Przecedź rosół powoli, bez wyciskania składników.",
+                    "Spróbuj czystego płynu po cedzeniu.",
+                    "Sól dodawaj stopniowo dopiero teraz."
+                ]
+            }
             if clarityMode == .paperFilter {
                 return [
                     "Najpierw przecedź wywar wstępnie.",
@@ -1180,6 +1341,12 @@ struct CookingModeView: View {
                 "Przecedź wywar bez wyciskania składników.",
                 "Spróbuj go po przecedzeniu.",
                 "Dopraw sól dopiero na końcu."
+            ]
+        case .optionalClarityTip:
+            return [
+                "Przy przelewaniu nie zbieraj końcówki z dna.",
+                "Zostaw ostatnie 200–300 ml płynu z osadem.",
+                "Dzięki temu rosół będzie klarowniejszy."
             ]
         }
     }
@@ -1250,7 +1417,8 @@ struct CookingModeView: View {
     private func handleNextAction() {
         guard canUseNextButton else { return }
 
-        if currentPhase.kind == .strainAndSeason {
+        if currentPhase.kind == .optionalClarityTip
+            || (currentPhase.kind == .strainAndSeason && !isGrandmaPreset) {
             showFinishAlert = true
             return
         }
@@ -2603,6 +2771,22 @@ private struct PhaseDetailsSheet: View {
     private var model: PhaseSheetModel {
         switch content.phaseKind {
         case .prep:
+            if content.isGrandmaStyle {
+                return PhaseSheetModel(
+                    eyebrow: "Start od zimnej wody",
+                    intro: "Zimna woda pomaga białkom z mięsa wypłynąć jako piana, którą łatwo zebrać.",
+                    sections: [
+                        PhaseSheetSection(
+                            title: "Jak prowadzić start",
+                            systemImage: "drop",
+                            text: "W trakcie podgrzewania zbieraj tylko to, co samo wypływa na powierzchnię.",
+                            bullets: ["Nie mieszaj wywaru.", "Mieszanie rozbija pianę i zwiększa mętność."]
+                        )
+                    ],
+                    footer: "Im spokojniejszy start, tym czystszy rosół na końcu.",
+                    footerLabel: "Klarowność"
+                )
+            }
             return PhaseSheetModel(
                 eyebrow: "Zanim zaczniesz",
                 intro: "Rosół jest wywarem ekstrakcyjnym: jakość zależy od czasu i temperatury. Najczęstsze błędy wynikają z pośpiechu, mieszania i przekraczania temperatury pracy.",
@@ -2629,6 +2813,22 @@ private struct PhaseDetailsSheet: View {
             )
 
         case .heatUp:
+            if content.isGrandmaStyle {
+                return PhaseSheetModel(
+                    eyebrow: "Zmniejsz ogień",
+                    intro: "Gdy wywar zaczyna wyraźnie pracować, przejdź na minimalny ogień.",
+                    sections: [
+                        PhaseSheetSection(
+                            title: "Docelowa praca",
+                            systemImage: "thermometer.medium",
+                            text: "Rosół ma lekko pyrkać przy brzegu, bez mocnego bulgotania.",
+                            bullets: ["Jeśli zacznie wrzeć — zmniejsz ogień.", "W razie potrzeby zdejmij garnek na około 1 minutę."]
+                        )
+                    ],
+                    footer: "Mocne wrzenie pogarsza klarowność i daje cięższy smak.",
+                    footerLabel: "Spokojnie"
+                )
+            }
             return PhaseSheetModel(
                 eyebrow: "Kluczowy moment",
                 intro: "Celem jest osiągnięcie temperatury pracy bez wrzenia. Najwięcej problemów z klarownością powstaje właśnie w tej fazie.",
@@ -2650,6 +2850,22 @@ private struct PhaseDetailsSheet: View {
             )
 
         case .stabilization:
+            if content.isGrandmaStyle {
+                return PhaseSheetModel(
+                    eyebrow: "30 minut samo mięso",
+                    intro: "Najpierw budujesz bazę mięsną, dopiero później dodajesz warzywa.",
+                    sections: [
+                        PhaseSheetSection(
+                            title: "Po co ten etap",
+                            systemImage: "clock",
+                            text: "Krótka stabilizacja mięsa daje wyraźny smak bez przeciągania gotowania.",
+                            bullets: ["Nie mieszaj wywaru.", "Utrzymuj delikatne pyrkanie."]
+                        )
+                    ],
+                    footer: "Po 30 minutach przechodzisz do warzyw i przypraw.",
+                    footerLabel: "Kolejność ma znaczenie"
+                )
+            }
             return PhaseSheetModel(
                 eyebrow: "60 minut bez warzyw",
                 intro: "Przez 60 minut gotujesz wyłącznie mięso. To etap budowania czystej bazy.",
@@ -2676,6 +2892,22 @@ private struct PhaseDetailsSheet: View {
             )
 
         case .addVegetables:
+            if content.isGrandmaStyle {
+                return PhaseSheetModel(
+                    eyebrow: "Warzywa i przyprawy",
+                    intro: "Warzywa dodajesz po bazie mięsnej, żeby zachować bardziej klasyczny profil rosołu.",
+                    sections: [
+                        PhaseSheetSection(
+                            title: "Na co uważać",
+                            systemImage: "exclamationmark.triangle",
+                            text: "Cebula opalana daje kolor i aromat, ale spalona na popiół może dać gorycz.",
+                            bullets: ["Warzywa gotują się szybciej niż mięso.", "Sól dodajesz dopiero po cedzeniu."]
+                        )
+                    ],
+                    footer: "Po dodaniu prowadź rosół spokojnie przez 60–75 minut.",
+                    footerLabel: "Bez pośpiechu"
+                )
+            }
             return PhaseSheetModel(
                 eyebrow: "Zmiana w garnku",
                 intro: "Po stabilizacji dodaj warzywa, opaloną cebulę i przyprawy zgodnie z kalkulatorem.",
@@ -2697,6 +2929,22 @@ private struct PhaseDetailsSheet: View {
             )
 
         case .simmerToPoultryOut:
+            if content.isGrandmaStyle {
+                return PhaseSheetModel(
+                    eyebrow: "Spokojne prowadzenie",
+                    intro: "To główny odcinek gotowania po dodaniu warzyw i przypraw.",
+                    sections: [
+                        PhaseSheetSection(
+                            title: "Jak prowadzić",
+                            systemImage: "flame",
+                            text: "Utrzymuj delikatne pyrkanie przez 60–75 minut i nie mieszaj.",
+                            bullets: ["Nie dopuszczaj do bulgotania.", "W razie wrzenia zmniejsz ogień."]
+                        )
+                    ],
+                    footer: "Ten etap kończy aktywne budowanie smaku.",
+                    footerLabel: "Kontrola temperatury"
+                )
+            }
             return PhaseSheetModel(
                 eyebrow: "Klarowność zależy od temperatury",
                 intro: "W tym etapie klarowność zależy głównie od temperatury i braku mieszania.",
@@ -2838,6 +3086,21 @@ private struct PhaseDetailsSheet: View {
             )
 
         case .beginRest:
+            if content.isGrandmaStyle {
+                return PhaseSheetModel(
+                    eyebrow: "Zakończenie gotowania",
+                    intro: "Po wyłączeniu ognia odstaw garnek i poczekaj 10 minut.",
+                    sections: [
+                        PhaseSheetSection(
+                            title: "Dlaczego odstawiasz",
+                            systemImage: "drop",
+                            text: "Osad opada na dno, a cedzenie jest łatwiejsze i czystsze."
+                        )
+                    ],
+                    footer: "Nie mieszaj i nie potrząsaj garnkiem.",
+                    footerLabel: "Odstaw"
+                )
+            }
             return PhaseSheetModel(
                 eyebrow: "Garnek stoi, nie ruszaj",
                 intro: "Po zakończeniu gotowania aktywnego nie wykonuj żadnych ruchów w garnku.",
@@ -2853,6 +3116,21 @@ private struct PhaseDetailsSheet: View {
             )
 
         case .rest:
+            if content.isGrandmaStyle {
+                return PhaseSheetModel(
+                    eyebrow: "10 minut spokoju",
+                    intro: "To krótki etap klarowania przed cedzeniem.",
+                    sections: [
+                        PhaseSheetSection(
+                            title: "Zasada etapu",
+                            systemImage: "clock",
+                            text: "Nie ruszaj wywaru — cierpliwość daje czystszy efekt."
+                        )
+                    ],
+                    footer: "Po odstawieniu przecedź powoli przez sito.",
+                    footerLabel: "Klarowność"
+                )
+            }
             return PhaseSheetModel(
                 eyebrow: "Czas na klarowność",
                 intro: "Odstawienie na 15–20 minut poprawia klarowność i ułatwia czyste cedzenie.",
@@ -2868,6 +3146,26 @@ private struct PhaseDetailsSheet: View {
             )
 
         case .strainAndSeason:
+            if content.isGrandmaStyle {
+                return PhaseSheetModel(
+                    eyebrow: "Cedzenie i doprawianie",
+                    intro: "Najpierw przecedź rosół, dopiero potem dosalaj.",
+                    sections: [
+                        PhaseSheetSection(
+                            title: "Cedzenie",
+                            systemImage: "line.3.horizontal.decrease.circle",
+                            text: "Przelewaj powoli i nie wyciskaj warzyw ani mięsa."
+                        ),
+                        PhaseSheetSection(
+                            title: "Sól na końcu",
+                            systemImage: "fork.knife",
+                            text: "Po cedzeniu łatwiej trafić we właściwy poziom słoności. Doprawiaj stopniowo."
+                        )
+                    ],
+                    footer: "W kolejnym kroku możesz zastosować opcjonalny trik na jeszcze czystszy finisz.",
+                    footerLabel: "Finalny smak"
+                )
+            }
             return PhaseSheetModel(
                 eyebrow: "Najpierw cedzenie, potem sól",
                 intro: "Zasada główna: najpierw cedzenie, dopiero potem doprawianie.",
@@ -2885,6 +3183,20 @@ private struct PhaseDetailsSheet: View {
                 ],
                 footer: "Po cedzeniu pracuj spokojnie. To ostatni moment, w którym łatwo zepsuć klarowność pośpiechem.",
                 footerLabel: "Ostatni krok"
+            )
+        case .optionalClarityTip:
+            return PhaseSheetModel(
+                eyebrow: "Opcjonalny trik",
+                intro: "Jeśli chcesz bardziej klarowny rosół bez dodatkowych działań, nie przelewaj wywaru do samego końca.",
+                sections: [
+                    PhaseSheetSection(
+                        title: "Jak to zrobić",
+                        systemImage: "sparkles",
+                        text: "Zostaw w garnku ostatnie 200–300 ml płynu z osadem."
+                    )
+                ],
+                footer: "To prosty krok, który często poprawia klarowność końcowej porcji.",
+                footerLabel: "Opcjonalnie"
             )
         }
     }

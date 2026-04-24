@@ -161,6 +161,7 @@ struct BrothCalculationResult: Hashable {
 enum BrothPreset: String, CaseIterable, Identifiable, Hashable {
     case poultryReady
     case poultryBeefReady
+    case grandmaReady
 
     var id: String { rawValue }
 
@@ -170,6 +171,8 @@ enum BrothPreset: String, CaseIterable, Identifiable, Hashable {
             return "Gotowy drobiowy"
         case .poultryBeefReady:
             return "Gotowy drobiowo-wołowy"
+        case .grandmaReady:
+            return "Szybki domowy rosół"
         }
     }
 
@@ -179,6 +182,8 @@ enum BrothPreset: String, CaseIterable, Identifiable, Hashable {
             return "Szybka, gotowa receptura oparta na drobiu."
         case .poultryBeefReady:
             return "Gotowa receptura z drobiem i wołowiną dla pełniejszego smaku."
+        case .grandmaReady:
+            return "Szybki „babciny” rosół domowy z drobiu."
         }
     }
 
@@ -188,6 +193,8 @@ enum BrothPreset: String, CaseIterable, Identifiable, Hashable {
             return .cleaner
         case .poultryBeefReady:
             return .richer
+        case .grandmaReady:
+            return .cleaner
         }
     }
 
@@ -197,6 +204,8 @@ enum BrothPreset: String, CaseIterable, Identifiable, Hashable {
             return ["kura"]
         case .poultryBeefReady:
             return ["kura", "szponder"]
+        case .grandmaReady:
+            return ["kura", "skrzydla_kurczaka"]
         }
     }
 
@@ -381,6 +390,11 @@ enum BrothCalculator {
 
         case .poultryBeefReady:
             return poultryBeefPresetCalculation(
+                pot: pot,
+                request: request
+            )
+        case .grandmaReady:
+            return grandmaPresetCalculation(
                 pot: pot,
                 request: request
             )
@@ -639,6 +653,149 @@ enum BrothCalculator {
             recommendedMeatRange: nil,
             clarityMode: request.clarityMode,
             useVinegar: request.useVinegar,
+            targetYieldLiters: request.targetYieldLiters,
+            vegetableBreakdown: vegetableBreakdown,
+            spiceBreakdown: spiceBreakdown,
+            microMode: false,
+            waterWasReducedToFit: false
+        )
+    }
+
+    private static func grandmaPresetCalculation(
+        pot: Double,
+        request: BrothCalculationRequest
+    ) -> BrothCalculationResult {
+        let waterLiters = interpolate(pot, table: [
+            (5, 3.4), (7, 4.8), (10, 6.8), (12, 8.2)
+        ])
+
+        let poultryMin = roundedToTen(max(0, waterLiters * 180))
+        let poultryMax = roundedToTen(max(Double(poultryMin), waterLiters * 220))
+
+        let chickenMain = roundedToTen(Double(poultryMin) * 0.72)
+        let chickenSupport = max(0, poultryMin - chickenMain)
+
+        let carrotGrams = roundedToFive((waterLiters / 4.0) * 275)
+        let parsleyRootGrams = roundedToFive((waterLiters / 4.0) * 150)
+        let celeriacGrams = roundedToFive((waterLiters / 4.0) * 200)
+        let leekGrams = roundedToFive((waterLiters / 4.0) * 80)
+        let onionCount = max(1, roundedToInt((waterLiters / 4.0)))
+
+        let vegetableBreakdown = BrothVegetableBreakdown(
+            totalGrams: carrotGrams + parsleyRootGrams + celeriacGrams + leekGrams,
+            carrotGrams: carrotGrams,
+            celeriacGrams: celeriacGrams,
+            parsleyRootGrams: parsleyRootGrams,
+            leekGrams: leekGrams,
+            onionCount: onionCount
+        )
+
+        let vegetables = [
+            VegetableAmount(
+                name: "Marchew",
+                amount: "\(carrotGrams) g",
+                note: "Babciny standard: ok. 250–300 g na 4 l."
+            ),
+            VegetableAmount(
+                name: "Pietruszka korzeń",
+                amount: "\(parsleyRootGrams) g",
+                note: "Orientacyjnie 120–180 g na 4 l."
+            ),
+            VegetableAmount(
+                name: "Seler korzeń",
+                amount: "\(celeriacGrams) g",
+                note: "Orientacyjnie 150–250 g na 4 l."
+            ),
+            VegetableAmount(
+                name: "Por (opcjonalnie)",
+                amount: "\(leekGrams) g",
+                note: "Połowa pora na 4 l."
+            ),
+            VegetableAmount(
+                name: "Cebula opalana / mocno zrumieniona",
+                amount: onionCount == 1 ? "1 szt." : "\(onionCount) szt.",
+                note: "Daje kolor i klasyczny aromat."
+            )
+        ]
+
+        let baseEstimatedYieldLiters = roundedToOneDecimal(interpolate(pot, table: [
+            (5, 2.9), (7, 4.1), (10, 5.9), (12, 7.1)
+        ]))
+
+        let clarityAdjustedYield = adjustedYield(
+            baseYieldLiters: baseEstimatedYieldLiters,
+            waterStartLiters: waterLiters,
+            fatIndex: 1.05,
+            clarityMode: request.clarityMode
+        )
+
+        let finalSaltBase = request.targetYieldLiters ?? clarityAdjustedYield.yieldLiters
+        let finalSaltGrams = roundedToOneDecimal(
+            request.targetYieldLiters == nil
+                ? finalSaltBase * 6.2
+                : finalSaltBase * 6.0
+        )
+
+        let peppercornCount = max(10, roundedToInt(interpolate(waterLiters, table: [
+            (4, 12), (6, 18), (8, 24)
+        ])))
+
+        let allspiceCount = max(4, roundedToInt(interpolate(waterLiters, table: [
+            (4, 5), (6, 7), (8, 9)
+        ])))
+
+        let bayLeafCount = max(2, roundedToInt(interpolate(waterLiters, table: [
+            (4, 2), (6, 3), (8, 4)
+        ])))
+
+        let spiceBreakdown = BrothSpiceBreakdown(
+            peppercornCount: peppercornCount,
+            allspiceCount: allspiceCount,
+            bayLeafCount: bayLeafCount
+        )
+
+        let structuredWarnings = deduplicatedStructuredWarnings(
+            presetStructuredWarnings(
+                waterLiters: waterLiters,
+                potSizeLiters: request.potSizeLiters,
+                clarityMode: request.clarityMode,
+                yieldLossLiters: clarityAdjustedYield.lossLiters
+            )
+        )
+
+        return BrothCalculationResult(
+            waterLiters: roundedToOneDecimal(waterLiters),
+            temperatureMin: 88,
+            temperatureMax: 90,
+            totalMinutes: 180,
+            estimatedYieldLiters: clarityAdjustedYield.yieldLiters,
+            startSaltGrams: 0,
+            finalSaltGrams: finalSaltGrams,
+            appleCiderVinegarMl: 0,
+            peppercornCount: peppercornCount,
+            allspiceCount: allspiceCount,
+            bayLeafCount: bayLeafCount,
+            vegetables: vegetables,
+            meatParts: [
+                MeatAmount(
+                    name: "Porcja rosołowa z kurczaka",
+                    grams: chickenMain,
+                    note: "Główna baza mięsna."
+                ),
+                MeatAmount(
+                    name: "Skrzydła / korpus / szyje",
+                    grams: chickenSupport,
+                    note: "Wzmocnienie smaku i body."
+                )
+            ],
+            timeline: buildGrandmaSummaryTimeline(),
+            warnings: structuredWarnings.map(warningText(for:)),
+            structuredWarnings: structuredWarnings,
+            validationFailure: nil,
+            scoring: nil,
+            recommendedMeatRange: BrothRecommendedMeatRange(minGrams: poultryMin, maxGrams: poultryMax),
+            clarityMode: request.clarityMode,
+            useVinegar: false,
             targetYieldLiters: request.targetYieldLiters,
             vegetableBreakdown: vegetableBreakdown,
             spiceBreakdown: spiceBreakdown,
@@ -1624,6 +1781,53 @@ private func buildBasicSummaryTimeline(profile: BrothProfile, hasLiver: Bool) ->
     ])
 
     return items.sorted { $0.minuteOffset < $1.minuteOffset }
+}
+
+private func buildGrandmaSummaryTimeline() -> [CookingTimelineItem] {
+    [
+        CookingTimelineItem(
+            minuteOffset: 0,
+            timeLabel: "START",
+            title: "Start od zimnej wody",
+            subtitle: "Włóż mięso, zalej zimną wodą i zbieraj szumowiny."
+        ),
+        CookingTimelineItem(
+            minuteOffset: 30,
+            timeLabel: "30 min",
+            title: "Stabilizacja samego mięsa",
+            subtitle: "Prowadź rosół bardzo spokojnie, bez bulgotania."
+        ),
+        CookingTimelineItem(
+            minuteOffset: 30,
+            timeLabel: "30 min",
+            title: "Dodaj warzywa i przyprawy",
+            subtitle: "Cebula opalana, pieprz, ziele, liść laurowy."
+        ),
+        CookingTimelineItem(
+            minuteOffset: 105,
+            timeLabel: "1 h 45 min",
+            title: "Wyłącz ogień i odstaw",
+            subtitle: "Nie mieszaj. Pozwól opaść osadom przez 10 minut."
+        ),
+        CookingTimelineItem(
+            minuteOffset: 115,
+            timeLabel: "1 h 55 min",
+            title: "Przecedź rosół",
+            subtitle: "Przelewaj spokojnie i nie wyciskaj składników."
+        ),
+        CookingTimelineItem(
+            minuteOffset: 120,
+            timeLabel: "2 h",
+            title: "Dopraw po cedzeniu",
+            subtitle: "Sól dodawaj stopniowo już w czystym płynie."
+        ),
+        CookingTimelineItem(
+            minuteOffset: 122,
+            timeLabel: "Opcjonalnie",
+            title: "Zostaw końcówkę z osadem",
+            subtitle: "Nie przelewaj ostatnich 200–300 ml z dna garnka."
+        )
+    ]
 }
 
 // MARK: - Warning builders and math
