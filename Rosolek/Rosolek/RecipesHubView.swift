@@ -4,25 +4,16 @@ struct RecipesHubView: View {
     @AppStorage("potSizeLiters") private var potSizeLiters = 7
     let compact: Bool
     @Binding var selectedPresetFilter: HomeRecipeFilter
+    @State private var selectedChefFilter: ChefRecipeFilter = .all
 
     var body: some View {
         ScrollView(showsIndicators: false) {
             VStack(alignment: .leading, spacing: compact ? 22 : 26) {
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Przepisy")
-                        .font(.system(size: compact ? 24 : 26, weight: .bold))
-                        .foregroundStyle(AppTheme.textPrimary)
-
-                    Text("Gotowe przepisy i inspiracje od szefów kuchni.")
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundStyle(AppTheme.textSecondary)
-                }
-
                 readyRecipesSection
                 chefRecipesSection
             }
             .padding(.horizontal, 16)
-            .padding(.top, compact ? 12 : 16)
+            .padding(.top, compact ? 8 : 12)
             .padding(.bottom, 32)
         }
         .background(AppTheme.background)
@@ -101,19 +92,25 @@ struct RecipesHubView: View {
                 .font(.system(size: compact ? 22 : 23, weight: .bold))
                 .foregroundStyle(AppTheme.textPrimary)
 
-            RecipeListCard(
-                title: "Rosół z jabłkami — chef Antoni Wierzba",
-                subtitle: "Polski rosół z pieczonym jabłkiem i majerankiem.",
-                assetName: "HomeChefOne",
-                isLocked: true
-            )
+            chefRecipeFilterPills
 
-            RecipeListCard(
-                title: "Azjatycki bulion — chefka Hana Mori",
-                subtitle: "Imbir, trawa cytrynowa i delikatna ostrość.",
-                assetName: "HomeChefTwo",
-                isLocked: true
-            )
+            if selectedChefFilter.matches(.polish) {
+                RecipeListCard(
+                    title: "Rosół z jabłkami — chef Antoni Wierzba",
+                    subtitle: "Polski rosół z pieczonym jabłkiem i majerankiem.",
+                    assetName: "HomeChefOne",
+                    isLocked: true
+                )
+            }
+
+            if selectedChefFilter.matches(.asian) {
+                RecipeListCard(
+                    title: "Azjatycki bulion — chefka Hana Mori",
+                    subtitle: "Imbir, trawa cytrynowa i delikatna ostrość.",
+                    assetName: "HomeChefTwo",
+                    isLocked: true
+                )
+            }
         }
     }
 
@@ -142,6 +139,53 @@ struct RecipesHubView: View {
                 }
             }
         }
+    }
+
+    private var chefRecipeFilterPills: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8) {
+                ForEach(ChefRecipeFilter.allCases) { filter in
+                    Button {
+                        selectedChefFilter = filter
+                    } label: {
+                        Text(filter.title)
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundStyle(selectedChefFilter == filter ? AppTheme.textPrimary : AppTheme.textSecondary)
+                            .padding(.horizontal, 12)
+                            .frame(height: 32)
+                            .background(
+                                Capsule()
+                                    .fill(selectedChefFilter == filter ? AppTheme.accentSoft : AppTheme.surface)
+                            )
+                            .overlay(
+                                Capsule()
+                                    .stroke(selectedChefFilter == filter ? AppTheme.accent.opacity(0.45) : AppTheme.border, lineWidth: 1)
+                            )
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+        }
+    }
+}
+
+private enum ChefRecipeFilter: String, CaseIterable, Identifiable {
+    case all
+    case polish
+    case asian
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .all: return "Wszystkie"
+        case .polish: return "Polskie"
+        case .asian: return "Azjatyckie"
+        }
+    }
+
+    func matches(_ category: ChefRecipeFilter) -> Bool {
+        self == .all || self == category
     }
 }
 
