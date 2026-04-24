@@ -215,23 +215,29 @@ struct BrothResultView: View {
     }
 
     var body: some View {
-        ScrollView(showsIndicators: false) {
-            VStack(alignment: .leading, spacing: 22) {
-                header
-                summaryGrid
-                refinementSection
-                ingredientsSection
-                spicesSection
-                timelineSection
+        ZStack(alignment: .top) {
+            AppTheme.background
+                .ignoresSafeArea()
 
-                if !warningCards.isEmpty {
-                    warningsSection
+            topRecipeBackdrop
+
+            ScrollView(showsIndicators: false) {
+                VStack(alignment: .leading, spacing: 22) {
+                    header
+                    summaryGrid
+                    refinementSection
+                    ingredientsSection
+                    spicesSection
+                    timelineSection
+
+                    if !warningCards.isEmpty {
+                        warningsSection
+                    }
                 }
+                .padding(AppSpacing.screen)
+                .padding(.bottom, 8)
             }
-            .padding(AppSpacing.screen)
-            .padding(.bottom, 8)
         }
-        .background(AppTheme.background)
         .navigationTitle("Twój rosół")
         .navigationBarTitleDisplayMode(.inline)
         .safeAreaInset(edge: .bottom) {
@@ -290,27 +296,33 @@ struct BrothResultView: View {
     private var summaryGrid: some View {
         LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
             ResultMetricCard(
-                title: "Uzysk",
-                value: litersString(result.estimatedYieldLiters),
-                subtitle: "po cedzeniu"
+                title: "Garnek",
+                value: "\(potSizeLiters) l",
+                subtitle: "pojemność",
+                tooltip: "Pojemność garnka podałeś w ustawieniach aplikacji. Możesz ją tam w każdej chwili zmienić."
             )
 
             ResultMetricCard(
-                title: "Garnek",
-                value: "\(potSizeLiters) l",
-                subtitle: "pojemność"
+                title: "Uzysk",
+                value: litersString(result.estimatedYieldLiters),
+                subtitle: "po cedzeniu",
+                tooltip: "To ilość czystego bulionu, która zostanie na końcu gotowania i będzie do wykorzystania."
             )
 
             ResultMetricCard(
                 title: "Wsad",
                 value: loadDisplay,
-                subtitle: "mięso + warzywa"
+                subtitle: "mięso + warzywa",
+                tooltip: "To cały wsad do garnka: mięso, podroby, warzywa i przyprawy, z których wydobędziesz smak."
             )
 
             ResultMetricCard(
                 title: "Temperatura",
                 value: hasThermometer ? "\(result.temperatureMin)–\(result.temperatureMax)°C" : "bez wrzenia",
-                subtitle: "zakres"
+                subtitle: "zakres",
+                tooltip: hasThermometer
+                    ? "Masz ustawiony tryb z termometrem. Jeśli chcesz, możesz to zmienić w ustawieniach."
+                    : "Masz ustawiony tryb bez termometru. Jeśli chcesz, możesz to zmienić w ustawieniach."
             )
         }
     }
@@ -566,9 +578,47 @@ extension BrothResultView {
     private var screenSubtitle: String {
         switch mode {
         case .preset:
-            return "Na start wlej \(litersString(result.waterLiters)) wody."
-        case .custom(let profile):
-            return "Profil \(profile.title). Na start wlej \(litersString(result.waterLiters)) wody."
+            return "To podsumowanie kalkulatora dla wybranego przepisu i składników."
+        case .custom:
+            return "To podsumowanie kalkulatora na bazie mięsa, które wybrałeś."
+        }
+    }
+
+    private var topRecipeBackdrop: some View {
+        Group {
+            if let assetName = recipeBackdropAssetName {
+                Image(assetName)
+                    .resizable()
+                    .scaledToFill()
+                    .frame(height: 240)
+                    .frame(maxWidth: .infinity)
+                    .clipped()
+                    .overlay(
+                        LinearGradient(
+                            colors: [
+                                Color.black.opacity(0.22),
+                                AppTheme.background.opacity(0.85),
+                                AppTheme.background
+                            ],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                    )
+                    .allowsHitTesting(false)
+            }
+        }
+    }
+
+    private var recipeBackdropAssetName: String? {
+        guard case .preset(let preset) = mode else { return nil }
+
+        switch preset {
+        case .poultryReady:
+            return "HomeRecipePoultry"
+        case .poultryBeefReady:
+            return "HomeRecipePoultryBeef"
+        case .grandmaReady:
+            return "HomeRecipeGrandma"
         }
     }
 
@@ -1094,13 +1144,35 @@ private struct ResultMetricCard: View {
     let title: String
     let value: String
     let subtitle: String
+    let tooltip: String
+    @State private var showTooltip = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text(title.uppercased())
-                .font(.system(size: 10, weight: .semibold))
-                .tracking(1.2)
-                .foregroundStyle(AppTheme.textSecondary)
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(alignment: .top, spacing: 8) {
+                Text(title.uppercased())
+                    .font(.system(size: 10, weight: .semibold))
+                    .tracking(1.2)
+                    .foregroundStyle(AppTheme.textSecondary)
+
+                Spacer(minLength: 0)
+
+                Button {
+                    showTooltip = true
+                } label: {
+                    Image(systemName: "info.circle")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(AppTheme.textSecondary)
+                }
+                .buttonStyle(.plain)
+                .popover(isPresented: $showTooltip, arrowEdge: .top) {
+                    Text(tooltip)
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundStyle(AppTheme.textPrimary)
+                        .padding(12)
+                        .frame(maxWidth: 260, alignment: .leading)
+                }
+            }
 
             Text(value)
                 .font(.system(size: 28, weight: .bold))
@@ -1113,8 +1185,9 @@ private struct ResultMetricCard: View {
                 .foregroundStyle(AppTheme.textSecondary)
                 .fixedSize(horizontal: false, vertical: true)
         }
-        .frame(maxWidth: .infinity, minHeight: 98, alignment: .leading)
-        .padding(AppSpacing.card)
+        .frame(maxWidth: .infinity, minHeight: 82, alignment: .leading)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
         .background(AppTheme.surface)
         .overlay(
             RoundedRectangle(cornerRadius: AppRadius.card, style: .continuous)
