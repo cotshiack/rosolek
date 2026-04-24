@@ -116,8 +116,8 @@ private struct ProfileChoiceCard: View {
 
     private var chips: [String] {
         switch profile {
-        case .cleaner: return ["klarowniejszy", "większy uzysk", "na co dzień"]
-        case .richer:  return ["mocniejszy aromat", "pełniejsze body", "dłuższe gotowanie"]
+        case .cleaner: return ["subtelny aromat", "lekki finisz", "czysty kolor"]
+        case .richer:  return ["głęboki aromat", "długi finisz", "mocne body"]
         }
     }
 
@@ -173,14 +173,18 @@ private struct ProfileChoiceCard: View {
                     if isSelected {
                         HStack(spacing: 5) {
                             Image(systemName: "checkmark")
-                                .font(.system(size: 11, weight: .black))
+                                .font(.system(size: 12, weight: .black))
                             Text("Twój wybór")
-                                .font(.system(size: 13, weight: .bold))
+                                .font(.system(size: 14, weight: .bold))
                         }
                         .foregroundStyle(AppTheme.textPrimary)
                         .padding(.horizontal, 12)
-                        .frame(height: 30)
-                        .background(AppTheme.accent)
+                        .frame(height: 32)
+                        .background(Color(hex: "F2D93C"))
+                        .overlay(
+                            Capsule()
+                                .stroke(Color(hex: "D4B820"), lineWidth: 1)
+                        )
                         .clipShape(Capsule())
                         .padding(14)
                         .transition(.scale(scale: 0.7).combined(with: .opacity))
@@ -199,17 +203,17 @@ private struct ProfileChoiceCard: View {
                     }
 
                     Text(profileAudienceDescription)
-                        .font(.system(size: 13, weight: .medium))
-                        .foregroundStyle(AppTheme.textSecondary)
-                        .lineLimit(1)
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundStyle(AppTheme.textPrimary.opacity(0.72))
+                        .lineLimit(2)
                         .padding(.top, 4)
 
                     HStack(spacing: 12) {
                         Label(cookTime, systemImage: "clock")
                         Label(yieldHint, systemImage: "drop")
                     }
-                    .font(.system(size: 10, weight: .medium))
-                    .foregroundStyle(AppTheme.textSecondary)
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(AppTheme.textPrimary.opacity(0.62))
                     .padding(.top, 8)
 
                     LazyVGrid(
@@ -227,7 +231,7 @@ private struct ProfileChoiceCard: View {
                 .padding(.vertical, 10)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .frame(maxHeight: .infinity, alignment: .top)
-                .background(isSelected ? AppTheme.accentSoft.opacity(0.40) : AppTheme.surface)
+                .background(isSelected ? AppTheme.accentSoft.opacity(0.62) : AppTheme.surface)
             }
             .clipShape(RoundedRectangle(cornerRadius: AppRadius.card, style: .continuous))
             .contentShape(RoundedRectangle(cornerRadius: AppRadius.card, style: .continuous))
@@ -235,7 +239,7 @@ private struct ProfileChoiceCard: View {
                 RoundedRectangle(cornerRadius: AppRadius.card, style: .continuous)
                     .stroke(isSelected ? AppTheme.accent : AppTheme.border, lineWidth: isSelected ? 2 : 1)
             )
-            .opacity(isSelected ? 1.0 : 0.82)
+            .opacity(isSelected ? 1.0 : 0.94)
             .scaleEffect(isSelected ? 1.0 : 0.975)
             .shadow(
                 color: isSelected ? AppTheme.accent.opacity(0.28) : Color.black.opacity(0.05),
@@ -255,17 +259,21 @@ private struct ProfileChip: View {
 
     var body: some View {
         Text(title)
-            .font(.system(size: 10, weight: .semibold))
-            .foregroundStyle(AppTheme.textSecondary)
+            .font(.system(size: 11, weight: .bold))
+            .foregroundStyle(isSelected ? AppTheme.textPrimary : AppTheme.textPrimary.opacity(0.76))
             .lineLimit(1)
             .minimumScaleFactor(0.75)
             .frame(maxWidth: .infinity)
             .padding(.horizontal, 8)
-            .padding(.vertical, 4)
-            .background(isSelected ? AppTheme.accentSoft : AppTheme.surfaceMuted)
+            .padding(.vertical, 6)
+            .background(
+                isSelected
+                    ? Color(hex: "F2D93C").opacity(0.25)
+                    : AppTheme.surface
+            )
             .overlay(
                 Capsule().stroke(
-                    isSelected ? AppTheme.accent.opacity(0.50) : Color(hex: "A0A0A0"),
+                    isSelected ? Color(hex: "D4B820") : AppTheme.border.opacity(0.95),
                     lineWidth: 1
                 )
             )

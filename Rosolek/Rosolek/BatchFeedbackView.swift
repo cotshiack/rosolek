@@ -95,7 +95,7 @@ struct BatchFeedbackView: View {
     init(batch: BatchRecord, standaloneMode: Bool = false) {
         self.batch = batch
         self.standaloneMode = standaloneMode
-        _batchName = State(initialValue: batch.customTitle ?? "")
+        _batchName = State(initialValue: batch.customTitle ?? batch.defaultTitle)
         _overallRating = State(initialValue: Double(batch.overallRating ?? 8))
         _strengthFeedback = State(initialValue: batch.strengthFeedbackRawValue.flatMap { BatchStrengthFeedback(rawValue: $0) })
         _fatFeedback = State(initialValue: batch.fatFeedbackRawValue.flatMap { BatchFatFeedback(rawValue: $0) })

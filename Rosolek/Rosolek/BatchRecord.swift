@@ -54,6 +54,7 @@ struct BatchRecord: Identifiable, Codable, Hashable {
 
     // New flow metadata
     let modeRawValue: String
+    let presetRawValue: String?
     let profileRawValue: String
     let clarityModeRawValue: String
     let useVinegar: Bool
@@ -90,6 +91,7 @@ struct BatchRecord: Identifiable, Codable, Hashable {
         createdAt: Date,
         styleRawValue: String,
         modeRawValue: String = "legacy",
+        presetRawValue: String? = nil,
         profileRawValue: String? = nil,
         clarityModeRawValue: String = BrothClarityMode.normal.rawValue,
         useVinegar: Bool = false,
@@ -116,6 +118,7 @@ struct BatchRecord: Identifiable, Codable, Hashable {
         self.createdAt = createdAt
         self.styleRawValue = styleRawValue
         self.modeRawValue = modeRawValue
+        self.presetRawValue = presetRawValue
         self.profileRawValue = profileRawValue ?? Self.legacyProfileRawValue(from: styleRawValue)
         self.clarityModeRawValue = clarityModeRawValue
         self.useVinegar = useVinegar
@@ -144,6 +147,7 @@ struct BatchRecord: Identifiable, Codable, Hashable {
         case createdAt
         case styleRawValue
         case modeRawValue
+        case presetRawValue
         case profileRawValue
         case clarityModeRawValue
         case useVinegar
@@ -190,6 +194,7 @@ struct BatchRecord: Identifiable, Codable, Hashable {
         self.createdAt = decodedCreatedAt
         self.styleRawValue = decodedStyleRawValue
         self.modeRawValue = try container.decodeIfPresent(String.self, forKey: .modeRawValue) ?? fallbackModeRawValue
+        self.presetRawValue = try container.decodeIfPresent(String.self, forKey: .presetRawValue)
         self.profileRawValue = try container.decodeIfPresent(String.self, forKey: .profileRawValue) ?? fallbackProfileRawValue
         self.clarityModeRawValue = try container.decodeIfPresent(String.self, forKey: .clarityModeRawValue) ?? BrothClarityMode.normal.rawValue
         self.useVinegar = try container.decodeIfPresent(Bool.self, forKey: .useVinegar) ?? false
@@ -220,6 +225,7 @@ struct BatchRecord: Identifiable, Codable, Hashable {
         try container.encode(createdAt, forKey: .createdAt)
         try container.encode(styleRawValue, forKey: .styleRawValue)
         try container.encode(modeRawValue, forKey: .modeRawValue)
+        try container.encodeIfPresent(presetRawValue, forKey: .presetRawValue)
         try container.encode(profileRawValue, forKey: .profileRawValue)
         try container.encode(clarityModeRawValue, forKey: .clarityModeRawValue)
         try container.encode(useVinegar, forKey: .useVinegar)
@@ -276,12 +282,34 @@ extension BatchRecord {
     }
 
     var defaultTitle: String {
+        if let preset = selectedPreset {
+            switch preset {
+            case .poultryReady:
+                return "Rosół drobiowy"
+            case .poultryBeefReady:
+                return "Rosół drobiowo-wołowy"
+            case .grandmaReady:
+                return "Szybki domowy rosół"
+            }
+        }
+
         switch brothProfile {
         case .cleaner:
             return "Rosół czystszy"
         case .richer:
             return "Rosół głębszy"
         }
+    }
+
+    private var selectedPreset: BrothPreset? {
+        guard modeRawValue == "preset" else { return nil }
+
+        if let presetRawValue,
+           let preset = BrothPreset(rawValue: presetRawValue) {
+            return preset
+        }
+
+        return Self.legacyPresetFromStyle(styleRawValue)
     }
 
     var displayTitle: String {

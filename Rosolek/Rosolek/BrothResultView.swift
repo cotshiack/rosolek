@@ -937,21 +937,25 @@ extension BrothResultView {
         let ingredientIDs = ingredientSnapshots.map(\.ingredientID)
 
         let modeRawValue: String
+        let presetRawValue: String?
         let profileRawValue: String
 
         switch mode {
         case .preset(let preset):
             modeRawValue = "preset"
+            presetRawValue = preset.rawValue
             profileRawValue = preset.profile.rawValue
 
         case .custom(let profile):
             modeRawValue = "custom"
+            presetRawValue = nil
             profileRawValue = profile.rawValue
         }
 
         let batch = batchStore.createBatch(
             styleRawValue: compatibilityStyle.rawValue,
             modeRawValue: modeRawValue,
+            presetRawValue: presetRawValue,
             profileRawValue: profileRawValue,
             clarityModeRawValue: clarityMode.rawValue,
             useVinegar: useVinegar,

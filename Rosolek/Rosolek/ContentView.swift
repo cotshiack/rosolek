@@ -72,6 +72,13 @@ private struct HomeView: View {
         )
     }
 
+    private var grandmaPresetRecipe: HomePresetRecipe {
+        HomePresetRecipe(
+            preset: .grandmaReady,
+            potSizeLiters: Double(potSizeLiters)
+        )
+    }
+
     private var presetItems: [HomePresetItem] {
         [
             HomePresetItem(
@@ -85,6 +92,12 @@ private struct HomeView: View {
                 artwork: .asset("HomeRecipePoultryBeef"),
                 fallbackStyle: .intense,
                 filter: .poultryBeef
+            ),
+            HomePresetItem(
+                recipe: grandmaPresetRecipe,
+                artwork: .asset("HomeRecipeGrandma"),
+                fallbackStyle: .light,
+                filter: .poultry
             )
         ]
     }
@@ -288,6 +301,24 @@ private struct HomeView: View {
                         .buttonStyle(.plain)
                         .frame(width: compact ? 206 : 216)
                     }
+
+                    LockedChefRecipeCard(
+                        compact: compact,
+                        title: "Klasyczny ramen shoyu",
+                        subtitle: "Autorski przepis premium z prowadzeniem krok po kroku.",
+                        artwork: .asset("HomeChefRamen"),
+                        badgeTitle: "Wkrótce"
+                    )
+                    .frame(width: compact ? 206 : 216)
+
+                    LockedChefRecipeCard(
+                        compact: compact,
+                        title: "Bulion wołowy demi-glace",
+                        subtitle: "Koncentrat o głębokim smaku, idealny do sosów i redukcji.",
+                        artwork: .asset("HomeChefDemiGlace"),
+                        badgeTitle: "Wkrótce"
+                    )
+                    .frame(width: compact ? 206 : 216)
                 }
                 .padding(.vertical, 2)
             }
@@ -343,17 +374,17 @@ private struct HomeView: View {
                 HStack(spacing: 14) {
                     LockedChefRecipeCard(
                         compact: compact,
-                        title: "Klasyczny ramen shoyu",
-                        subtitle: "Autorski przepis premium z prowadzeniem krok po kroku.",
-                        artwork: .asset("HomeChefRamen")
+                        title: "Rosół z jabłkami — chef Antoni Wierzba",
+                        subtitle: "Polski rosół z pieczonym jabłkiem i majerankiem.",
+                        artwork: .asset("HomeChefOne")
                     )
                     .frame(width: compact ? 206 : 216)
 
                     LockedChefRecipeCard(
                         compact: compact,
-                        title: "Bulion wołowy demi-glace",
-                        subtitle: "Koncentrat o głębokim smaku, idealny do sosów i redukcji.",
-                        artwork: .asset("HomeChefDemiGlace")
+                        title: "Azjatycki bulion — chefka Hana Mori",
+                        subtitle: "Imbir, trawa cytrynowa i delikatna ostrość.",
+                        artwork: .asset("HomeChefTwo")
                     )
                     .frame(width: compact ? 206 : 216)
                 }
@@ -597,6 +628,7 @@ private struct LockedChefRecipeCard: View {
     let title: String
     let subtitle: String
     let artwork: HomeCardArtwork
+    var badgeTitle: String = "Premium"
 
     var body: some View {
         AppCard(
@@ -611,7 +643,7 @@ private struct LockedChefRecipeCard: View {
                 )
 
                 HStack {
-                    PremiumBadge()
+                    PremiumBadge(title: badgeTitle)
                     Spacer(minLength: 0)
                     Image(systemName: "lock.fill")
                         .font(.system(size: 14, weight: .semibold))
@@ -642,8 +674,10 @@ private struct LockedChefRecipeCard: View {
 }
 
 private struct PremiumBadge: View {
+    var title: String = "Premium"
+
     var body: some View {
-        Text("Premium")
+        Text(title)
             .font(.system(size: 11, weight: .bold))
             .foregroundStyle(AppTheme.textPrimary)
             .padding(.horizontal, 10)
@@ -1418,6 +1452,8 @@ private struct HomePresetRecipe {
             return "Rosół drobiowy"
         case .poultryBeefReady:
             return "Rosół drobiowo-wołowy"
+        case .grandmaReady:
+            return "Szybki domowy rosół"
         }
     }
 
@@ -1427,6 +1463,8 @@ private struct HomePresetRecipe {
             return "Gotowa receptura drobiowa — czystszy smak i prostszy start."
         case .poultryBeefReady:
             return "Gotowa receptura z drobiem i wołowiną — pełniejszy smak i mocniejszy wywar."
+        case .grandmaReady:
+            return "Szybki przepis domowy w stylu babcinym — prosty i wyraźny."
         }
     }
 
