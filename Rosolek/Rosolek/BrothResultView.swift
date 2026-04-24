@@ -1149,7 +1149,8 @@ private struct ResultMetricCard: View {
             .appSoftShadow()
 
             if showTooltip {
-                Color.clear
+                Color.black.opacity(0.001)
+                    .ignoresSafeArea()
                     .contentShape(Rectangle())
                     .onTapGesture {
                         withAnimation(.easeInOut(duration: 0.18)) {
