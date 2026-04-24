@@ -162,8 +162,8 @@ private struct RecipeListCard: View {
                     .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
 
                 VStack(alignment: .leading, spacing: 8) {
-                    HStack {
-                        if let badgeTitle {
+                    if let badgeTitle {
+                        HStack(spacing: 0) {
                             Text(badgeTitle)
                                 .font(.system(size: 10, weight: .bold))
                                 .foregroundStyle(AppTheme.textPrimary)
@@ -177,11 +177,15 @@ private struct RecipeListCard: View {
                                     Capsule()
                                         .stroke(AppTheme.accent.opacity(0.4), lineWidth: 1)
                                 )
+                            Spacer(minLength: 0)
                         }
+                    }
 
+                    HStack(alignment: .top, spacing: 8) {
                         Text(title)
                             .font(.system(size: 17, weight: .bold))
                             .foregroundStyle(AppTheme.textPrimary)
+                            .lineLimit(2)
 
                         if isLocked {
                             Image(systemName: "lock.fill")
