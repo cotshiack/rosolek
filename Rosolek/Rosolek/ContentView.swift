@@ -72,6 +72,13 @@ private struct HomeView: View {
         )
     }
 
+    private var grandmaPresetRecipe: HomePresetRecipe {
+        HomePresetRecipe(
+            preset: .grandmaReady,
+            potSizeLiters: Double(potSizeLiters)
+        )
+    }
+
     private var presetItems: [HomePresetItem] {
         [
             HomePresetItem(
@@ -85,6 +92,12 @@ private struct HomeView: View {
                 artwork: .asset("HomeRecipePoultryBeef"),
                 fallbackStyle: .intense,
                 filter: .poultryBeef
+            ),
+            HomePresetItem(
+                recipe: grandmaPresetRecipe,
+                artwork: .asset("HomeRecipeGrandma"),
+                fallbackStyle: .light,
+                filter: .poultry
             )
         ]
     }
@@ -1418,6 +1431,8 @@ private struct HomePresetRecipe {
             return "Rosół drobiowy"
         case .poultryBeefReady:
             return "Rosół drobiowo-wołowy"
+        case .grandmaReady:
+            return "Szybki domowy rosół"
         }
     }
 
@@ -1427,6 +1442,8 @@ private struct HomePresetRecipe {
             return "Gotowa receptura drobiowa — czystszy smak i prostszy start."
         case .poultryBeefReady:
             return "Gotowa receptura z drobiem i wołowiną — pełniejszy smak i mocniejszy wywar."
+        case .grandmaReady:
+            return "Szybki przepis domowy w stylu babcinym — prosty i wyraźny."
         }
     }
 

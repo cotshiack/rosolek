@@ -62,6 +62,19 @@ struct RecipesHubView: View {
                     }
                     .buttonStyle(.plain)
                 }
+
+                if selectedPresetFilter.matches(.poultry) {
+                    NavigationLink {
+                        BrothResultView(preset: .grandmaReady, potSizeLiters: potSizeLiters)
+                    } label: {
+                        RecipeListCard(
+                            title: "Szybki domowy rosół",
+                            subtitle: "Babciny styl: szybki i wyraźny, z doprawianiem po cedzeniu.",
+                            assetName: "HomeRecipeGrandma"
+                        )
+                    }
+                    .buttonStyle(.plain)
+                }
             }
         }
     }
