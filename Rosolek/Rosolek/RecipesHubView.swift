@@ -102,15 +102,15 @@ struct RecipesHubView: View {
                 .foregroundStyle(AppTheme.textPrimary)
 
             RecipeListCard(
-                title: "Polski rosół z jabłkami chefa Antoniego Wierzbickiego",
-                subtitle: "Nowoczesna interpretacja tradycji: pieczone jabłka, majeranek i głęboki, domowy finisz.",
+                title: "Rosół z jabłkami — chef Antoni Wierzba",
+                subtitle: "Polski rosół z pieczonym jabłkiem i majerankiem.",
                 assetName: "HomeChefOne",
                 isLocked: true
             )
 
             RecipeListCard(
-                title: "Azjatycki bulion chefa Takumiego Sato",
-                subtitle: "Aromatyczny bulion inspirowany Dalekim Wschodem: imbir, trawa cytrynowa i lekko pikantny profil.",
+                title: "Azjatycki bulion — chefka Hana Mori",
+                subtitle: "Imbir, trawa cytrynowa i delikatna ostrość.",
                 assetName: "HomeChefTwo",
                 isLocked: true
             )

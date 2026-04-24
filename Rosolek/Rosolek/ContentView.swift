@@ -374,16 +374,16 @@ private struct HomeView: View {
                 HStack(spacing: 14) {
                     LockedChefRecipeCard(
                         compact: compact,
-                        title: "Polski rosół z jabłkami chefa Antoniego Wierzbickiego",
-                        subtitle: "Nowoczesna interpretacja tradycji: pieczone jabłka, majeranek i głęboki, domowy finisz.",
+                        title: "Rosół z jabłkami — chef Antoni Wierzba",
+                        subtitle: "Polski rosół z pieczonym jabłkiem i majerankiem.",
                         artwork: .asset("HomeChefOne")
                     )
                     .frame(width: compact ? 206 : 216)
 
                     LockedChefRecipeCard(
                         compact: compact,
-                        title: "Azjatycki bulion chefa Takumiego Sato",
-                        subtitle: "Aromatyczny bulion inspirowany Dalekim Wschodem: imbir, trawa cytrynowa i lekko pikantny profil.",
+                        title: "Azjatycki bulion — chefka Hana Mori",
+                        subtitle: "Imbir, trawa cytrynowa i delikatna ostrość.",
                         artwork: .asset("HomeChefTwo")
                     )
                     .frame(width: compact ? 206 : 216)
