@@ -154,7 +154,7 @@ private struct RecipeListCard: View {
 
     var body: some View {
         AppCard(
-            background: isLocked ? AppTheme.surfaceMuted : AppTheme.surface,
+            background: isLocked ? AppTheme.surfaceSoft : AppTheme.surface,
             border: AppTheme.border
         ) {
             HStack(spacing: 14) {
@@ -167,8 +167,6 @@ private struct RecipeListCard: View {
                 VStack(alignment: .leading, spacing: 8) {
                     if badgeTitle != nil || isLocked {
                         HStack(spacing: 8) {
-                            Spacer(minLength: 0)
-
                             if let badgeTitle {
                                 Text(badgeTitle)
                                     .font(.system(size: 10, weight: .bold))
@@ -184,6 +182,8 @@ private struct RecipeListCard: View {
                                             .stroke(AppTheme.accent.opacity(0.4), lineWidth: 1)
                                     )
                             }
+
+                            Spacer(minLength: 0)
 
                             if isLocked {
                                 Image(systemName: "lock.fill")
