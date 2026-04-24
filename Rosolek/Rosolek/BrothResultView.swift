@@ -20,6 +20,7 @@ struct BrothResultView: View {
     @State private var clarityMode: BrothClarityMode = .normal
     @State private var useVinegar = false
     @State private var activeMetricTooltip: ResultMetricTooltipKey?
+    @State private var isSummaryGridInteracting = false
 
     init(
         mode: BrothMode,
@@ -215,27 +216,107 @@ struct BrothResultView: View {
         }
     }
 
-    var body: some View {
-        ScrollView(showsIndicators: false) {
-            VStack(alignment: .leading, spacing: 22) {
-                header
-                summaryGrid
-                refinementSection
-                ingredientsSection
-                spicesSection
-                timelineSection
-
-                if !warningCards.isEmpty {
-                    warningsSection
-                }
+    private func tooltipText(for key: ResultMetricTooltipKey) -> String {
+        switch key {
+        case .pot:
+            return "Pojemność garnka podałeś w ustawieniach aplikacji. Możesz ją tam w każdej chwili zmienić."
+        case .yield:
+            return "To ilość czystego bulionu, która zostanie na końcu gotowania i będzie do wykorzystania."
+        case .load:
+            return "To cały wsad do garnka: mięso, podroby, warzywa i przyprawy, z których wydobędziesz smak."
+        case .temperature:
+            if hasThermometer {
+                return "Masz ustawiony tryb z termometrem. Jeśli chcesz, możesz to zmienić w ustawieniach."
             }
-            .padding(AppSpacing.screen)
-            .padding(.bottom, 8)
+            return "Masz ustawiony tryb bez termometru. Jeśli chcesz, możesz to zmienić w ustawieniach."
         }
-        .onTapGesture {
+    }
+
+    var body: some View {
+        ZStack {
+            ScrollView(showsIndicators: false) {
+                VStack(alignment: .leading, spacing: 22) {
+                    header
+                    summaryGrid
+                    refinementSection
+                    ingredientsSection
+                    spicesSection
+                    timelineSection
+
+                    if !warningCards.isEmpty {
+                        warningsSection
+                    }
+                }
+                .padding(AppSpacing.screen)
+                .padding(.bottom, 8)
+            }
+            .simultaneousGesture(
+                DragGesture(minimumDistance: 8)
+                    .onChanged { _ in
+                        isSummaryGridInteracting = true
+                        if activeMetricTooltip != nil {
+                            withAnimation(.easeInOut(duration: 0.18)) {
+                                activeMetricTooltip = nil
+                            }
+                        }
+                    }
+                    .onEnded { _ in
+                        isSummaryGridInteracting = false
+                    }
+            )
+
             if activeMetricTooltip != nil {
-                withAnimation(.easeInOut(duration: 0.18)) {
-                    activeMetricTooltip = nil
+                Color.black.opacity(0.001)
+                    .ignoresSafeArea()
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                        withAnimation(.easeInOut(duration: 0.18)) {
+                            activeMetricTooltip = nil
+                        }
+                    }
+                    .zIndex(8)
+            }
+
+        }
+        .overlayPreferenceValue(ResultMetricInfoAnchorPreferenceKey.self) { anchors in
+            GeometryReader { proxy in
+                if let activeMetricTooltip, let anchor = anchors[activeMetricTooltip], !isSummaryGridInteracting {
+                    let iconRect = proxy[anchor]
+                    let tooltipWidth = min(220, max(160, proxy.size.width - 28))
+                    let horizontalPadding: CGFloat = 12
+                    let estimatedTooltipHeight: CGFloat = 132
+
+                    let preferredLeading = iconRect.maxX - tooltipWidth
+                    let clampedLeading = min(
+                        max(preferredLeading, horizontalPadding),
+                        max(horizontalPadding, proxy.size.width - tooltipWidth - horizontalPadding)
+                    )
+
+                    let preferredTop = iconRect.maxY + 8
+                    let fallbackTop = iconRect.minY - estimatedTooltipHeight - 8
+                    let resolvedTop = preferredTop + estimatedTooltipHeight > proxy.size.height - horizontalPadding
+                        ? max(horizontalPadding, fallbackTop)
+                        : preferredTop
+
+                    Text(tooltipText(for: activeMetricTooltip))
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundStyle(Color.white)
+                        .multilineTextAlignment(.leading)
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 12)
+                        .frame(width: tooltipWidth, alignment: .leading)
+                        .background(Color.black.opacity(0.88))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                .stroke(Color.white.opacity(0.16), lineWidth: 1)
+                        )
+                        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                        .shadow(color: Color.black.opacity(0.24), radius: 8, x: 0, y: 3)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                        .offset(x: clampedLeading, y: resolvedTop)
+                        .transition(.opacity.combined(with: .scale(scale: 0.96, anchor: .topTrailing)))
+                        .animation(.easeInOut(duration: 0.18), value: activeMetricTooltip)
+                        .allowsHitTesting(false)
                 }
             }
         }
@@ -301,8 +382,7 @@ struct BrothResultView: View {
                 title: "Garnek",
                 value: "\(potSizeLiters) l",
                 subtitle: "pojemność",
-                tooltip: "Pojemność garnka podałeś w ustawieniach aplikacji. Możesz ją tam w każdej chwili zmienić.",
-                isTooltipVisible: activeMetricTooltip == .pot,
+                tooltipKey: .pot,
                 onInfoTap: {
                     withAnimation(.easeInOut(duration: 0.18)) {
                         activeMetricTooltip = activeMetricTooltip == .pot ? nil : .pot
@@ -314,8 +394,7 @@ struct BrothResultView: View {
                 title: "Uzysk",
                 value: litersString(result.estimatedYieldLiters),
                 subtitle: "po cedzeniu",
-                tooltip: "To ilość czystego bulionu, która zostanie na końcu gotowania i będzie do wykorzystania.",
-                isTooltipVisible: activeMetricTooltip == .yield,
+                tooltipKey: .yield,
                 onInfoTap: {
                     withAnimation(.easeInOut(duration: 0.18)) {
                         activeMetricTooltip = activeMetricTooltip == .yield ? nil : .yield
@@ -327,8 +406,7 @@ struct BrothResultView: View {
                 title: "Wsad",
                 value: loadDisplay,
                 subtitle: "mięso + warzywa",
-                tooltip: "To cały wsad do garnka: mięso, podroby, warzywa i przyprawy, z których wydobędziesz smak.",
-                isTooltipVisible: activeMetricTooltip == .load,
+                tooltipKey: .load,
                 onInfoTap: {
                     withAnimation(.easeInOut(duration: 0.18)) {
                         activeMetricTooltip = activeMetricTooltip == .load ? nil : .load
@@ -340,10 +418,7 @@ struct BrothResultView: View {
                 title: "Temperatura",
                 value: hasThermometer ? "\(result.temperatureMin)–\(result.temperatureMax)°C" : "bez wrzenia",
                 subtitle: "zakres",
-                tooltip: hasThermometer
-                    ? "Masz ustawiony tryb z termometrem. Jeśli chcesz, możesz to zmienić w ustawieniach."
-                    : "Masz ustawiony tryb bez termometru. Jeśli chcesz, możesz to zmienić w ustawieniach.",
-                isTooltipVisible: activeMetricTooltip == .temperature,
+                tooltipKey: .temperature,
                 onInfoTap: {
                     withAnimation(.easeInOut(duration: 0.18)) {
                         activeMetricTooltip = activeMetricTooltip == .temperature ? nil : .temperature
@@ -1128,19 +1203,26 @@ private struct RefinementChoiceChip: View {
     }
 }
 
-private enum ResultMetricTooltipKey {
+private enum ResultMetricTooltipKey: Hashable {
     case pot
     case yield
     case load
     case temperature
 }
 
+private struct ResultMetricInfoAnchorPreferenceKey: PreferenceKey {
+    static var defaultValue: [ResultMetricTooltipKey: Anchor<CGRect>] = [:]
+
+    static func reduce(value: inout [ResultMetricTooltipKey: Anchor<CGRect>], nextValue: () -> [ResultMetricTooltipKey: Anchor<CGRect>]) {
+        value.merge(nextValue(), uniquingKeysWith: { _, new in new })
+    }
+}
+
 private struct ResultMetricCard: View {
     let title: String
     let value: String
     let subtitle: String
-    let tooltip: String
-    let isTooltipVisible: Bool
+    let tooltipKey: ResultMetricTooltipKey
     let onInfoTap: () -> Void
 
     var body: some View {
@@ -1159,6 +1241,9 @@ private struct ResultMetricCard: View {
                         .foregroundStyle(AppTheme.textSecondary)
                 }
                 .buttonStyle(.plain)
+                .anchorPreference(key: ResultMetricInfoAnchorPreferenceKey.self, value: .bounds) { anchor in
+                    [tooltipKey: anchor]
+                }
             }
 
             Text(value)
@@ -1181,31 +1266,7 @@ private struct ResultMetricCard: View {
                 .stroke(AppTheme.border, lineWidth: 1)
         )
         .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-        .overlay(alignment: .topTrailing) {
-            if isTooltipVisible {
-                Text(tooltip)
-                    .font(.system(size: 13, weight: .medium))
-                    .foregroundStyle(Color.white)
-                    .multilineTextAlignment(.leading)
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 12)
-                    .frame(maxWidth: 210, alignment: .leading)
-                    .background(Color.black.opacity(0.88))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 10, style: .continuous)
-                            .stroke(Color.white.opacity(0.16), lineWidth: 1)
-                    )
-                    .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-                    .shadow(color: Color.black.opacity(0.24), radius: 8, x: 0, y: 3)
-                    .padding(.top, 28)
-                    .padding(.trailing, 10)
-                    .transition(.opacity.combined(with: .scale(scale: 0.96, anchor: .topTrailing)))
-                    .onTapGesture { }
-            }
-        }
-        .zIndex(isTooltipVisible ? 20 : 0)
         .appSoftShadow()
-        .animation(.easeInOut(duration: 0.18), value: isTooltipVisible)
     }
 }
 
