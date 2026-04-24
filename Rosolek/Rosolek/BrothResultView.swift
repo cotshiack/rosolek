@@ -19,6 +19,7 @@ struct BrothResultView: View {
     @State private var activeCookingTitleForConflict = ""
     @State private var clarityMode: BrothClarityMode = .normal
     @State private var useVinegar = false
+    @State private var activeMetricTooltip: ResultMetricTooltipKey?
 
     init(
         mode: BrothMode,
@@ -231,6 +232,13 @@ struct BrothResultView: View {
             .padding(AppSpacing.screen)
             .padding(.bottom, 8)
         }
+        .onTapGesture {
+            if activeMetricTooltip != nil {
+                withAnimation(.easeInOut(duration: 0.18)) {
+                    activeMetricTooltip = nil
+                }
+            }
+        }
         .background(AppTheme.background)
         .navigationTitle("Twój rosół")
         .navigationBarTitleDisplayMode(.inline)
@@ -293,21 +301,39 @@ struct BrothResultView: View {
                 title: "Garnek",
                 value: "\(potSizeLiters) l",
                 subtitle: "pojemność",
-                tooltip: "Pojemność garnka podałeś w ustawieniach aplikacji. Możesz ją tam w każdej chwili zmienić."
+                tooltip: "Pojemność garnka podałeś w ustawieniach aplikacji. Możesz ją tam w każdej chwili zmienić.",
+                isTooltipVisible: activeMetricTooltip == .pot,
+                onInfoTap: {
+                    withAnimation(.easeInOut(duration: 0.18)) {
+                        activeMetricTooltip = activeMetricTooltip == .pot ? nil : .pot
+                    }
+                }
             )
 
             ResultMetricCard(
                 title: "Uzysk",
                 value: litersString(result.estimatedYieldLiters),
                 subtitle: "po cedzeniu",
-                tooltip: "To ilość czystego bulionu, która zostanie na końcu gotowania i będzie do wykorzystania."
+                tooltip: "To ilość czystego bulionu, która zostanie na końcu gotowania i będzie do wykorzystania.",
+                isTooltipVisible: activeMetricTooltip == .yield,
+                onInfoTap: {
+                    withAnimation(.easeInOut(duration: 0.18)) {
+                        activeMetricTooltip = activeMetricTooltip == .yield ? nil : .yield
+                    }
+                }
             )
 
             ResultMetricCard(
                 title: "Wsad",
                 value: loadDisplay,
                 subtitle: "mięso + warzywa",
-                tooltip: "To cały wsad do garnka: mięso, podroby, warzywa i przyprawy, z których wydobędziesz smak."
+                tooltip: "To cały wsad do garnka: mięso, podroby, warzywa i przyprawy, z których wydobędziesz smak.",
+                isTooltipVisible: activeMetricTooltip == .load,
+                onInfoTap: {
+                    withAnimation(.easeInOut(duration: 0.18)) {
+                        activeMetricTooltip = activeMetricTooltip == .load ? nil : .load
+                    }
+                }
             )
 
             ResultMetricCard(
@@ -316,7 +342,13 @@ struct BrothResultView: View {
                 subtitle: "zakres",
                 tooltip: hasThermometer
                     ? "Masz ustawiony tryb z termometrem. Jeśli chcesz, możesz to zmienić w ustawieniach."
-                    : "Masz ustawiony tryb bez termometru. Jeśli chcesz, możesz to zmienić w ustawieniach."
+                    : "Masz ustawiony tryb bez termometru. Jeśli chcesz, możesz to zmienić w ustawieniach.",
+                isTooltipVisible: activeMetricTooltip == .temperature,
+                onInfoTap: {
+                    withAnimation(.easeInOut(duration: 0.18)) {
+                        activeMetricTooltip = activeMetricTooltip == .temperature ? nil : .temperature
+                    }
+                }
             )
         }
     }
@@ -1096,71 +1128,61 @@ private struct RefinementChoiceChip: View {
     }
 }
 
+private enum ResultMetricTooltipKey {
+    case pot
+    case yield
+    case load
+    case temperature
+}
+
 private struct ResultMetricCard: View {
     let title: String
     let value: String
     let subtitle: String
     let tooltip: String
-    @State private var showTooltip = false
+    let isTooltipVisible: Bool
+    let onInfoTap: () -> Void
 
     var body: some View {
-        ZStack(alignment: .topTrailing) {
-            VStack(alignment: .leading, spacing: 4) {
-                HStack(alignment: .top, spacing: 8) {
-                    Text(title.uppercased())
-                        .font(.system(size: 10, weight: .semibold))
-                        .tracking(1.2)
-                        .foregroundStyle(AppTheme.textSecondary)
-
-                    Spacer(minLength: 0)
-
-                    Button {
-                        withAnimation(.easeInOut(duration: 0.18)) {
-                            showTooltip.toggle()
-                        }
-                    } label: {
-                        Image(systemName: "info.circle")
-                            .font(.system(size: 14, weight: .semibold))
-                            .foregroundStyle(AppTheme.textSecondary)
-                    }
-                    .buttonStyle(.plain)
-                }
-
-                Text(value)
-                    .font(.system(size: 28, weight: .bold))
-                    .foregroundStyle(AppTheme.textPrimary)
-                    .lineLimit(2)
-                    .minimumScaleFactor(0.82)
-
-                Text(subtitle)
-                    .font(.system(size: 13, weight: .medium))
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(alignment: .top, spacing: 8) {
+                Text(title.uppercased())
+                    .font(.system(size: 10, weight: .semibold))
+                    .tracking(1.2)
                     .foregroundStyle(AppTheme.textSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            .frame(maxWidth: .infinity, minHeight: 82, alignment: .leading)
-            .padding(.horizontal, 12)
-            .padding(.vertical, 10)
-            .background(AppTheme.surface)
-            .overlay(
-                RoundedRectangle(cornerRadius: 18, style: .continuous)
-                    .stroke(AppTheme.border, lineWidth: 1)
-            )
-            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-            .appSoftShadow()
 
-            if showTooltip {
-                Color.black.opacity(0.001)
-                    .ignoresSafeArea()
-                    .contentShape(Rectangle())
-                    .onTapGesture {
-                        withAnimation(.easeInOut(duration: 0.18)) {
-                            showTooltip = false
-                        }
-                    }
-                    .zIndex(0)
+                Spacer(minLength: 0)
+
+                Button(action: onInfoTap) {
+                    Image(systemName: "info.circle")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(AppTheme.textSecondary)
+                }
+                .buttonStyle(.plain)
             }
 
-            if showTooltip {
+            Text(value)
+                .font(.system(size: 28, weight: .bold))
+                .foregroundStyle(AppTheme.textPrimary)
+                .lineLimit(2)
+                .minimumScaleFactor(0.82)
+
+            Text(subtitle)
+                .font(.system(size: 13, weight: .medium))
+                .foregroundStyle(AppTheme.textSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .frame(maxWidth: .infinity, minHeight: 82, alignment: .leading)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+        .background(AppTheme.surface)
+        .overlay(
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .stroke(AppTheme.border, lineWidth: 1)
+        )
+        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .overlay(alignment: .topTrailing) {
+            if isTooltipVisible {
                 Text(tooltip)
                     .font(.system(size: 13, weight: .medium))
                     .foregroundStyle(Color.white)
@@ -1179,10 +1201,11 @@ private struct ResultMetricCard: View {
                     .padding(.trailing, 10)
                     .transition(.opacity.combined(with: .scale(scale: 0.96, anchor: .topTrailing)))
                     .onTapGesture { }
-                    .zIndex(1)
             }
         }
-        .animation(.easeInOut(duration: 0.18), value: showTooltip)
+        .zIndex(isTooltipVisible ? 20 : 0)
+        .appSoftShadow()
+        .animation(.easeInOut(duration: 0.18), value: isTooltipVisible)
     }
 }
 
