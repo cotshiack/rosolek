@@ -215,29 +215,23 @@ struct BrothResultView: View {
     }
 
     var body: some View {
-        ZStack(alignment: .top) {
-            AppTheme.background
-                .ignoresSafeArea()
+        ScrollView(showsIndicators: false) {
+            VStack(alignment: .leading, spacing: 22) {
+                header
+                summaryGrid
+                refinementSection
+                ingredientsSection
+                spicesSection
+                timelineSection
 
-            topRecipeBackdrop
-
-            ScrollView(showsIndicators: false) {
-                VStack(alignment: .leading, spacing: 22) {
-                    header
-                    summaryGrid
-                    refinementSection
-                    ingredientsSection
-                    spicesSection
-                    timelineSection
-
-                    if !warningCards.isEmpty {
-                        warningsSection
-                    }
+                if !warningCards.isEmpty {
+                    warningsSection
                 }
-                .padding(AppSpacing.screen)
-                .padding(.bottom, 8)
             }
+            .padding(AppSpacing.screen)
+            .padding(.bottom, 8)
         }
+        .background(AppTheme.background)
         .navigationTitle("Twój rosół")
         .navigationBarTitleDisplayMode(.inline)
         .safeAreaInset(edge: .bottom) {
@@ -581,44 +575,6 @@ extension BrothResultView {
             return "To podsumowanie kalkulatora dla wybranego przepisu i składników."
         case .custom:
             return "To podsumowanie kalkulatora na bazie mięsa, które wybrałeś."
-        }
-    }
-
-    private var topRecipeBackdrop: some View {
-        Group {
-            if let assetName = recipeBackdropAssetName {
-                Image(assetName)
-                    .resizable()
-                    .scaledToFill()
-                    .frame(height: 240)
-                    .frame(maxWidth: .infinity)
-                    .clipped()
-                    .overlay(
-                        LinearGradient(
-                            colors: [
-                                Color.black.opacity(0.22),
-                                AppTheme.background.opacity(0.85),
-                                AppTheme.background
-                            ],
-                            startPoint: .top,
-                            endPoint: .bottom
-                        )
-                    )
-                    .allowsHitTesting(false)
-            }
-        }
-    }
-
-    private var recipeBackdropAssetName: String? {
-        guard case .preset(let preset) = mode else { return nil }
-
-        switch preset {
-        case .poultryReady:
-            return "HomeRecipePoultry"
-        case .poultryBeefReady:
-            return "HomeRecipePoultryBeef"
-        case .grandmaReady:
-            return "HomeRecipeGrandma"
         }
     }
 
@@ -1146,55 +1102,84 @@ private struct ResultMetricCard: View {
     let subtitle: String
     let tooltip: String
     @State private var showTooltip = false
+    @State private var tooltipToken: UUID?
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            HStack(alignment: .top, spacing: 8) {
-                Text(title.uppercased())
-                    .font(.system(size: 10, weight: .semibold))
-                    .tracking(1.2)
-                    .foregroundStyle(AppTheme.textSecondary)
-
-                Spacer(minLength: 0)
-
-                Button {
-                    showTooltip = true
-                } label: {
-                    Image(systemName: "info.circle")
-                        .font(.system(size: 14, weight: .semibold))
+        ZStack(alignment: .topTrailing) {
+            VStack(alignment: .leading, spacing: 4) {
+                HStack(alignment: .top, spacing: 8) {
+                    Text(title.uppercased())
+                        .font(.system(size: 10, weight: .semibold))
+                        .tracking(1.2)
                         .foregroundStyle(AppTheme.textSecondary)
+
+                    Spacer(minLength: 0)
+
+                    Button {
+                        showTooltipTemporarily()
+                    } label: {
+                        Image(systemName: "info.circle")
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundStyle(AppTheme.textSecondary)
+                    }
+                    .buttonStyle(.plain)
                 }
-                .buttonStyle(.plain)
-                .popover(isPresented: $showTooltip, arrowEdge: .top) {
-                    Text(tooltip)
-                        .font(.system(size: 13, weight: .medium))
-                        .foregroundStyle(AppTheme.textPrimary)
-                        .padding(12)
-                        .frame(maxWidth: 260, alignment: .leading)
-                }
+
+                Text(value)
+                    .font(.system(size: 28, weight: .bold))
+                    .foregroundStyle(AppTheme.textPrimary)
+                    .lineLimit(2)
+                    .minimumScaleFactor(0.82)
+
+                Text(subtitle)
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundStyle(AppTheme.textSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
             }
+            .frame(maxWidth: .infinity, minHeight: 82, alignment: .leading)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 10)
+            .background(AppTheme.surface)
+            .overlay(
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .stroke(AppTheme.border, lineWidth: 1)
+            )
+            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .appSoftShadow()
 
-            Text(value)
-                .font(.system(size: 28, weight: .bold))
-                .foregroundStyle(AppTheme.textPrimary)
-                .lineLimit(2)
-                .minimumScaleFactor(0.82)
-
-            Text(subtitle)
-                .font(.system(size: 13, weight: .medium))
-                .foregroundStyle(AppTheme.textSecondary)
-                .fixedSize(horizontal: false, vertical: true)
+            if showTooltip {
+                Text(tooltip)
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundStyle(AppTheme.textPrimary)
+                    .multilineTextAlignment(.leading)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 8)
+                    .frame(maxWidth: 180, alignment: .leading)
+                    .background(AppTheme.surface)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 10, style: .continuous)
+                            .stroke(AppTheme.border, lineWidth: 1)
+                    )
+                    .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                    .shadow(color: Color.black.opacity(0.08), radius: 6, x: 0, y: 2)
+                    .padding(.top, 28)
+                    .padding(.trailing, 10)
+                    .transition(.opacity.combined(with: .scale(scale: 0.96, anchor: .topTrailing)))
+                    .zIndex(1)
+            }
         }
-        .frame(maxWidth: .infinity, minHeight: 82, alignment: .leading)
-        .padding(.horizontal, 12)
-        .padding(.vertical, 10)
-        .background(AppTheme.surface)
-        .overlay(
-            RoundedRectangle(cornerRadius: AppRadius.card, style: .continuous)
-                .stroke(AppTheme.border, lineWidth: 1)
-        )
-        .clipShape(RoundedRectangle(cornerRadius: AppRadius.card, style: .continuous))
-        .appSoftShadow()
+        .animation(.easeInOut(duration: 0.18), value: showTooltip)
+    }
+
+    private func showTooltipTemporarily() {
+        let token = UUID()
+        tooltipToken = token
+        showTooltip = true
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.4) {
+            guard tooltipToken == token else { return }
+            showTooltip = false
+        }
     }
 }
 
