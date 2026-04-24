@@ -75,6 +75,22 @@ struct RecipesHubView: View {
                     }
                     .buttonStyle(.plain)
                 }
+
+                RecipeListCard(
+                    title: "Klasyczny ramen shoyu",
+                    subtitle: "Autorski przepis premium z prowadzeniem krok po kroku.",
+                    assetName: "HomeChefRamen",
+                    isLocked: true,
+                    badgeTitle: "Wkrótce"
+                )
+
+                RecipeListCard(
+                    title: "Bulion wołowy demi-glace",
+                    subtitle: "Koncentrat o głębokim smaku, idealny do sosów i redukcji.",
+                    assetName: "HomeChefDemiGlace",
+                    isLocked: true,
+                    badgeTitle: "Wkrótce"
+                )
             }
         }
     }
@@ -86,16 +102,16 @@ struct RecipesHubView: View {
                 .foregroundStyle(AppTheme.textPrimary)
 
             RecipeListCard(
-                title: "Klasyczny ramen shoyu",
-                subtitle: "Autorski przepis premium z prowadzeniem krok po kroku.",
-                assetName: "HomeChefRamen",
+                title: "Polski rosół z jabłkami chefa Antoniego Wierzbickiego",
+                subtitle: "Nowoczesna interpretacja tradycji: pieczone jabłka, majeranek i głęboki, domowy finisz.",
+                assetName: "HomeChefOne",
                 isLocked: true
             )
 
             RecipeListCard(
-                title: "Bulion wołowy demi-glace",
-                subtitle: "Koncentrat o głębokim smaku, idealny do sosów i redukcji.",
-                assetName: "HomeChefDemiGlace",
+                title: "Azjatycki bulion chefa Takumiego Sato",
+                subtitle: "Aromatyczny bulion inspirowany Dalekim Wschodem: imbir, trawa cytrynowa i lekko pikantny profil.",
+                assetName: "HomeChefTwo",
                 isLocked: true
             )
         }
@@ -134,6 +150,7 @@ private struct RecipeListCard: View {
     let subtitle: String
     let assetName: String
     var isLocked = false
+    var badgeTitle: String? = nil
 
     var body: some View {
         AppCard {
@@ -146,6 +163,22 @@ private struct RecipeListCard: View {
 
                 VStack(alignment: .leading, spacing: 8) {
                     HStack {
+                        if let badgeTitle {
+                            Text(badgeTitle)
+                                .font(.system(size: 10, weight: .bold))
+                                .foregroundStyle(AppTheme.textPrimary)
+                                .padding(.horizontal, 8)
+                                .frame(height: 20)
+                                .background(
+                                    Capsule()
+                                        .fill(AppTheme.accentSoft)
+                                )
+                                .overlay(
+                                    Capsule()
+                                        .stroke(AppTheme.accent.opacity(0.4), lineWidth: 1)
+                                )
+                        }
+
                         Text(title)
                             .font(.system(size: 17, weight: .bold))
                             .foregroundStyle(AppTheme.textPrimary)

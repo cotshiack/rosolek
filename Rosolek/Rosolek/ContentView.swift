@@ -301,6 +301,24 @@ private struct HomeView: View {
                         .buttonStyle(.plain)
                         .frame(width: compact ? 206 : 216)
                     }
+
+                    LockedChefRecipeCard(
+                        compact: compact,
+                        title: "Klasyczny ramen shoyu",
+                        subtitle: "Autorski przepis premium z prowadzeniem krok po kroku.",
+                        artwork: .asset("HomeChefRamen"),
+                        badgeTitle: "Wkrótce"
+                    )
+                    .frame(width: compact ? 206 : 216)
+
+                    LockedChefRecipeCard(
+                        compact: compact,
+                        title: "Bulion wołowy demi-glace",
+                        subtitle: "Koncentrat o głębokim smaku, idealny do sosów i redukcji.",
+                        artwork: .asset("HomeChefDemiGlace"),
+                        badgeTitle: "Wkrótce"
+                    )
+                    .frame(width: compact ? 206 : 216)
                 }
                 .padding(.vertical, 2)
             }
@@ -356,17 +374,17 @@ private struct HomeView: View {
                 HStack(spacing: 14) {
                     LockedChefRecipeCard(
                         compact: compact,
-                        title: "Klasyczny ramen shoyu",
-                        subtitle: "Autorski przepis premium z prowadzeniem krok po kroku.",
-                        artwork: .asset("HomeChefRamen")
+                        title: "Polski rosół z jabłkami chefa Antoniego Wierzbickiego",
+                        subtitle: "Nowoczesna interpretacja tradycji: pieczone jabłka, majeranek i głęboki, domowy finisz.",
+                        artwork: .asset("HomeChefOne")
                     )
                     .frame(width: compact ? 206 : 216)
 
                     LockedChefRecipeCard(
                         compact: compact,
-                        title: "Bulion wołowy demi-glace",
-                        subtitle: "Koncentrat o głębokim smaku, idealny do sosów i redukcji.",
-                        artwork: .asset("HomeChefDemiGlace")
+                        title: "Azjatycki bulion chefa Takumiego Sato",
+                        subtitle: "Aromatyczny bulion inspirowany Dalekim Wschodem: imbir, trawa cytrynowa i lekko pikantny profil.",
+                        artwork: .asset("HomeChefTwo")
                     )
                     .frame(width: compact ? 206 : 216)
                 }
@@ -610,6 +628,7 @@ private struct LockedChefRecipeCard: View {
     let title: String
     let subtitle: String
     let artwork: HomeCardArtwork
+    var badgeTitle: String = "Premium"
 
     var body: some View {
         AppCard(
@@ -624,7 +643,7 @@ private struct LockedChefRecipeCard: View {
                 )
 
                 HStack {
-                    PremiumBadge()
+                    PremiumBadge(title: badgeTitle)
                     Spacer(minLength: 0)
                     Image(systemName: "lock.fill")
                         .font(.system(size: 14, weight: .semibold))
@@ -655,8 +674,10 @@ private struct LockedChefRecipeCard: View {
 }
 
 private struct PremiumBadge: View {
+    var title: String = "Premium"
+
     var body: some View {
-        Text("Premium")
+        Text(title)
             .font(.system(size: 11, weight: .bold))
             .foregroundStyle(AppTheme.textPrimary)
             .padding(.horizontal, 10)
