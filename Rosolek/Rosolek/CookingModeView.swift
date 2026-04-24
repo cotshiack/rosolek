@@ -835,23 +835,35 @@ struct CookingModeView: View {
                         .fixedSize(horizontal: false, vertical: true)
                 }
 
-                StartChecklistCard(
-                    hasThermometer: hasThermometer,
-                    waterLiters: result.waterLiters,
-                    useVinegar: batchUsesVinegar,
-                    vinegarMl: result.appleCiderVinegarMl,
-                    prepMeatReady: $prepMeatReady,
-                    prepWaterReady: $prepWaterReady,
-                    prepPotReady: $prepPotReady,
-                    prepThermometerReady: $prepThermometerReady,
-                    prepVinegarReady: $prepVinegarReady
-                )
-
                 if canStartCooking {
                     ReadyToStartBanner()
+                        .transition(
+                            .asymmetric(
+                                insertion: .move(edge: .bottom).combined(with: .opacity),
+                                removal: .opacity
+                            )
+                        )
+                } else {
+                    StartChecklistCard(
+                        hasThermometer: hasThermometer,
+                        waterLiters: result.waterLiters,
+                        useVinegar: batchUsesVinegar,
+                        vinegarMl: result.appleCiderVinegarMl,
+                        prepMeatReady: $prepMeatReady,
+                        prepWaterReady: $prepWaterReady,
+                        prepPotReady: $prepPotReady,
+                        prepThermometerReady: $prepThermometerReady,
+                        prepVinegarReady: $prepVinegarReady
+                    )
+                    .transition(
+                        .asymmetric(
+                            insertion: .opacity,
+                            removal: .move(edge: .top).combined(with: .opacity)
+                        )
+                    )
                 }
             }
-            .animation(.easeInOut(duration: 0.2), value: canStartCooking)
+            .animation(.spring(response: 0.35, dampingFraction: 0.88), value: canStartCooking)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .appSoftShadow()
