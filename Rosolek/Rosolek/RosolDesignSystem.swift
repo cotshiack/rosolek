@@ -5,6 +5,7 @@ enum AppTheme {
     static let surface = Color(hex: "FFFFFF")
     static let surfaceMuted = Color(hex: "F7F7F5")
     static let surfaceSoft = Color(hex: "FCFCFA")
+    static let surfaceLocked = Color(hex: "F9F9F7")
 
     static let textPrimary = Color(hex: "111111")
     static let textSecondary = Color(hex: "6E6E73")

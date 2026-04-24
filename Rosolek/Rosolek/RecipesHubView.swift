@@ -154,7 +154,7 @@ private struct RecipeListCard: View {
 
     var body: some View {
         AppCard(
-            background: isLocked ? AppTheme.surfaceSoft : AppTheme.surface,
+            background: isLocked ? AppTheme.surfaceLocked : AppTheme.surface,
             border: AppTheme.border
         ) {
             HStack(spacing: 14) {

@@ -632,7 +632,7 @@ private struct LockedChefRecipeCard: View {
 
     var body: some View {
         AppCard(
-            background: AppTheme.surfaceSoft,
+            background: AppTheme.surfaceLocked,
             border: AppTheme.border
         ) {
             VStack(alignment: .leading, spacing: compact ? 14 : 16) {
