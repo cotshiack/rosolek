@@ -678,6 +678,7 @@ struct CookingModeView: View {
             prepThermometerReady = !hasThermometer
             prepVinegarReady = !batchUsesVinegar
             restoreSessionIfNeeded()
+            attachToExistingLiveActivityIfNeeded()
             updateLiveActivity()
         }
         .onDisappear {
@@ -690,6 +691,7 @@ struct CookingModeView: View {
                 updateLiveActivity()
             } else if newPhase == .active {
                 resumeFromBackground()
+                attachToExistingLiveActivityIfNeeded()
                 updateLiveActivity()
             }
         }
@@ -1398,6 +1400,11 @@ struct CookingModeView: View {
 
     private func startLiveActivity() {
         guard ActivityAuthorizationInfo().areActivitiesEnabled else { return }
+        if let existingActivity = existingLiveActivity() {
+            liveActivity = existingActivity
+            updateLiveActivity()
+            return
+        }
         let attributes = CookingActivityAttributes(batchTitle: currentBatch.displayTitle)
         let state = liveActivityState()
         liveActivity = try? Activity.request(
@@ -1407,6 +1414,9 @@ struct CookingModeView: View {
     }
 
     private func updateLiveActivity() {
+        if liveActivity == nil {
+            liveActivity = existingLiveActivity()
+        }
         guard let activity = liveActivity else { return }
         let state = liveActivityState()
         Task {
@@ -1421,6 +1431,19 @@ struct CookingModeView: View {
             await activity.end(.init(state: state, staleDate: nil), dismissalPolicy: .immediate)
         }
         liveActivity = nil
+    }
+
+    private func attachToExistingLiveActivityIfNeeded() {
+        guard ActivityAuthorizationInfo().areActivitiesEnabled else { return }
+        if liveActivity == nil {
+            liveActivity = existingLiveActivity()
+        }
+    }
+
+    private func existingLiveActivity() -> Activity<CookingActivityAttributes>? {
+        Activity<CookingActivityAttributes>.activities.first { activity in
+            activity.attributes.batchTitle == currentBatch.displayTitle
+        }
     }
 
     private func saveSession(backgrounded: Bool) {

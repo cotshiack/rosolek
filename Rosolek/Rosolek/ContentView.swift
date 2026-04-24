@@ -155,7 +155,6 @@ private struct HomeView: View {
         .toolbar(.hidden, for: .navigationBar)
         .onAppear {
             returnToHomeTrigger = 0
-            selectedMenuTab = .home
             CookingSessionCoordinator.clearOrphanedSessionIfNeeded(in: batchStore)
             activeCookingSession = CookingSession.load()
             handlePendingHomeRoute()
