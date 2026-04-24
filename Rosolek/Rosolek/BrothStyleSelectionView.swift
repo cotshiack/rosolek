@@ -116,8 +116,8 @@ private struct ProfileChoiceCard: View {
 
     private var chips: [String] {
         switch profile {
-        case .cleaner: return ["klarowniejszy", "większy uzysk", "na co dzień"]
-        case .richer:  return ["mocniejszy aromat", "pełniejsze body", "dłuższe gotowanie"]
+        case .cleaner: return ["subtelny aromat", "lekki finisz", "czysty kolor"]
+        case .richer:  return ["głęboki aromat", "długi finisz", "mocne body"]
         }
     }
 
