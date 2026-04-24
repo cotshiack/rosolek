@@ -301,6 +301,7 @@ struct BatchRenameSheet: View {
     let onSave: () -> Void
 
     @Environment(\.dismiss) private var dismiss
+    @FocusState private var renameFieldFocused: Bool
 
     private var previewName: String {
         let trimmed = renameText.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -329,6 +330,13 @@ struct BatchRenameSheet: View {
                 )
 
                 TextField(defaultTitle, text: $renameText)
+                    .focused($renameFieldFocused)
+                    .textInputAutocapitalization(.words)
+                    .autocorrectionDisabled(true)
+                    .submitLabel(.done)
+                    .onSubmit {
+                        renameFieldFocused = false
+                    }
                     .font(.system(size: 17, weight: .semibold))
                     .foregroundStyle(AppTheme.textPrimary)
                     .padding(.horizontal, 16)
@@ -362,6 +370,11 @@ struct BatchRenameSheet: View {
                     }
                     .font(.system(size: 16, weight: .bold))
                     .foregroundStyle(AppTheme.textPrimary)
+                }
+            }
+            .onAppear {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                    renameFieldFocused = true
                 }
             }
         }

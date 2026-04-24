@@ -76,6 +76,7 @@ struct BatchFeedbackView: View {
     @AppStorage("returnToHomeTrigger") private var returnToHomeTrigger = 0
     @Environment(\.dismiss) private var dismiss
     @FocusState private var notesFieldFocused: Bool
+    @FocusState private var focusedField: FeedbackInputField?
 
     let batch: BatchRecord
     var standaloneMode: Bool = false
@@ -86,6 +87,10 @@ struct BatchFeedbackView: View {
     @State private var fatFeedback: BatchFatFeedback?
     @State private var clarityFeedback: BatchClarityFeedback?
     @State private var notes: String
+
+    private enum FeedbackInputField {
+        case batchName
+    }
 
     init(batch: BatchRecord, standaloneMode: Bool = false) {
         self.batch = batch
@@ -120,11 +125,13 @@ struct BatchFeedbackView: View {
         }
         .toolbar {
             ToolbarItemGroup(placement: .keyboard) {
-                Spacer()
-                Button("Gotowe") {
-                    notesFieldFocused = false
+                if notesFieldFocused {
+                    Spacer()
+                    Button("Gotowe") {
+                        notesFieldFocused = false
+                    }
+                    .font(.system(size: 15, weight: .semibold))
                 }
-                .font(.system(size: 15, weight: .semibold))
             }
         }
     }
@@ -157,6 +164,13 @@ struct BatchFeedbackView: View {
                 }
 
                 TextField(batch.defaultTitle, text: $batchName)
+                    .focused($focusedField, equals: .batchName)
+                    .textInputAutocapitalization(.words)
+                    .autocorrectionDisabled(true)
+                    .submitLabel(.done)
+                    .onSubmit {
+                        focusedField = nil
+                    }
                     .font(.system(size: 15, weight: .medium))
                     .foregroundStyle(AppTheme.textPrimary)
                     .padding(.horizontal, 14)

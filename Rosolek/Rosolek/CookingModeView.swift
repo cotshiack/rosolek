@@ -678,6 +678,7 @@ struct CookingModeView: View {
             prepThermometerReady = !hasThermometer
             prepVinegarReady = !batchUsesVinegar
             restoreSessionIfNeeded()
+            attachToExistingLiveActivityIfNeeded()
             updateLiveActivity()
         }
         .onDisappear {
@@ -690,6 +691,7 @@ struct CookingModeView: View {
                 updateLiveActivity()
             } else if newPhase == .active {
                 resumeFromBackground()
+                attachToExistingLiveActivityIfNeeded()
                 updateLiveActivity()
             }
         }
@@ -1391,13 +1393,19 @@ struct CookingModeView: View {
             totalSteps: max(1, phases.count - 1),
             stepEndDate: stepEnd,
             totalEndDate: totalEnd,
+            totalProgress: progress,
             isRunning: isStageRunning
         )
     }
 
     private func startLiveActivity() {
         guard ActivityAuthorizationInfo().areActivitiesEnabled else { return }
-        let attributes = CookingActivityAttributes(batchTitle: currentBatch.displayTitle)
+        if let existingActivity = existingLiveActivity() {
+            liveActivity = existingActivity
+            updateLiveActivity()
+            return
+        }
+        let attributes = CookingActivityAttributes(batchID: currentBatch.id, batchTitle: currentBatch.displayTitle)
         let state = liveActivityState()
         liveActivity = try? Activity.request(
             attributes: attributes,
@@ -1406,6 +1414,9 @@ struct CookingModeView: View {
     }
 
     private func updateLiveActivity() {
+        if liveActivity == nil {
+            liveActivity = existingLiveActivity()
+        }
         guard let activity = liveActivity else { return }
         let state = liveActivityState()
         Task {
@@ -1420,6 +1431,40 @@ struct CookingModeView: View {
             await activity.end(.init(state: state, staleDate: nil), dismissalPolicy: .immediate)
         }
         liveActivity = nil
+    }
+
+    private func attachToExistingLiveActivityIfNeeded() {
+        guard ActivityAuthorizationInfo().areActivitiesEnabled else { return }
+        if liveActivity == nil {
+            liveActivity = existingLiveActivity()
+        }
+        if !sessionStarted, phaseIndex == 0 {
+            restoreFromLiveActivityIfNeeded()
+        }
+    }
+
+    private func existingLiveActivity() -> Activity<CookingActivityAttributes>? {
+        Activity<CookingActivityAttributes>.activities.first { activity in
+            activity.attributes.batchID == currentBatch.id
+        }
+    }
+
+    private func restoreFromLiveActivityIfNeeded() {
+        guard let activity = existingLiveActivity() else { return }
+        let state = activity.content.state
+        guard state.stepNumber > 0 else { return }
+
+        phaseIndex = min(max(0, state.stepNumber), phases.count - 1)
+        sessionStarted = true
+        isStageRunning = state.isRunning
+        phaseElapsedSeconds = 0
+
+        if let currentDuration = phases[phaseIndex].durationSeconds,
+           let stepEndDate = state.stepEndDate,
+           state.isRunning {
+            let remaining = max(0, Int(stepEndDate.timeIntervalSinceNow))
+            phaseElapsedSeconds = max(0, currentDuration - remaining)
+        }
     }
 
     private func saveSession(backgrounded: Bool) {
@@ -1467,7 +1512,10 @@ struct CookingModeView: View {
         guard let session = CookingSession.load(),
               session.batchID == batch.id,
               !isFinished
-        else { return }
+        else {
+            restoreFromLiveActivityIfNeeded()
+            return
+        }
 
         phaseIndex = session.phaseIndex
         phaseElapsedSeconds = session.phaseElapsedSeconds
@@ -1479,6 +1527,10 @@ struct CookingModeView: View {
         prepPotReady = session.prepPotReady
         prepThermometerReady = session.prepThermometerReady
         prepVinegarReady = session.prepVinegarReady
+
+        if !sessionStarted, phaseIndex == 0 {
+            restoreFromLiveActivityIfNeeded()
+        }
 
         if let backgroundedAt = session.backgroundedAt, session.isStageRunning {
             let elapsed = Int(Date().timeIntervalSince(backgroundedAt))

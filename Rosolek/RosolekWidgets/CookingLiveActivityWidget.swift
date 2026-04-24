@@ -10,9 +10,11 @@ struct CookingActivityAttributes: ActivityAttributes {
         var totalSteps: Int
         var stepEndDate: Date?
         var totalEndDate: Date?
+        var totalProgress: Double
         var isRunning: Bool
     }
 
+    let batchID: UUID
     let batchTitle: String
 }
 
@@ -59,24 +61,17 @@ struct CookingLiveActivityWidget: Widget {
                     }
                 }
                 DynamicIslandExpandedRegion(.bottom) {
-                    VStack(alignment: .leading, spacing: 6) {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text(context.state.isRunning ? "Gotowanie trwa" : "Gotowanie wstrzymane")
+                            .font(.system(size: 12, weight: .bold))
+                            .foregroundStyle(context.state.isRunning ? WidgetTheme.accent : WidgetTheme.textSecondary)
                         Text(context.state.stepName)
                             .font(.system(size: 14, weight: .semibold))
                             .foregroundStyle(WidgetTheme.textPrimary)
                             .lineLimit(1)
-                        if let endDate = context.state.totalEndDate {
-                            HStack(spacing: 4) {
-                                Image(systemName: "clock")
-                                    .font(.system(size: 10, weight: .semibold))
-                                    .foregroundStyle(WidgetTheme.textSecondary)
-                                Text("Koniec za ")
-                                    .font(.system(size: 12, weight: .medium))
-                                    .foregroundStyle(WidgetTheme.textSecondary)
-                                Text(endDate, style: .relative)
-                                    .font(.system(size: 12, weight: .semibold))
-                                    .foregroundStyle(WidgetTheme.textSecondary)
-                            }
-                        }
+
+                        ProgressView(value: max(0, min(1, context.state.totalProgress)))
+                            .tint(WidgetTheme.accent)
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.top, 4)
@@ -101,7 +96,7 @@ struct CookingLiveActivityWidget: Widget {
                     .font(.system(size: 12, weight: .semibold))
                     .foregroundStyle(WidgetTheme.accent)
             }
-            .widgetURL(URL(string: "rosolek://cooking"))
+            .widgetURL(cookingURL(for: context.attributes.batchID))
         }
     }
 }
@@ -111,50 +106,69 @@ private struct LockScreenView: View {
     let state: CookingActivityAttributes.ContentState
 
     var body: some View {
-        HStack(alignment: .center, spacing: 14) {
-            ZStack {
-                Circle()
-                    .fill(WidgetTheme.accent)
-                    .frame(width: 44, height: 44)
-                Image(systemName: "flame.fill")
-                    .font(.system(size: 18, weight: .semibold))
-                    .foregroundStyle(WidgetTheme.textPrimary)
-            }
-
-            VStack(alignment: .leading, spacing: 2) {
-                Text("Gotowanie na żywo")
-                    .font(.system(size: 13, weight: .bold))
-                    .foregroundStyle(WidgetTheme.textPrimary)
-                    .lineLimit(1)
-                Text(state.stepName)
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundStyle(WidgetTheme.textSecondary)
-                    .lineLimit(1)
-            }
-
-            Spacer(minLength: 8)
-
-            VStack(alignment: .trailing, spacing: 2) {
-                if let endDate = state.stepEndDate, state.isRunning, endDate > .now {
-                    Text(timerInterval: Date.now...endDate, countsDown: true)
-                        .font(.system(size: 22, weight: .bold).monospacedDigit())
-                        .foregroundStyle(WidgetTheme.textPrimary)
-                        .multilineTextAlignment(.trailing)
-                } else {
-                    Text("Pauza")
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundStyle(WidgetTheme.textSecondary)
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(alignment: .center) {
+                HStack(spacing: 6) {
+                    Image(systemName: "flame.fill")
+                        .font(.system(size: 12, weight: .bold))
+                    Text(state.isRunning ? "Gotowanie trwa" : "Gotowanie wstrzymane")
+                        .font(.system(size: 12, weight: .bold))
                 }
+                .foregroundStyle(state.isRunning ? WidgetTheme.accent : WidgetTheme.textSecondary)
+
+                Spacer(minLength: 8)
+
                 Text("Etap \(state.stepNumber)/\(state.totalSteps)")
                     .font(.system(size: 11, weight: .semibold))
                     .foregroundStyle(WidgetTheme.textSecondary)
+            }
+
+            HStack(alignment: .firstTextBaseline) {
+                if let endDate = state.stepEndDate, state.isRunning, endDate > .now {
+                    Text(timerInterval: Date.now...endDate, countsDown: true)
+                        .font(.system(size: 34, weight: .bold).monospacedDigit())
+                        .foregroundStyle(WidgetTheme.textPrimary)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.8)
+                } else {
+                    Text("Pauza")
+                        .font(.system(size: 24, weight: .bold))
+                        .foregroundStyle(WidgetTheme.textSecondary)
+                }
+                Spacer(minLength: 0)
+            }
+
+            Text(state.stepName)
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundStyle(WidgetTheme.textPrimary)
+                .lineLimit(1)
+
+            ProgressView(value: clampedProgress)
+                .tint(WidgetTheme.accent)
+
+            if let totalEnd = state.totalEndDate, state.isRunning, totalEnd > .now {
+                HStack(spacing: 4) {
+                    Text("Koniec całości za")
+                    Text(totalEnd, style: .relative)
+                        .fontWeight(.semibold)
+                }
+                .font(.system(size: 12, weight: .medium))
+                .foregroundStyle(WidgetTheme.textSecondary)
             }
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 14)
         .background(WidgetTheme.surface)
-        .widgetURL(URL(string: "rosolek://cooking"))
+        .widgetURL(cookingURL(for: attributes.batchID))
     }
+
+    private var clampedProgress: Double {
+        max(0, min(1, state.totalProgress))
+    }
+}
+
+private func cookingURL(for batchID: UUID) -> URL? {
+    URL(string: "rosolek://cooking?batchID=\(batchID.uuidString)")
 }
 
 @main

@@ -8,8 +8,10 @@ struct CookingActivityAttributes: ActivityAttributes {
         var totalSteps: Int
         var stepEndDate: Date?
         var totalEndDate: Date?
+        var totalProgress: Double
         var isRunning: Bool
     }
 
+    let batchID: UUID
     let batchTitle: String
 }

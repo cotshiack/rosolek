@@ -59,13 +59,15 @@ struct SettingsView: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItemGroup(placement: .keyboard) {
-                Spacer()
+                if focusedField == .customPot {
+                    Spacer()
 
-                Button("Gotowe") {
-                    focusedField = nil
+                    Button("Gotowe") {
+                        focusedField = nil
+                    }
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(AppTheme.textPrimary)
                 }
-                .font(.system(size: 15, weight: .semibold))
-                .foregroundStyle(AppTheme.textPrimary)
             }
         }
         .onAppear {
@@ -165,6 +167,10 @@ struct SettingsView: View {
             TextField("Np. Paweł", text: $draftName)
                 .textInputAutocapitalization(.words)
                 .autocorrectionDisabled(true)
+                .submitLabel(.done)
+                .onSubmit {
+                    focusedField = nil
+                }
                 .focused($focusedField, equals: .name)
                 .font(.system(size: 17, weight: .semibold))
                 .foregroundStyle(AppTheme.textPrimary)
@@ -224,19 +230,40 @@ struct SettingsView: View {
             }
 
             if isCustomPotSelected {
-                TextField("Np. 8", text: $customPotSize)
-                    .keyboardType(.numberPad)
-                    .focused($focusedField, equals: .customPot)
-                    .font(.system(size: 17, weight: .semibold))
-                    .foregroundStyle(AppTheme.textPrimary)
-                    .padding(.horizontal, 14)
-                    .frame(height: 50)
-                    .background(AppTheme.background)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: AppRadius.button, style: .continuous)
-                            .stroke(AppTheme.border, lineWidth: 1)
+                HStack(spacing: 10) {
+                    TextField("Np. 8", text: $customPotSize)
+                        .keyboardType(.numberPad)
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled(true)
+                        .focused($focusedField, equals: .customPot)
+                        .font(.system(size: 19, weight: .bold))
+                        .foregroundStyle(AppTheme.textPrimary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+
+                    Text("l")
+                        .font(.system(size: 16, weight: .bold))
+                        .foregroundStyle(AppTheme.textSecondary)
+                        .padding(.horizontal, 10)
+                        .frame(height: 30)
+                        .background(AppTheme.surfaceMuted)
+                        .clipShape(Capsule())
+                }
+                .padding(.horizontal, 14)
+                .frame(height: 54)
+                .background(AppTheme.surface)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        .stroke(potInputAlert?.tone.borderColor ?? AppTheme.border, lineWidth: 1)
+                )
+                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+
+                if let alert = potInputAlert {
+                    SettingsInlineAlertCard(
+                        systemImage: alert.systemImage,
+                        message: alert.message,
+                        tone: alert.tone
                     )
-                    .clipShape(RoundedRectangle(cornerRadius: AppRadius.button, style: .continuous))
+                }
             }
 
             inlineActions(
@@ -494,10 +521,49 @@ struct SettingsView: View {
     private var canSavePot: Bool {
         if isCustomPotSelected {
             guard let value = Int(customPotSize) else { return false }
-            return value > 0
+            guard value > 0 else { return false }
+            return potInputAlert?.blocksSave != true
         }
 
         return draftPotSize > 0
+    }
+
+    private struct PotInputAlertData {
+        let systemImage: String
+        let message: String
+        let tone: SettingsInlineAlertTone
+        let blocksSave: Bool
+    }
+
+    private var potInputAlert: PotInputAlertData? {
+        guard isCustomPotSelected else { return nil }
+        guard let value = Int(customPotSize), value > 0 else { return nil }
+
+        switch value {
+        case 1...2:
+            return PotInputAlertData(
+                systemImage: "exclamationmark.triangle",
+                message: "To bardzo mały garnek. Sprawdź, czy na pewno wpisana pojemność jest poprawna.",
+                tone: .warning,
+                blocksSave: false
+            )
+        case 3...20:
+            return nil
+        case 21...30:
+            return PotInputAlertData(
+                systemImage: "info.circle",
+                message: "To duży garnek. Jeśli naprawdę najczęściej gotujesz w takim, możesz zostawić tę wartość.",
+                tone: .neutral,
+                blocksSave: false
+            )
+        default:
+            return PotInputAlertData(
+                systemImage: "xmark.octagon",
+                message: "Maksymalna pojemność w aplikacji to 30 l. Wpisz mniejszą wartość, aby zapisać.",
+                tone: .danger,
+                blocksSave: true
+            )
+        }
     }
 
     private func toggleEditor(_ editor: EditableSetting) {
@@ -591,5 +657,64 @@ struct SettingsView: View {
         activeEditor = nil
         hasCompletedOnboarding = false
         returnToHomeTrigger += 1
+    }
+}
+
+private enum SettingsInlineAlertTone {
+    case neutral
+    case warning
+    case danger
+
+    var background: Color {
+        switch self {
+        case .neutral: return AppTheme.surfaceMuted
+        case .warning: return AppTheme.accentSoft
+        case .danger: return Color(hex: "FFE8E6")
+        }
+    }
+
+    var borderColor: Color {
+        switch self {
+        case .neutral: return AppTheme.border
+        case .warning: return AppTheme.accent.opacity(0.7)
+        case .danger: return Color(hex: "F3B7B2")
+        }
+    }
+
+    var iconColor: Color {
+        switch self {
+        case .neutral: return AppTheme.textSecondary
+        case .warning: return AppTheme.warning
+        case .danger: return AppTheme.textPrimary
+        }
+    }
+}
+
+private struct SettingsInlineAlertCard: View {
+    let systemImage: String
+    let message: String
+    let tone: SettingsInlineAlertTone
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 10) {
+            Image(systemName: systemImage)
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundStyle(tone.iconColor)
+                .padding(.top, 1)
+
+            Text(message)
+                .font(.system(size: 13, weight: .medium))
+                .foregroundStyle(AppTheme.textPrimary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 11)
+        .background(tone.background)
+        .overlay(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .stroke(tone.borderColor, lineWidth: 1)
+        )
+        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
     }
 }

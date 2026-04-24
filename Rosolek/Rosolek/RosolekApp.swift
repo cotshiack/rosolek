@@ -1,10 +1,10 @@
 import SwiftUI
+import Foundation
 
 @main
 struct RosolekApp: App {
     @StateObject private var batchStore = BatchStore()
     @StateObject private var router = AppRouter()
-    @AppStorage("returnToHomeTrigger") private var returnToHomeTrigger = 0
 
     var body: some Scene {
         WindowGroup {
@@ -13,8 +13,12 @@ struct RosolekApp: App {
                 .environmentObject(router)
                 .onOpenURL { url in
                     if url.scheme == "rosolek", url.host == "cooking" {
-                        router.routeToActiveCooking()
-                        returnToHomeTrigger += 1
+                        let components = URLComponents(url: url, resolvingAgainstBaseURL: false)
+                        let batchID = components?.queryItems?
+                            .first(where: { $0.name == "batchID" })?
+                            .value
+                            .flatMap(UUID.init(uuidString:))
+                        router.routeToActiveCooking(batchID: batchID)
                     }
                 }
         }

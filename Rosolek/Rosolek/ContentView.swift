@@ -46,6 +46,8 @@ private struct HomeView: View {
     @State private var activeCookingSession: CookingSession?
     @State private var deepLinkBatch: BatchRecord?
     @State private var navigateToDeepLinkedCooking = false
+    @State private var selectedMenuTab: HomeMenuTab = .home
+    @StateObject private var keyboard = KeyboardObserver()
 
     private var latestBatch: BatchRecord? {
         batchStore.batches.first
@@ -99,24 +101,55 @@ private struct HomeView: View {
                 AppTheme.background
                     .ignoresSafeArea()
 
-                ScrollView(showsIndicators: false) {
-                    VStack(alignment: .leading, spacing: compact ? 22 : 26) {
-                        topBar
-                        if activeCookingSession != nil {
-                            activeCookingBanner
+                Group {
+                    switch selectedMenuTab {
+                    case .home:
+                        ScrollView(showsIndicators: false) {
+                            VStack(alignment: .leading, spacing: compact ? 22 : 26) {
+                                topBar
+                                if activeCookingSession != nil {
+                                    activeCookingBanner
+                                }
+                                greetingSection(compact: compact)
+                                calculatorSection(compact: compact)
+                                readyRecipesSection(compact: compact)
+                                chefRecipesSection(compact: compact)
+                                lastCookingSection(compact: compact)
+                            }
+                            .padding(.horizontal, 16)
+                            .padding(.top, compact ? 12 : 16)
+                            .padding(.bottom, keyboard.isVisible ? 28 : 24)
                         }
-                        greetingSection(compact: compact)
-                        calculatorSection(compact: compact)
-                        readyRecipesSection(compact: compact)
-                        chefRecipesSection(compact: compact)
-                        lastCookingSection(compact: compact)
+                    case .recipes:
+                        RecipesHubView(
+                            compact: compact,
+                            selectedPresetFilter: $selectedPresetFilter
+                        )
+                    case .history:
+                        HistoryView()
+                    case .settings:
+                        SettingsView()
+                    case .live:
+                        Color.clear
                     }
-                    .padding(.horizontal, 16)
-                    .padding(.top, compact ? 12 : 16)
-                    .padding(.bottom, 28)
                 }
             }
+            .animation(.easeInOut(duration: 0.2), value: keyboard.isVisible)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                if !keyboard.isVisible {
+                    FloatingHomeMenuBar(
+                        selectedTab: $selectedMenuTab,
+                        isLiveActive: activeCookingSession != nil
+                    ) { tab in
+                        handleMenuTabTap(tab)
+                    } onLiveTap: {
+                        openActiveCookingFromMenu()
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.bottom, -8)
+                }
+            }
         }
         .navigationBarTitleDisplayMode(.inline)
         .toolbar(.hidden, for: .navigationBar)
@@ -125,6 +158,9 @@ private struct HomeView: View {
             CookingSessionCoordinator.clearOrphanedSessionIfNeeded(in: batchStore)
             activeCookingSession = CookingSession.load()
             handlePendingHomeRoute()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
+            activeCookingSession = CookingSession.load()
         }
         .onChange(of: router.pendingHomeRoute) { _, _ in
             handlePendingHomeRoute()
@@ -139,6 +175,9 @@ private struct HomeView: View {
                     hasThermometer: deepLinkBatch.hasThermometer
                 )
             }
+        }
+        .onChange(of: returnToHomeTrigger) { _, _ in
+            selectedMenuTab = .home
         }
     }
 
@@ -155,13 +194,27 @@ private struct HomeView: View {
                 systemImage: "thermometer",
                 title: hasThermometer ? "tak" : "nie"
             )
+        }
+    }
 
-            NavigationLink {
-                SettingsView()
-            } label: {
-                AppIconCircleButton(systemName: "gearshape")
+    private func openActiveCookingFromMenu() {
+        guard let batch = CookingSessionCoordinator.activeBatch(in: batchStore) else { return }
+        deepLinkBatch = batch
+        navigateToDeepLinkedCooking = true
+    }
+
+    private func handleMenuTabTap(_ tab: HomeMenuTab) {
+        switch tab {
+        case .home:
+            if selectedMenuTab == .home {
+                returnToHomeTrigger += 1
+            } else {
+                selectedMenuTab = .home
             }
-            .buttonStyle(.plain)
+        case .recipes, .history, .settings:
+            selectedMenuTab = tab
+        case .live:
+            break
         }
     }
 
@@ -263,8 +316,15 @@ private struct HomeView: View {
         guard let route = router.pendingHomeRoute else { return }
 
         switch route {
-        case .openActiveCooking:
-            if let batch = CookingSessionCoordinator.activeBatch(in: batchStore) {
+        case .openActiveCooking(let batchID):
+            let batch: BatchRecord?
+            if let batchID {
+                batch = batchStore.batch(for: batchID)
+            } else {
+                batch = CookingSessionCoordinator.activeBatch(in: batchStore)
+            }
+
+            if let batch {
                 deepLinkBatch = batch
                 navigateToDeepLinkedCooking = true
             }
@@ -754,7 +814,7 @@ private enum HomeCardArtwork {
     }
 }
 
-private enum HomeRecipeFilter: String, CaseIterable, Identifiable {
+enum HomeRecipeFilter: String, CaseIterable, Identifiable {
     case all
     case poultry
     case poultryBeef
