@@ -32,36 +32,32 @@ enum BrothKind: String, CaseIterable, Identifiable {
         switch self {
         case .rosol:
             return [
-                .init(title: "Lekki", subtitle: "Do delikatnych zup i codziennego gotowania.", profile: .cleaner),
-                .init(title: "Klasyczny", subtitle: "Najbardziej uniwersalny, domowy balans.", profile: .cleaner),
-                .init(title: "Bogaty", subtitle: "Gdy bulion ma grać główną rolę.", profile: .richer)
+                .init(title: "Lekki", subtitle: "Delikatny i klarowny na co dzień.", profile: .cleaner),
+                .init(title: "Bogaty", subtitle: "Pełniejszy, gdy bulion gra główną rolę.", profile: .richer)
             ]
         case .ramen:
             return [
-                .init(title: "Lekka baza", subtitle: "Lżejsza baza do czystych ramenów.", profile: .cleaner),
-                .init(title: "Pełna baza", subtitle: "Pełniejsza baza o głębszym body.", profile: .richer),
-                .init(title: "Mocna baza", subtitle: "Mocniejsza baza z wyraźnym charakterem.", profile: .richer)
+                .init(title: "Lekka baza", subtitle: "Czystsza baza do lżejszych ramenów.", profile: .cleaner),
+                .init(title: "Mocna baza", subtitle: "Głębsza baza do wyrazistszych misek.", profile: .richer)
             ]
         case .beef:
             return [
                 .init(title: "Czysty", subtitle: "Lżejszy wołowy finisz.", profile: .cleaner),
-                .init(title: "Klasyczny", subtitle: "Najbardziej uniwersalny profil wołowy.", profile: .richer),
-                .init(title: "Mocny", subtitle: "Do sosów i dań z mocnym bulionem.", profile: .richer)
+                .init(title: "Mocny", subtitle: "Intensywny profil pod sosy i dania.", profile: .richer)
             ]
         case .veggie:
             return [
-                .init(title: "Jasny", subtitle: "Świeży i delikatny na co dzień.", profile: .cleaner),
-                .init(title: "Głęboki", subtitle: "Mocniejszy warzywny umami pod sosy i zupy.", profile: .richer)
+                .init(title: "Jasny", subtitle: "Świeży i delikatny profil warzywny.", profile: .cleaner),
+                .init(title: "Głęboki", subtitle: "Mocniejsze umami i pełniejsze body.", profile: .richer)
             ]
         case .fish:
             return [
                 .init(title: "Delikatny", subtitle: "Lekki fumet do subtelnych dań.", profile: .cleaner),
-                .init(title: "Intensywny", subtitle: "Wyraźniejsza baza rybna do mocniejszych kompozycji.", profile: .richer)
+                .init(title: "Intensywny", subtitle: "Wyraźniejsza baza do mocniejszych kompozycji.", profile: .richer)
             ]
         }
     }
 }
-
 struct BrothStyleOption: Identifiable, Hashable {
     let title: String
     let subtitle: String
@@ -198,7 +194,7 @@ private struct BrothKindCard: View {
 
                 if isSelected {
                     LazyVGrid(
-                        columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: kind.styles.count == 2 ? 2 : 3),
+                        columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: 2),
                         spacing: 10
                     ) {
                         ForEach(kind.styles) { style in
@@ -221,15 +217,15 @@ private struct BrothKindCard: View {
                                     Text(style.title)
                                         .font(.system(size: 15, weight: .bold))
                                         .foregroundStyle(AppTheme.textPrimary)
-                                        .lineLimit(1)
+                                        
 
                                     Text(style.subtitle)
                                         .font(.system(size: 11, weight: .medium))
                                         .foregroundStyle(AppTheme.textSecondary)
-                                        .lineLimit(2)
+                                        .lineLimit(3)
                                 }
                                 .padding(12)
-                                .frame(maxWidth: .infinity, minHeight: 108, alignment: .topLeading)
+                                .frame(maxWidth: .infinity, minHeight: 122, alignment: .topLeading)
                                 .background(
                                     RoundedRectangle(cornerRadius: 14, style: .continuous)
                                         .fill(selectedStyleID == style.id ? AppTheme.accentSoft.opacity(0.2) : AppTheme.surface)
