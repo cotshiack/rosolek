@@ -238,59 +238,26 @@ private struct BrothKindCard: View {
 
 private struct BrothKindIllustration: View {
     let kind: BrothKind
+    
+    private var assetName: String {
+        switch kind {
+        case .rosol: return "HomeRecipeGrandma"
+        case .ramen: return "HomeChefRamen"
+        case .beef: return "HomeChefDemiGlace"
+        case .veggie: return "HomeChefOne"
+        case .fish: return "HomeChefTwo"
+        }
+    }
 
     var body: some View {
-        ZStack {
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .fill(AppTheme.surfaceMuted)
-                .frame(width: 56, height: 56)
-
-            switch kind {
-            case .rosol:
-                ZStack {
-                    Circle().fill(Color(hex: "E6C36A")).frame(width: 28, height: 28)
-                    Circle().stroke(Color(hex: "C79F49"), lineWidth: 2).frame(width: 30, height: 30)
-                }
-            case .ramen:
-                ZStack {
-                    Circle().fill(Color(hex: "D9B16A")).frame(width: 26, height: 26)
-                    Circle().stroke(Color(hex: "B58748"), lineWidth: 2).frame(width: 30, height: 30)
-                }
-            case .beef:
-                ZStack {
-                    RoundedRectangle(cornerRadius: 8).fill(Color(hex: "C36D54")).frame(width: 28, height: 20)
-                    RoundedRectangle(cornerRadius: 8).stroke(Color(hex: "9E4F3B"), lineWidth: 1.5).frame(width: 28, height: 20)
-                }
-            case .veggie:
-                HStack(spacing: 3) {
-                    RoundedRectangle(cornerRadius: 3).fill(Color(hex: "65B56E")).frame(width: 7, height: 16)
-                    RoundedRectangle(cornerRadius: 3).fill(Color(hex: "8CCF85")).frame(width: 7, height: 16)
-                    RoundedRectangle(cornerRadius: 3).fill(Color(hex: "5AA463")).frame(width: 7, height: 16)
-                }
-            case .fish:
-                ZStack {
-                    Ellipse().fill(Color(hex: "9EB5C7")).frame(width: 24, height: 12)
-                    Triangle()
-                        .fill(Color(hex: "86A1B5"))
-                        .frame(width: 8, height: 10)
-                        .offset(x: 12)
-                }
-            }
-        }
+        Image(assetName)
+            .resizable()
+            .scaledToFill()
+            .frame(width: 56, height: 56)
+            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 16, style: .continuous)
                 .stroke(AppTheme.border, lineWidth: 1)
         )
-    }
-}
-
-private struct Triangle: Shape {
-    func path(in rect: CGRect) -> Path {
-        var path = Path()
-        path.move(to: CGPoint(x: rect.minX, y: rect.minY))
-        path.addLine(to: CGPoint(x: rect.maxX, y: rect.midY))
-        path.addLine(to: CGPoint(x: rect.minX, y: rect.maxY))
-        path.closeSubpath()
-        return path
     }
 }
