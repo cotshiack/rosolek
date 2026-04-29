@@ -32,33 +32,31 @@ enum BrothKind: String, CaseIterable, Identifiable {
         switch self {
         case .rosol:
             return [
-                .init(title: "Lekki", subtitle: "Czystszy i delikatny", profile: .cleaner),
-                .init(title: "Klasyczny", subtitle: "Domowy, zbalansowany", profile: .cleaner),
-                .init(title: "Bogaty", subtitle: "Pełniejszy i mocniejszy", profile: .richer)
+                .init(title: "Lekki", subtitle: "Do delikatnych zup i codziennego gotowania.", profile: .cleaner),
+                .init(title: "Klasyczny", subtitle: "Najbardziej uniwersalny, domowy balans.", profile: .cleaner),
+                .init(title: "Bogaty", subtitle: "Gdy bulion ma grać główną rolę.", profile: .richer)
             ]
         case .ramen:
             return [
-                .init(title: "Lekka baza", subtitle: "Bardziej klarowna", profile: .cleaner),
-                .init(title: "Pełna baza", subtitle: "Bardziej kremowa", profile: .richer),
-                .init(title: "Mocna baza", subtitle: "Dłużej gotowana", profile: .richer)
+                .init(title: "Lekka baza", subtitle: "Lżejsza baza do czystych ramenów.", profile: .cleaner),
+                .init(title: "Pełna baza", subtitle: "Pełniejsza baza o głębszym body.", profile: .richer),
+                .init(title: "Mocna baza", subtitle: "Mocniejsza baza z wyraźnym charakterem.", profile: .richer)
             ]
         case .beef:
             return [
-                .init(title: "Czysty", subtitle: "Lżejszy finisz", profile: .cleaner),
-                .init(title: "Klasyczny", subtitle: "Zbalansowany", profile: .richer),
-                .init(title: "Mocny", subtitle: "Wyraźnie wołowy", profile: .richer)
+                .init(title: "Czysty", subtitle: "Lżejszy wołowy finisz.", profile: .cleaner),
+                .init(title: "Klasyczny", subtitle: "Najbardziej uniwersalny profil wołowy.", profile: .richer),
+                .init(title: "Mocny", subtitle: "Do sosów i dań z mocnym bulionem.", profile: .richer)
             ]
         case .veggie:
             return [
-                .init(title: "Jasny", subtitle: "Lekki profil", profile: .cleaner),
-                .init(title: "Klasyczny", subtitle: "Warzywny balans", profile: .cleaner),
-                .init(title: "Głęboki", subtitle: "Więcej umami", profile: .richer)
+                .init(title: "Jasny", subtitle: "Świeży i delikatny na co dzień.", profile: .cleaner),
+                .init(title: "Głęboki", subtitle: "Mocniejszy warzywny umami pod sosy i zupy.", profile: .richer)
             ]
         case .fish:
             return [
-                .init(title: "Delikatny", subtitle: "Subtelny aromat", profile: .cleaner),
-                .init(title: "Klasyczny", subtitle: "Zbalansowany", profile: .cleaner),
-                .init(title: "Intensywny", subtitle: "Mocniejsza baza", profile: .richer)
+                .init(title: "Delikatny", subtitle: "Lekki fumet do subtelnych dań.", profile: .cleaner),
+                .init(title: "Intensywny", subtitle: "Wyraźniejsza baza rybna do mocniejszych kompozycji.", profile: .richer)
             ]
         }
     }
@@ -175,11 +173,6 @@ private struct BrothKindCard: View {
             lineWidth: isSelected ? 1.5 : 1
         ) {
             VStack(alignment: .leading, spacing: 12) {
-                if isSelected {
-                    RoundedRectangle(cornerRadius: 3, style: .continuous)
-                        .fill(AppTheme.accent)
-                        .frame(width: 42, height: 4)
-                }
                 Button(action: onKindTap) {
                     HStack(spacing: 12) {
                         BrothKindIllustration(kind: kind)
@@ -204,47 +197,49 @@ private struct BrothKindCard: View {
                 .buttonStyle(.plain)
 
                 if isSelected {
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        HStack(spacing: 10) {
-                            ForEach(kind.styles) { style in
-                                Button {
-                                    onStyleTap(style)
-                                } label: {
-                                    VStack(alignment: .leading, spacing: 8) {
-                                        HStack {
-                                            Image(systemName: iconName(for: style))
-                                                .font(.system(size: 13, weight: .bold))
-                                                .foregroundStyle(selectedStyleID == style.id ? AppTheme.accent : AppTheme.textSecondary)
-                                            Spacer()
-                                            if selectedStyleID == style.id {
-                                                Image(systemName: "checkmark.circle.fill")
-                                                    .font(.system(size: 17, weight: .bold))
-                                                    .foregroundStyle(AppTheme.accent)
-                                            }
+                    LazyVGrid(
+                        columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: kind.styles.count == 2 ? 2 : 3),
+                        spacing: 10
+                    ) {
+                        ForEach(kind.styles) { style in
+                            Button {
+                                onStyleTap(style)
+                            } label: {
+                                VStack(alignment: .leading, spacing: 8) {
+                                    HStack {
+                                        Image(systemName: iconName(for: style))
+                                            .font(.system(size: 13, weight: .bold))
+                                            .foregroundStyle(selectedStyleID == style.id ? AppTheme.accent : AppTheme.textSecondary)
+                                        Spacer()
+                                        if selectedStyleID == style.id {
+                                            Image(systemName: "checkmark.circle.fill")
+                                                .font(.system(size: 17, weight: .bold))
+                                                .foregroundStyle(AppTheme.accent)
                                         }
-
-                                        Text(style.title)
-                                            .font(.system(size: 15, weight: .bold))
-                                            .foregroundStyle(AppTheme.textPrimary)
-
-                                        Text(style.subtitle)
-                                            .font(.system(size: 11, weight: .medium))
-                                            .foregroundStyle(AppTheme.textSecondary)
-                                            .lineLimit(2)
                                     }
-                                    .padding(12)
-                                    .frame(width: 146, height: 102, alignment: .topLeading)
-                                    .background(
-                                        RoundedRectangle(cornerRadius: 14, style: .continuous)
-                                            .fill(selectedStyleID == style.id ? AppTheme.accentSoft.opacity(0.25) : AppTheme.surface)
-                                    )
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 14, style: .continuous)
-                                            .stroke(selectedStyleID == style.id ? AppTheme.accent : AppTheme.border, lineWidth: selectedStyleID == style.id ? 1.5 : 1)
-                                    )
+
+                                    Text(style.title)
+                                        .font(.system(size: 15, weight: .bold))
+                                        .foregroundStyle(AppTheme.textPrimary)
+                                        .lineLimit(1)
+
+                                    Text(style.subtitle)
+                                        .font(.system(size: 11, weight: .medium))
+                                        .foregroundStyle(AppTheme.textSecondary)
+                                        .lineLimit(2)
                                 }
-                                .buttonStyle(.plain)
+                                .padding(12)
+                                .frame(maxWidth: .infinity, minHeight: 108, alignment: .topLeading)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                        .fill(selectedStyleID == style.id ? AppTheme.accentSoft.opacity(0.2) : AppTheme.surface)
+                                )
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                        .stroke(selectedStyleID == style.id ? AppTheme.accent : AppTheme.border, lineWidth: selectedStyleID == style.id ? 1.5 : 1)
+                                )
                             }
+                            .buttonStyle(.plain)
                         }
                     }
                     .transition(.move(edge: .top).combined(with: .opacity))
