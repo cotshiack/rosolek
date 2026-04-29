@@ -136,6 +136,15 @@ struct BrothResultView: View {
             BrothWarning(code: mapWarningCode($0.code), severity: mapSeverity($0.severity), params: [])
         }
 
+        let timeline = UltraSpecTimelineCatalog.steps(for: variant).map {
+            CookingTimelineItem(
+                minuteOffset: $0.minuteOffset,
+                timeLabel: $0.timeLabel,
+                title: $0.title,
+                subtitle: $0.subtitle
+            )
+        }
+
         return BrothCalculationResult(
             waterLiters: ultra.waterStartL,
             temperatureMin: variantConfig(for: variant)?.temperature.minC ?? 88,
@@ -150,7 +159,7 @@ struct BrothResultView: View {
             bayLeafCount: ultra.spices.bayLeafCount,
             vegetables: vegRows,
             meatParts: resolvedSelections.map { MeatAmount(name: $0.name, grams: $0.grams, note: nil) },
-            timeline: [],
+            timeline: timeline,
             warnings: warningTexts,
             structuredWarnings: structured,
             validationFailure: nil,
@@ -199,7 +208,7 @@ struct BrothResultView: View {
             bayLeafCount: 0,
             vegetables: [],
             meatParts: resolvedSelections.map { MeatAmount(name: $0.name, grams: $0.grams, note: nil) },
-            timeline: [],
+            timeline: timeline,
             warnings: [message],
             structuredWarnings: [.init(code: failureCode, severity: .error, params: [])],
             validationFailure: .init(code: failureCode, messageFallback: message),
