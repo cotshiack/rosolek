@@ -80,6 +80,9 @@ enum UltraSpecEngine {
             UltraSpecComputedVegetable(ingredientID: $0.ingredientID, grams: Int((Double(vegetableTotalG) * $0.share).rounded()))
         }
 
+        let carrotGrams = vegetables.first(where: { $0.ingredientID == "VEG_CARROT" })?.grams ?? 0
+        let carrotShare = vegetableTotalG > 0 ? (Double(carrotGrams) / Double(vegetableTotalG)) : 0
+
         var estimatedYieldL = waterStartL * config.yieldFactor
         if request.clarityMode == .paperFilter {
             estimatedYieldL *= 0.96
@@ -118,6 +121,9 @@ enum UltraSpecEngine {
             if let limit = thresholds.offalMaxShare, totalAnimalG > 0, (Double(offalG) / Double(totalAnimalG)) > limit {
                 warnings.append("OFFAL_TOO_HIGH")
             }
+            if let carrotMax = thresholds.carrotMaxShare, carrotShare > carrotMax {
+                warnings.append("VEG_SWEET_RISK")
+            }
         }
 
         if request.clarityMode == .paperFilter {
@@ -133,7 +139,8 @@ enum UltraSpecEngine {
             thresholds: thresholds,
             wingsShare: poultryG > 0 ? (Double(wingsG) / Double(poultryG)) : 0,
             beefShare: totalAnimalG > 0 ? (Double(beefG) / Double(totalAnimalG)) : 0,
-            offalShare: totalAnimalG > 0 ? (Double(offalG) / Double(totalAnimalG)) : 0
+            offalShare: totalAnimalG > 0 ? (Double(offalG) / Double(totalAnimalG)) : 0,
+            carrotShare: carrotShare
         )
 
         return UltraSpecCalculationResult(

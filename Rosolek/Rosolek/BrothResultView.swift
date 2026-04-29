@@ -248,6 +248,7 @@ struct BrothResultView: View {
         case .wingsTooHigh: return .wingsTooHighLight
         case .beefTooHigh: return .heavyBeefProfile
         case .offalTooHigh: return .offalDominantRisk
+        case .vegSweetRisk: return .singleIngredientRisk
         }
     }
 
