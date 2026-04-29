@@ -219,7 +219,7 @@ struct BrothResultView: View {
             bayLeafCount: 0,
             vegetables: [],
             meatParts: resolvedSelections.map { MeatAmount(name: $0.name, grams: $0.grams, note: nil) },
-            timeline: timeline,
+            timeline: [],
             warnings: [message],
             structuredWarnings: [.init(code: failureCode, severity: .error, params: [])],
             validationFailure: .init(code: failureCode, messageFallback: message),
