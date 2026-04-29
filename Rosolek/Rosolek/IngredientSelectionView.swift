@@ -23,6 +23,7 @@ enum IngredientIllustrationKind: Hashable {
     case gizzards
     case liver
     case fish
+    case vegetables
 }
 
 struct IngredientOption: Identifiable, Hashable {
@@ -120,9 +121,9 @@ struct IngredientSelectionView: View {
         .init(id: "glowy_rybne", name: "Głowy rybne", subtitle: "Intensywniejszy smak.", category: .fish, illustration: .bones, fatScore: 0.8, gelatinScore: 1.1, clarityPenalty: 0.7, isPoultry: false, isBeef: false, isOffal: false, isLiver: false, isBoneHeavy: true),
         .init(id: "filet_rybny", name: "Filet rybny", subtitle: "Delikatny aromat i ciało.", category: .fish, illustration: .fish, fatScore: 0.7, gelatinScore: 0.4, clarityPenalty: 0.5, isPoultry: false, isBeef: false, isOffal: false, isLiver: false, isBoneHeavy: false),
 
-        .init(id: "cebula_baza", name: "Cebula", subtitle: "Klasyczna baza warzywna.", category: .veggies, illustration: .gizzards, fatScore: 0.1, gelatinScore: 0.1, clarityPenalty: 0.1, isPoultry: false, isBeef: false, isOffal: false, isLiver: false, isBoneHeavy: false),
-        .init(id: "seler_baza", name: "Seler korzeniowy", subtitle: "Głębia i słodycz.", category: .veggies, illustration: .gizzards, fatScore: 0.1, gelatinScore: 0.1, clarityPenalty: 0.1, isPoultry: false, isBeef: false, isOffal: false, isLiver: false, isBoneHeavy: false),
-        .init(id: "por_baza", name: "Por", subtitle: "Warzywna łagodność.", category: .veggies, illustration: .gizzards, fatScore: 0.1, gelatinScore: 0.1, clarityPenalty: 0.1, isPoultry: false, isBeef: false, isOffal: false, isLiver: false, isBoneHeavy: false)
+        .init(id: "cebula_baza", name: "Cebula", subtitle: "Klasyczna baza warzywna.", category: .veggies, illustration: .vegetables, fatScore: 0.1, gelatinScore: 0.1, clarityPenalty: 0.1, isPoultry: false, isBeef: false, isOffal: false, isLiver: false, isBoneHeavy: false),
+        .init(id: "seler_baza", name: "Seler korzeniowy", subtitle: "Głębia i słodycz.", category: .veggies, illustration: .vegetables, fatScore: 0.1, gelatinScore: 0.1, clarityPenalty: 0.1, isPoultry: false, isBeef: false, isOffal: false, isLiver: false, isBoneHeavy: false),
+        .init(id: "por_baza", name: "Por", subtitle: "Warzywna łagodność.", category: .veggies, illustration: .vegetables, fatScore: 0.1, gelatinScore: 0.1, clarityPenalty: 0.1, isPoultry: false, isBeef: false, isOffal: false, isLiver: false, isBoneHeavy: false)
     ]
 
     var body: some View {
@@ -168,7 +169,7 @@ struct IngredientSelectionView: View {
                 .font(.system(size: 34, weight: .bold))
                 .foregroundStyle(AppTheme.textPrimary)
 
-            Text("Bulion: \(selectedKind.rawValue) • Styl: \(selectedStyleName). Zacznij od bazy, a warzywa i przyprawy policzymy automatycznie.")
+            Text("Bulion: \(selectedKind.rawValue) • Styl: \(selectedStyleName). Dodaj bazę, a warzywa możesz też edytować ręcznie.")
                 .font(.system(size: 15, weight: .medium))
                 .foregroundStyle(AppTheme.textSecondary)
                 .fixedSize(horizontal: false, vertical: true)
@@ -177,9 +178,9 @@ struct IngredientSelectionView: View {
 
     private var visibleCategories: [IngredientCategory] {
         switch selectedKind {
-        case .rosol: return [.poultry, .beef, .offal]
-        case .ramen: return [.pork, .poultry, .beef, .offal]
-        case .beef: return [.beef, .offal]
+        case .rosol: return [.poultry, .beef, .offal, .veggies]
+        case .ramen: return [.pork, .poultry, .beef, .offal, .veggies]
+        case .beef: return [.beef, .offal, .veggies]
         case .veggie: return [.veggies]
         case .fish: return [.fish, .veggies]
         }
@@ -961,7 +962,7 @@ struct CategoryIllustrationBadge: View {
         case .fish:
             BeefCategoryIllustration(selected: selected)
         case .veggies:
-            ChickenCategoryIllustration(selected: selected)
+            VegetableIllustration()
         }
     }
 }
@@ -1008,7 +1009,17 @@ struct IngredientIllustrationBadge: View {
             LiverIllustration()
         case .fish:
             FishIllustration()
+        case .vegetables:
+            VegetableIllustration()
         }
+    }
+}
+
+struct VegetableIllustration: View {
+    var body: some View {
+        Image(systemName: "carrot.fill")
+            .font(.system(size: 18, weight: .semibold))
+            .foregroundStyle(Color(hex: "4F7A1D"))
     }
 }
 

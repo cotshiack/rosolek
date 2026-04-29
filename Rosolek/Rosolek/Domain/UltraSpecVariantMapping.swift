@@ -56,12 +56,19 @@ struct UltraSpecRequestBuilder {
         case "korpus_kurczaka": return "POULTRY_CARCASS"
         case "szyje_kurczaka": return "POULTRY_NECK"
         case "skrzydla_kurczaka": return "POULTRY_WINGS"
+        case "lapki", "szyja_indyka", "skrzydlo_indyka", "korpus_indyka": return "POULTRY_NECK"
+        case "korpus_kaczki", "szyja_kaczki", "skrzydla_kaczki": return "POULTRY_WINGS"
         case "szponder": return "BEEF_SHORT_RIB"
         case "prega": return "BEEF_SHANK"
+        case "mostek", "golen", "ogon", "kosci_szpikowe", "kosci_rosolowe": return "BEEF_SHANK"
         case "kosci_wieprzowe": return "PORK_JOINT_BONES"
-        case "lapki_wieprzowe": return "PORK_TROTTERS"
+        case "lapki_wieprzowe", "gicz_wieprzowa": return "PORK_TROTTERS"
+        case "serca", "zoladki", "watrobka": return "OFFAL_CHICKEN_LIVER"
         case "kregoslup_rybny": return "FISH_WHITE_BONES"
+        case "glowy_rybne", "filet_rybny": return "FISH_WHITE_BONES"
         case "cebula_baza": return "VEG_ONION"
+        case "seler_baza": return "VEG_CELERIAC"
+        case "por_baza": return "VEG_LEEK"
         default: return id
         }
     }

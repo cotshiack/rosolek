@@ -41,4 +41,20 @@ final class UltraSpecVariantMappingTests: XCTestCase {
         XCTAssertEqual(request.items.first?.ingredientID, "POULTRY_OLD_HEN")
         XCTAssertEqual(request.items.last?.ingredientID, "BEEF_SHORT_RIB")
     }
+
+    func testRequestBuilderMapsVegetableAndFishAliases() {
+        let request = UltraSpecRequestBuilder.build(
+            kind: .fish,
+            styleKey: "fish_delicate",
+            potCapacityL: 7,
+            selections: [
+                .init(ingredientID: "seler_baza", ingredientName: "Seler", category: .veggies, grams: 150),
+                .init(ingredientID: "por_baza", ingredientName: "Por", category: .veggies, grams: 100),
+                .init(ingredientID: "glowy_rybne", ingredientName: "Głowy", category: .fish, grams: 900)
+            ],
+            clarityMode: .normal
+        )
+
+        XCTAssertEqual(request.items.map(\.ingredientID), ["VEG_CELERIAC", "VEG_LEEK", "FISH_WHITE_BONES"])
+    }
 }
