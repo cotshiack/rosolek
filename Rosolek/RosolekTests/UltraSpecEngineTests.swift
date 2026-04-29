@@ -96,6 +96,19 @@ final class UltraSpecEngineTests: XCTestCase {
         XCTAssertTrue(result.warningMessages.contains(where: { $0.code == .offalTooHigh }))
     }
 
+    func testHardNoBaseThrowsError() {
+        let request = UltraSpecCalculationRequest(
+            variant: .ramenShio,
+            potCapacityL: 6,
+            items: [],
+            clarityMode: .normal
+        )
+
+        XCTAssertThrowsError(try UltraSpecEngine.calculate(request: request)) { error in
+            XCTAssertEqual(error as? UltraSpecEngineError, .hardNoBase)
+        }
+    }
+
     func testHardPotTooSmallThrowsError() {
         let request = UltraSpecCalculationRequest(
             variant: .rosolLekki,

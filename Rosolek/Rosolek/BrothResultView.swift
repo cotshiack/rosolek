@@ -197,6 +197,9 @@ struct BrothResultView: View {
         case .variantNotConfigured:
             failureCode = .premiumBlocked
             message = "Nie udało się dopasować konfiguracji wariantu ULTRA-SPEC."
+        case .hardNoBase:
+            failureCode = .hardNoMeat
+            message = "Brak bazy dla tego bulionu. Dodaj składniki bazowe."
         }
 
         return BrothCalculationResult(

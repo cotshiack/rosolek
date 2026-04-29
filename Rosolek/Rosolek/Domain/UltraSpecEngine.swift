@@ -57,7 +57,20 @@ enum UltraSpecEngine {
         let offalG = resolvedItems.filter { $0.0.category == .offal }.reduce(0) { $0 + max(0, $1.1) }
         let wingsG = resolvedItems.filter { $0.0.id == "POULTRY_WINGS" }.reduce(0) { $0 + max(0, $1.1) }
 
-        let displacementL = Double(totalAnimalG) / 1000.0 * 0.55
+
+        let animalRequired: Bool = {
+            switch request.variant {
+            case .warzywnyJasny, .warzywnyUmami:
+                return false
+            default:
+                return true
+            }
+        }()
+        if animalRequired && totalAnimalG == 0 {
+            throw UltraSpecEngineError.hardNoBase
+        }
+
+                let displacementL = Double(totalAnimalG) / 1000.0 * 0.55
         let foamReserveL = request.potCapacityL * 0.12
         let safetyReserveL = max(0.25, request.potCapacityL * 0.08)
         let waterSafeL = request.potCapacityL - displacementL - foamReserveL - safetyReserveL
@@ -172,4 +185,5 @@ enum UltraSpecEngineError: Error, Equatable {
     case hardPotTooSmall
     case hardPotTooBig
     case hardNotFit
+    case hardNoBase
 }
