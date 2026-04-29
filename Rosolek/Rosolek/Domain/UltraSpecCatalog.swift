@@ -48,7 +48,15 @@ enum UltraSpecCatalog {
         
         .init(id: "OFFAL_CHICKEN_LIVER", name: "Wątróbka drobiowa", category: .offal, allowedVariants: [.rosolLekki, .rosolBogaty, .ramenShio, .wolowyCzysty, .wolowyMocny], bonesFlag: false, fatScore: 1.8, collagenScore: 0.5, tags: ["offal", "endOnly"], premiumOnly: true),
         .init(id: "FISH_WHITE_BONES", name: "Ości białych ryb", category: .fish, allowedVariants: [.rybnyDelikatny, .rybnyIntensywny], bonesFlag: true, fatScore: 0.5, collagenScore: 0.6, tags: ["fishBase"], premiumOnly: false),
-        .init(id: "VEG_ONION", name: "Cebula", category: .veg, allowedVariants: [.warzywnyJasny, .warzywnyUmami, .rybnyDelikatny, .rybnyIntensywny], bonesFlag: false, fatScore: 0, collagenScore: 0, tags: ["onion"], premiumOnly: false)
+        .init(id: "VEG_ONION", name: "Cebula", category: .veg, allowedVariants: [.rosolLekki, .rosolBogaty, .ramenShio, .ramenTonkotsu, .wolowyCzysty, .wolowyMocny, .warzywnyJasny, .warzywnyUmami, .rybnyDelikatny, .rybnyIntensywny], bonesFlag: false, fatScore: 0, collagenScore: 0, tags: ["onion"], premiumOnly: false),
+        .init(id: "VEG_CARROT", name: "Marchew", category: .veg, allowedVariants: [.rosolLekki, .rosolBogaty, .wolowyCzysty, .wolowyMocny, .warzywnyJasny, .warzywnyUmami, .rybnyDelikatny, .rybnyIntensywny], bonesFlag: false, fatScore: 0, collagenScore: 0, tags: ["sweetRisk"], premiumOnly: false),
+        .init(id: "VEG_CELERIAC", name: "Seler korzeniowy", category: .veg, allowedVariants: [.rosolLekki, .rosolBogaty, .wolowyCzysty, .wolowyMocny, .warzywnyJasny, .warzywnyUmami], bonesFlag: false, fatScore: 0, collagenScore: 0, tags: ["base"], premiumOnly: false),
+        .init(id: "VEG_PARSNIP_PL", name: "Pietruszka korzeń", category: .veg, allowedVariants: [.rosolLekki, .rosolBogaty, .wolowyCzysty, .wolowyMocny, .warzywnyJasny, .warzywnyUmami], bonesFlag: false, fatScore: 0, collagenScore: 0, tags: ["base"], premiumOnly: false),
+        .init(id: "VEG_LEEK", name: "Por", category: .veg, allowedVariants: [.rosolLekki, .rosolBogaty, .ramenTonkotsu, .warzywnyJasny, .warzywnyUmami, .rybnyDelikatny, .rybnyIntensywny], bonesFlag: false, fatScore: 0, collagenScore: 0, tags: ["leek"], premiumOnly: false),
+        .init(id: "VEG_CELERY_STALK", name: "Seler naciowy", category: .veg, allowedVariants: [.rybnyDelikatny, .rybnyIntensywny], bonesFlag: false, fatScore: 0, collagenScore: 0, tags: ["stalk"], premiumOnly: false),
+        .init(id: "AROMA_GINGER", name: "Imbir", category: .veg, allowedVariants: [.ramenShio, .ramenTonkotsu], bonesFlag: false, fatScore: 0, collagenScore: 0, tags: ["aroma"], premiumOnly: false),
+        .init(id: "AROMA_GARLIC", name: "Czosnek", category: .veg, allowedVariants: [.ramenShio, .ramenTonkotsu], bonesFlag: false, fatScore: 0, collagenScore: 0, tags: ["aroma"], premiumOnly: false),
+        .init(id: "AROMA_SCALLION", name: "Dymka", category: .veg, allowedVariants: [.ramenShio], bonesFlag: false, fatScore: 0, collagenScore: 0, tags: ["aroma"], premiumOnly: false)
     ]
 }
 
