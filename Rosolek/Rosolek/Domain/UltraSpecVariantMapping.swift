@@ -1,0 +1,68 @@
+import Foundation
+
+struct UltraSpecVariantResolver {
+    static func resolve(kind: BrothKind, styleKey: String) -> UltraSpecVariantID {
+        switch (kind, styleKey) {
+        case (.rosol, "rosol_rich"):
+            return .rosolBogaty
+        case (.rosol, _):
+            return .rosolLekki
+
+        case (.ramen, "ramen_tonkotsu"):
+            return .ramenTonkotsu
+        case (.ramen, _):
+            return .ramenShio
+
+        case (.beef, "beef_strong"):
+            return .wolowyMocny
+        case (.beef, _):
+            return .wolowyCzysty
+
+        case (.veggie, "veggie_umami"):
+            return .warzywnyUmami
+        case (.veggie, _):
+            return .warzywnyJasny
+
+        case (.fish, "fish_intense"):
+            return .rybnyIntensywny
+        case (.fish, _):
+            return .rybnyDelikatny
+        }
+    }
+}
+
+struct UltraSpecRequestBuilder {
+    static func build(
+        kind: BrothKind,
+        styleKey: String,
+        potCapacityL: Double,
+        selections: [BrothIngredientSelection],
+        clarityMode: BrothClarityMode
+    ) -> UltraSpecCalculationRequest {
+        let variant = UltraSpecVariantResolver.resolve(kind: kind, styleKey: styleKey)
+        let items = selections.map { UltraSpecInputItem(ingredientID: mapIngredientID($0.ingredientID), grams: $0.grams) }
+
+        return UltraSpecCalculationRequest(
+            variant: variant,
+            potCapacityL: potCapacityL,
+            items: items,
+            clarityMode: clarityMode
+        )
+    }
+
+    private static func mapIngredientID(_ id: String) -> String {
+        switch id {
+        case "kura": return "POULTRY_OLD_HEN"
+        case "korpus_kurczaka": return "POULTRY_CARCASS"
+        case "szyje_kurczaka": return "POULTRY_NECK"
+        case "skrzydla_kurczaka": return "POULTRY_WINGS"
+        case "szponder": return "BEEF_SHORT_RIB"
+        case "prega": return "BEEF_SHANK"
+        case "kosci_wieprzowe": return "PORK_JOINT_BONES"
+        case "lapki_wieprzowe": return "PORK_TROTTERS"
+        case "kregoslup_rybny": return "FISH_WHITE_BONES"
+        case "cebula_baza": return "VEG_ONION"
+        default: return id
+        }
+    }
+}
