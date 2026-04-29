@@ -82,60 +82,29 @@ struct BrothStyleSelectionView: View {
                     .font(AppTypography.flowHeader)
                     .foregroundStyle(AppTheme.textPrimary)
 
-                VStack(spacing: 10) {
+                VStack(spacing: 12) {
                     ForEach(BrothKind.allCases) { kind in
-                        Button {
-                            selectedKind = kind
-                            selectedStyle = nil
-                        } label: {
-                            HStack {
-                                VStack(alignment: .leading, spacing: 4) {
-                                    Text(kind.rawValue).font(.system(size: 17, weight: .bold))
-                                    Text(kind.subtitle).font(.system(size: 13, weight: .medium)).foregroundStyle(AppTheme.textSecondary)
-                                }
-                                Spacer()
-                                if selectedKind == kind { Image(systemName: "checkmark.circle.fill") }
-                            }
-                            .foregroundStyle(AppTheme.textPrimary)
-                            .padding(14)
-                            .background(RoundedRectangle(cornerRadius: 14).fill(selectedKind == kind ? AppTheme.accentSoft : AppTheme.surface))
-                            .overlay(RoundedRectangle(cornerRadius: 14).stroke(selectedKind == kind ? AppTheme.accent : AppTheme.border, lineWidth: 1))
-                        }.buttonStyle(.plain)
-                    }
-                }
-
-                if let selectedKind {
-                    Text("Wybierz styl")
-                        .font(.system(size: 22, weight: .bold))
-                        .foregroundStyle(AppTheme.textPrimary)
-                    VStack(spacing: 10) {
-                        ForEach(selectedKind.styles) { style in
-                            Button {
-                                selectedStyle = style
-                            } label: {
-                                HStack {
-                                    VStack(alignment: .leading, spacing: 4) {
-                                        Text(style.title).font(.system(size: 16, weight: .bold))
-                                        Text(style.subtitle).font(.system(size: 13, weight: .medium)).foregroundStyle(AppTheme.textSecondary)
+                        BrothKindCard(
+                            kind: kind,
+                            isSelected: selectedKind == kind,
+                            selectedStyleID: selectedStyle?.id,
+                            onKindTap: {
+                                withAnimation(.spring(response: 0.28, dampingFraction: 0.86)) {
+                                    if selectedKind == kind {
+                                        selectedKind = nil
+                                        selectedStyle = nil
+                                    } else {
+                                        selectedKind = kind
+                                        selectedStyle = nil
                                     }
-                                    Spacer()
-                                    if selectedStyle?.id == style.id { Image(systemName: "checkmark") }
                                 }
-                                .padding(14)
-                                .background(RoundedRectangle(cornerRadius: 14).fill(selectedStyle?.id == style.id ? AppTheme.accentSoft : AppTheme.surface))
-                                .overlay(RoundedRectangle(cornerRadius: 14).stroke(selectedStyle?.id == style.id ? AppTheme.accent : AppTheme.border, lineWidth: 1))
-                            }.buttonStyle(.plain)
-                        }
-                    }
-                } else {
-                    AppCard {
-                        HStack(spacing: 10) {
-                            Image(systemName: "hand.tap")
-                                .font(.system(size: 15, weight: .bold))
-                            Text("Najpierw wybierz rodzaj bulionu, a potem styl.")
-                                .font(.system(size: 14, weight: .semibold))
-                        }
-                        .foregroundStyle(AppTheme.textSecondary)
+                            },
+                            onStyleTap: { style in
+                                withAnimation(.easeInOut(duration: 0.2)) {
+                                    selectedStyle = style
+                                }
+                            }
+                        )
                     }
                 }
             }
@@ -159,5 +128,137 @@ struct BrothStyleSelectionView: View {
             .padding(.vertical, 8)
             .background(AppTheme.background.opacity(0.98).ignoresSafeArea(edges: .bottom))
         }
+    }
+}
+
+private struct BrothKindCard: View {
+    let kind: BrothKind
+    let isSelected: Bool
+    let selectedStyleID: UUID?
+    let onKindTap: () -> Void
+    let onStyleTap: (BrothStyleOption) -> Void
+
+    var body: some View {
+        AppCard(
+            background: isSelected ? AppTheme.accentSoft.opacity(0.68) : AppTheme.surface,
+            border: isSelected ? AppTheme.accent : AppTheme.border,
+            lineWidth: isSelected ? 1.5 : 1
+        ) {
+            VStack(alignment: .leading, spacing: 12) {
+                Button(action: onKindTap) {
+                    HStack(spacing: 12) {
+                        BrothKindIllustration(kind: kind)
+
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text(kind.rawValue)
+                                .font(.system(size: 21, weight: .bold))
+                                .foregroundStyle(AppTheme.textPrimary)
+
+                            Text(kind.subtitle)
+                                .font(.system(size: 14, weight: .medium))
+                                .foregroundStyle(AppTheme.textSecondary)
+                        }
+
+                        Spacer()
+
+                        Image(systemName: isSelected ? "chevron.up" : "chevron.down")
+                            .font(.system(size: 14, weight: .bold))
+                            .foregroundStyle(AppTheme.textPrimary)
+                    }
+                }
+                .buttonStyle(.plain)
+
+                if isSelected {
+                    VStack(spacing: 8) {
+                        ForEach(kind.styles) { style in
+                            Button {
+                                onStyleTap(style)
+                            } label: {
+                                HStack {
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        Text(style.title)
+                                            .font(.system(size: 16, weight: .bold))
+                                        Text(style.subtitle)
+                                            .font(.system(size: 13, weight: .medium))
+                                            .foregroundStyle(AppTheme.textSecondary)
+                                    }
+                                    Spacer()
+                                    if selectedStyleID == style.id {
+                                        Image(systemName: "checkmark.circle.fill")
+                                            .foregroundStyle(AppTheme.accent)
+                                    }
+                                }
+                                .foregroundStyle(AppTheme.textPrimary)
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 10)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                        .fill(selectedStyleID == style.id ? AppTheme.surfaceMuted : AppTheme.surface)
+                                )
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                        .stroke(selectedStyleID == style.id ? AppTheme.accent : AppTheme.border, lineWidth: 1)
+                                )
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                    .transition(.move(edge: .top).combined(with: .opacity))
+                }
+            }
+        }
+        .appSoftShadow()
+    }
+}
+
+private struct BrothKindIllustration: View {
+    let kind: BrothKind
+
+    var body: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .fill(AppTheme.surfaceMuted)
+                .frame(width: 56, height: 56)
+
+            switch kind {
+            case .rosol:
+                Circle().fill(Color(hex: "E6C36A")).frame(width: 28, height: 28)
+            case .ramen:
+                ZStack {
+                    Circle().fill(Color(hex: "D9B16A")).frame(width: 26, height: 26)
+                    Circle().stroke(Color(hex: "B58748"), lineWidth: 2).frame(width: 30, height: 30)
+                }
+            case .beef:
+                RoundedRectangle(cornerRadius: 8).fill(Color(hex: "C36D54")).frame(width: 28, height: 20)
+            case .veggie:
+                VStack(spacing: 2) {
+                    RoundedRectangle(cornerRadius: 3).fill(Color(hex: "65B56E")).frame(width: 6, height: 16)
+                    RoundedRectangle(cornerRadius: 3).fill(Color(hex: "8CCF85")).frame(width: 6, height: 16)
+                }
+            case .fish:
+                ZStack {
+                    Ellipse().fill(Color(hex: "9EB5C7")).frame(width: 24, height: 12)
+                    Triangle()
+                        .fill(Color(hex: "86A1B5"))
+                        .frame(width: 8, height: 10)
+                        .offset(x: 12)
+                }
+            }
+        }
+        .overlay(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .stroke(AppTheme.border, lineWidth: 1)
+        )
+    }
+}
+
+private struct Triangle: Shape {
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        path.move(to: CGPoint(x: rect.minX, y: rect.minY))
+        path.addLine(to: CGPoint(x: rect.maxX, y: rect.midY))
+        path.addLine(to: CGPoint(x: rect.minX, y: rect.maxY))
+        path.closeSubpath()
+        return path
     }
 }
