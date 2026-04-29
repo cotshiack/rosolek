@@ -64,6 +64,38 @@ final class UltraSpecEngineTests: XCTestCase {
         XCTAssertTrue(result.warningMessages.contains(where: { $0.code == .wingsTooHigh }))
     }
 
+    func testBeefTooHighWarningAppears() throws {
+        let request = UltraSpecCalculationRequest(
+            variant: .rosolBogaty,
+            potCapacityL: 8,
+            items: [
+                .init(ingredientID: "BEEF_SHORT_RIB", grams: 2000),
+                .init(ingredientID: "POULTRY_CARCASS", grams: 200)
+            ],
+            clarityMode: .normal
+        )
+
+        let result = try UltraSpecEngine.calculate(request: request)
+        XCTAssertTrue(result.warnings.contains("BEEF_TOO_HIGH"))
+        XCTAssertTrue(result.warningMessages.contains(where: { $0.code == .beefTooHigh }))
+    }
+
+    func testOffalTooHighWarningAppears() throws {
+        let request = UltraSpecCalculationRequest(
+            variant: .rosolBogaty,
+            potCapacityL: 8,
+            items: [
+                .init(ingredientID: "OFFAL_CHICKEN_LIVER", grams: 500),
+                .init(ingredientID: "POULTRY_CARCASS", grams: 1000)
+            ],
+            clarityMode: .normal
+        )
+
+        let result = try UltraSpecEngine.calculate(request: request)
+        XCTAssertTrue(result.warnings.contains("OFFAL_TOO_HIGH"))
+        XCTAssertTrue(result.warningMessages.contains(where: { $0.code == .offalTooHigh }))
+    }
+
     func testHardPotTooSmallThrowsError() {
         let request = UltraSpecCalculationRequest(
             variant: .rosolLekki,

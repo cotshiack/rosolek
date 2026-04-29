@@ -45,6 +45,8 @@ enum UltraSpecCatalog {
         .init(id: "BEEF_SHORT_RIB", name: "Szponder", category: .beef, allowedVariants: [.rosolBogaty, .wolowyCzysty, .wolowyMocny, .ramenShio], bonesFlag: false, fatScore: 1.7, collagenScore: 1.4, tags: ["classic"], premiumOnly: false),
         .init(id: "PORK_JOINT_BONES", name: "Kości wieprzowe stawowe", category: .pork, allowedVariants: [.ramenTonkotsu], bonesFlag: true, fatScore: 1.6, collagenScore: 2.2, tags: ["tonkotsu", "bones"], premiumOnly: false),
         .init(id: "PORK_TROTTERS", name: "Łapki wieprzowe", category: .pork, allowedVariants: [.ramenTonkotsu], bonesFlag: true, fatScore: 1.2, collagenScore: 2.4, tags: ["tonkotsu", "collagen"], premiumOnly: false),
+        
+        .init(id: "OFFAL_CHICKEN_LIVER", name: "Wątróbka drobiowa", category: .offal, allowedVariants: [.rosolLekki, .rosolBogaty, .ramenShio, .wolowyCzysty, .wolowyMocny], bonesFlag: false, fatScore: 1.8, collagenScore: 0.5, tags: ["offal", "endOnly"], premiumOnly: true),
         .init(id: "FISH_WHITE_BONES", name: "Ości białych ryb", category: .fish, allowedVariants: [.rybnyDelikatny, .rybnyIntensywny], bonesFlag: true, fatScore: 0.5, collagenScore: 0.6, tags: ["fishBase"], premiumOnly: false),
         .init(id: "VEG_ONION", name: "Cebula", category: .veg, allowedVariants: [.warzywnyJasny, .warzywnyUmami, .rybnyDelikatny, .rybnyIntensywny], bonesFlag: false, fatScore: 0, collagenScore: 0, tags: ["onion"], premiumOnly: false)
     ]
