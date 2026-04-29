@@ -65,10 +65,11 @@ enum BrothKind: String, CaseIterable, Identifiable {
 }
 
 struct BrothStyleOption: Identifiable, Hashable {
-    let id = UUID()
     let title: String
     let subtitle: String
     let profile: BrothProfile
+
+    var id: String { "\(title)-\(subtitle)-\(profile.rawValue)" }
 }
 
 struct BrothStyleSelectionView: View {
@@ -134,7 +135,7 @@ struct BrothStyleSelectionView: View {
 private struct BrothKindCard: View {
     let kind: BrothKind
     let isSelected: Bool
-    let selectedStyleID: UUID?
+    let selectedStyleID: String?
     let onKindTap: () -> Void
     let onStyleTap: (BrothStyleOption) -> Void
 
@@ -161,6 +162,14 @@ private struct BrothKindCard: View {
 
                         Spacer()
 
+                        if isSelected {
+                            Text("Wybrany")
+                                .font(.system(size: 12, weight: .bold))
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 4)
+                                .background(Capsule().fill(AppTheme.accentSoft))
+                        }
+
                         Image(systemName: isSelected ? "chevron.up" : "chevron.down")
                             .font(.system(size: 14, weight: .bold))
                             .foregroundStyle(AppTheme.textPrimary)
@@ -184,7 +193,8 @@ private struct BrothKindCard: View {
                                     }
                                     Spacer()
                                     if selectedStyleID == style.id {
-                                        Image(systemName: "checkmark.circle.fill")
+                                        Label("Wybrano", systemImage: "checkmark.circle.fill")
+                                            .font(.system(size: 12, weight: .bold))
                                             .foregroundStyle(AppTheme.accent)
                                     }
                                 }
@@ -193,11 +203,11 @@ private struct BrothKindCard: View {
                                 .padding(.vertical, 10)
                                 .background(
                                     RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                        .fill(selectedStyleID == style.id ? AppTheme.surfaceMuted : AppTheme.surface)
+                                                                                .fill(selectedStyleID == style.id ? AppTheme.accentSoft.opacity(0.45) : AppTheme.surface)
                                 )
                                 .overlay(
                                     RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                        .stroke(selectedStyleID == style.id ? AppTheme.accent : AppTheme.border, lineWidth: 1)
+                                                                                .stroke(selectedStyleID == style.id ? AppTheme.accent : AppTheme.border, lineWidth: selectedStyleID == style.id ? 1.5 : 1)
                                 )
                             }
                             .buttonStyle(.plain)
@@ -222,18 +232,25 @@ private struct BrothKindIllustration: View {
 
             switch kind {
             case .rosol:
-                Circle().fill(Color(hex: "E6C36A")).frame(width: 28, height: 28)
+                ZStack {
+                    Circle().fill(Color(hex: "E6C36A")).frame(width: 28, height: 28)
+                    Circle().stroke(Color(hex: "C79F49"), lineWidth: 2).frame(width: 30, height: 30)
+                }
             case .ramen:
                 ZStack {
                     Circle().fill(Color(hex: "D9B16A")).frame(width: 26, height: 26)
                     Circle().stroke(Color(hex: "B58748"), lineWidth: 2).frame(width: 30, height: 30)
                 }
             case .beef:
-                RoundedRectangle(cornerRadius: 8).fill(Color(hex: "C36D54")).frame(width: 28, height: 20)
+                ZStack {
+                    RoundedRectangle(cornerRadius: 8).fill(Color(hex: "C36D54")).frame(width: 28, height: 20)
+                    RoundedRectangle(cornerRadius: 8).stroke(Color(hex: "9E4F3B"), lineWidth: 1.5).frame(width: 28, height: 20)
+                }
             case .veggie:
-                VStack(spacing: 2) {
-                    RoundedRectangle(cornerRadius: 3).fill(Color(hex: "65B56E")).frame(width: 6, height: 16)
-                    RoundedRectangle(cornerRadius: 3).fill(Color(hex: "8CCF85")).frame(width: 6, height: 16)
+                HStack(spacing: 3) {
+                    RoundedRectangle(cornerRadius: 3).fill(Color(hex: "65B56E")).frame(width: 7, height: 16)
+                    RoundedRectangle(cornerRadius: 3).fill(Color(hex: "8CCF85")).frame(width: 7, height: 16)
+                    RoundedRectangle(cornerRadius: 3).fill(Color(hex: "5AA463")).frame(width: 7, height: 16)
                 }
             case .fish:
                 ZStack {
