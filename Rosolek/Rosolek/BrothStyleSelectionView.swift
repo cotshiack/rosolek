@@ -130,7 +130,7 @@ struct BrothStyleSelectionView: View {
         .safeAreaInset(edge: .bottom) {
             VStack(spacing: 8) {
                 if selectedKind == nil || selectedStyle == nil {
-                    Text(selectedKind == nil ? "Wybierz rodzaj bulionu, aby kontynuować." : "Wybierz styl, aby przejść dalej.")
+                    Text(selectedKind == nil ? "Wybierz rodzaj bulionu, aby kontynuować." : "Wybierz styl, aby kontynuować.")
                         .font(.system(size: 13, weight: .semibold))
                         .foregroundStyle(AppTheme.textSecondary)
                         .frame(maxWidth: .infinity, alignment: .leading)
@@ -170,11 +170,16 @@ private struct BrothKindCard: View {
 
     var body: some View {
         AppCard(
-            background: isSelected ? AppTheme.accentSoft.opacity(0.4) : AppTheme.surface,
+            background: AppTheme.surface,
             border: isSelected ? AppTheme.accent : AppTheme.border,
             lineWidth: isSelected ? 1.5 : 1
         ) {
             VStack(alignment: .leading, spacing: 12) {
+                if isSelected {
+                    RoundedRectangle(cornerRadius: 3, style: .continuous)
+                        .fill(AppTheme.accent)
+                        .frame(width: 42, height: 4)
+                }
                 Button(action: onKindTap) {
                     HStack(spacing: 12) {
                         BrothKindIllustration(kind: kind)
@@ -219,19 +224,19 @@ private struct BrothKindCard: View {
                                         }
 
                                         Text(style.title)
-                                            .font(.system(size: 16, weight: .bold))
+                                            .font(.system(size: 15, weight: .bold))
                                             .foregroundStyle(AppTheme.textPrimary)
 
                                         Text(style.subtitle)
-                                            .font(.system(size: 12, weight: .medium))
+                                            .font(.system(size: 11, weight: .medium))
                                             .foregroundStyle(AppTheme.textSecondary)
                                             .lineLimit(2)
                                     }
                                     .padding(12)
-                                    .frame(width: 156, height: 118, alignment: .topLeading)
+                                    .frame(width: 146, height: 102, alignment: .topLeading)
                                     .background(
                                         RoundedRectangle(cornerRadius: 14, style: .continuous)
-                                            .fill(selectedStyleID == style.id ? AppTheme.accentSoft.opacity(0.45) : AppTheme.surface)
+                                            .fill(selectedStyleID == style.id ? AppTheme.accentSoft.opacity(0.25) : AppTheme.surface)
                                     )
                                     .overlay(
                                         RoundedRectangle(cornerRadius: 14, style: .continuous)
