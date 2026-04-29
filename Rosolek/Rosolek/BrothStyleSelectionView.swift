@@ -243,9 +243,9 @@ private struct BrothKindIllustration: View {
         switch kind {
         case .rosol: return "HomeRecipeGrandma"
         case .ramen: return "HomeChefRamen"
-        case .beef: return "HomeChefDemiGlace"
-        case .veggie: return "HomeChefOne"
-        case .fish: return "HomeChefTwo"
+        case .beef: return "HomeRecipePoultryBeef"
+        case .veggie: return "HomeRecipePoultry"
+        case .fish: return "HomeHeroCustomBroth"
         }
     }
 
