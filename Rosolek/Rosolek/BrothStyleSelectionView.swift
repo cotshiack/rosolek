@@ -70,15 +70,6 @@ struct BrothStyleOption: Identifiable, Hashable {
 struct BrothStyleSelectionView: View {
     @State private var selectedKind: BrothKind? = nil
     @State private var selectedStyle: BrothStyleOption?
-    private var selectionSummary: String {
-        if let kind = selectedKind, let style = selectedStyle {
-            return "Wybrano: \(kind.rawValue) · \(style.title)"
-        }
-        if let kind = selectedKind {
-            return "Wybierz styl dla: \(kind.rawValue)"
-        }
-        return "Wybierz rodzaj bulionu"
-    }
 
     var body: some View {
         ScrollView(showsIndicators: false) {
@@ -86,10 +77,6 @@ struct BrothStyleSelectionView: View {
                 Text("Wybierz rodzaj bulionu")
                     .font(AppTypography.flowHeader)
                     .foregroundStyle(AppTheme.textPrimary)
-
-                Text(selectionSummary)
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundStyle(AppTheme.textSecondary)
 
                 VStack(spacing: 12) {
                     ForEach(BrothKind.allCases) { kind in
@@ -210,11 +197,10 @@ private struct BrothKindCard: View {
                                             .font(.system(size: 13, weight: .bold))
                                             .foregroundStyle(selectedStyleID == style.id ? AppTheme.accent : AppTheme.textSecondary)
                                         Spacer()
-                                        if selectedStyleID == style.id {
-                                            Image(systemName: "checkmark.circle.fill")
-                                                .font(.system(size: 17, weight: .bold))
-                                                .foregroundStyle(AppTheme.accent)
-                                        }
+                                        Image(systemName: "checkmark.circle.fill")
+                                            .font(.system(size: 17, weight: .bold))
+                                            .foregroundStyle(AppTheme.accent)
+                                            .opacity(selectedStyleID == style.id ? 1 : 0)
                                     }
 
                                     Text(style.title)
