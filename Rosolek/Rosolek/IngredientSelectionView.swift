@@ -2,6 +2,7 @@ import SwiftUI
 
 enum IngredientCategory: String, CaseIterable, Identifiable, Hashable {
     case poultry = "Drób"
+    case pork = "Wieprzowina"
     case beef = "Wołowina"
     case offal = "Podroby"
     case fish = "Ryby i owoce morza"
@@ -98,6 +99,10 @@ struct IngredientSelectionView: View {
         .init(id: "korpus_kaczki", name: "Korpus z kaczki", subtitle: "Bogaty smak i wyższa tłustość.", category: .poultry, illustration: .duck, fatScore: 2.0, gelatinScore: 1.1, clarityPenalty: 1.4, isPoultry: true, isBeef: false, isOffal: false, isLiver: false, isBoneHeavy: true),
         .init(id: "szyja_kaczki", name: "Szyja z kaczki", subtitle: "Głębia, tłustość i więcej body.", category: .poultry, illustration: .duck, fatScore: 1.8, gelatinScore: 1.4, clarityPenalty: 1.2, isPoultry: true, isBeef: false, isOffal: false, isLiver: false, isBoneHeavy: true),
         .init(id: "skrzydla_kaczki", name: "Skrzydła z kaczki", subtitle: "Wyraźniejszy charakter i tłustość.", category: .poultry, illustration: .duck, fatScore: 1.9, gelatinScore: 0.9, clarityPenalty: 1.3, isPoultry: true, isBeef: false, isOffal: false, isLiver: false, isBoneHeavy: false),
+        
+        .init(id: "kosci_wieprzowe", name: "Kości wieprzowe stawowe", subtitle: "Baza kolagenowa pod tonkotsu.", category: .pork, illustration: .bones, fatScore: 1.6, gelatinScore: 2.1, clarityPenalty: 1.8, isPoultry: false, isBeef: false, isOffal: false, isLiver: false, isBoneHeavy: true),
+        .init(id: "gicz_wieprzowa", name: "Gicz wieprzowa", subtitle: "Dodatkowy kolagen i body.", category: .pork, illustration: .bones, fatScore: 1.8, gelatinScore: 1.9, clarityPenalty: 1.7, isPoultry: false, isBeef: false, isOffal: false, isLiver: false, isBoneHeavy: true),
+        .init(id: "lapki_wieprzowe", name: "Łapki wieprzowe", subtitle: "Maksimum żelatyny do tonkotsu.", category: .pork, illustration: .bones, fatScore: 1.2, gelatinScore: 2.4, clarityPenalty: 1.7, isPoultry: false, isBeef: false, isOffal: false, isLiver: false, isBoneHeavy: true),
 
         .init(id: "szponder", name: "Szponder", subtitle: "Klasyczna baza wołowa.", category: .beef, illustration: .beef, fatScore: 1.7, gelatinScore: 1.1, clarityPenalty: 1.0, isPoultry: false, isBeef: true, isOffal: false, isLiver: false, isBoneHeavy: false),
         .init(id: "prega", name: "Pręga", subtitle: "Smak, włókno i kolagen.", category: .beef, illustration: .beef, fatScore: 1.2, gelatinScore: 1.6, clarityPenalty: 0.8, isPoultry: false, isBeef: true, isOffal: false, isLiver: false, isBoneHeavy: false),
@@ -173,7 +178,7 @@ struct IngredientSelectionView: View {
     private var visibleCategories: [IngredientCategory] {
         switch selectedKind {
         case .rosol: return [.poultry, .beef, .offal]
-        case .ramen: return [.poultry, .beef, .offal]
+        case .ramen: return [.pork, .poultry, .beef, .offal]
         case .beef: return [.beef, .offal]
         case .veggie: return [.veggies]
         case .fish: return [.fish, .veggies]
@@ -947,6 +952,8 @@ struct CategoryIllustrationBadge: View {
         switch category {
         case .poultry:
             ChickenCategoryIllustration(selected: selected)
+        case .pork:
+            BeefCategoryIllustration(selected: selected)
         case .beef:
             BeefCategoryIllustration(selected: selected)
         case .offal:

@@ -808,6 +808,8 @@ extension BrothResultView {
                 return "Więcej smaku i trochę tłustości."
             }
             return "Część wybrana przez użytkownika."
+        case .pork:
+            return "Baza wieprzowa pod gęstszy, kremowy profil."
 
         case .beef:
             if normalizedID.contains("kosc") || normalizedID.contains("ogon") {
@@ -939,10 +941,11 @@ extension BrothResultView {
     private func categorySortIndex(_ category: IngredientCategory) -> Int {
         switch category {
         case .poultry: return 0
-        case .beef: return 1
-        case .offal: return 2
-        case .fish: return 3
-        case .veggies: return 4
+        case .pork: return 1
+        case .beef: return 2
+        case .offal: return 3
+        case .fish: return 4
+        case .veggies: return 5
         }
     }
 
