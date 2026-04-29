@@ -6,6 +6,8 @@ struct BrothResultView: View {
     let selectedIngredientCount: Int
     let selectedIDs: [String]
     let initialSelections: [BrothIngredientSelection]
+    let selectedKind: BrothKind?
+    let selectedStyleName: String?
 
     @EnvironmentObject private var batchStore: BatchStore
 
@@ -27,13 +29,17 @@ struct BrothResultView: View {
         totalWeight: Int,
         selectedIngredientCount: Int,
         selectedIDs: [String],
-        initialSelections: [BrothIngredientSelection] = []
+        initialSelections: [BrothIngredientSelection] = [],
+        selectedKind: BrothKind? = nil,
+        selectedStyleName: String? = nil
     ) {
         self.mode = mode
         self.totalWeight = totalWeight
         self.selectedIngredientCount = selectedIngredientCount
         self.selectedIDs = selectedIDs
         self.initialSelections = initialSelections
+        self.selectedKind = selectedKind
+        self.selectedStyleName = selectedStyleName
     }
 
     init(
@@ -50,20 +56,26 @@ struct BrothResultView: View {
             totalWeight: result.meatParts.reduce(0) { $0 + $1.grams },
             selectedIngredientCount: preset.defaultSelectedIDs.count,
             selectedIDs: preset.defaultSelectedIDs,
-            initialSelections: []
+            initialSelections: [],
+            selectedKind: nil,
+            selectedStyleName: nil
         )
     }
 
     init(
         profile: BrothProfile,
-        selections: [BrothIngredientSelection]
+        selections: [BrothIngredientSelection],
+        selectedKind: BrothKind? = nil,
+        selectedStyleName: String? = nil
     ) {
         self.init(
             mode: .custom(profile),
             totalWeight: selections.reduce(0) { $0 + $1.grams },
             selectedIngredientCount: selections.count,
             selectedIDs: selections.map(\.ingredientID),
-            initialSelections: selections
+            initialSelections: selections,
+            selectedKind: selectedKind,
+            selectedStyleName: selectedStyleName
         )
     }
 
@@ -511,7 +523,7 @@ struct BrothResultView: View {
             }
 
             MeatShoppingCard(
-                title: "Mięso",
+                title: selectedKind == .veggie ? "Baza" : (selectedKind == .fish ? "Baza rybna" : "Mięso"),
                 totalWeight: formattedWeight,
                 rows: meatRows,
                 description: usesUserSelections
@@ -672,7 +684,7 @@ extension BrothResultView {
         case .preset(let preset):
             return preset.title
         case .custom:
-            return "Własny rosół"
+            return selectedKind.map { "Własny \($0.rawValue.lowercased())" } ?? "Własny bulion"
         }
     }
 
@@ -681,7 +693,10 @@ extension BrothResultView {
         case .preset:
             return "To podsumowanie kalkulatora dla wybranego przepisu i składników."
         case .custom:
-            return "To podsumowanie kalkulatora na bazie mięsa, które wybrałeś."
+            if let selectedStyleName {
+                return "Podsumowanie dla stylu \(selectedStyleName.lowercased()) i wybranej bazy."
+            }
+            return "Podsumowanie kalkulatora na bazie wybranych składników."
         }
     }
 
@@ -690,7 +705,7 @@ extension BrothResultView {
         case .preset:
             return "Mięso, warzywa i przyprawy policzyła aplikacja."
         case .custom:
-            return "Mięso dodałeś Ty, resztę policzyła aplikacja."
+            return selectedKind == .veggie ? "Bazę warzywną dodałeś Ty, resztę policzyła aplikacja." : "Bazę dodałeś Ty, resztę policzyła aplikacja."
         }
     }
 

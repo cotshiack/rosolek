@@ -72,7 +72,7 @@ struct BrothStyleOption: Identifiable, Hashable {
 }
 
 struct BrothStyleSelectionView: View {
-    @State private var selectedKind: BrothKind? = .rosol
+    @State private var selectedKind: BrothKind? = nil
     @State private var selectedStyle: BrothStyleOption?
 
     var body: some View {
@@ -126,6 +126,16 @@ struct BrothStyleSelectionView: View {
                                 .overlay(RoundedRectangle(cornerRadius: 14).stroke(selectedStyle?.id == style.id ? AppTheme.accent : AppTheme.border, lineWidth: 1))
                             }.buttonStyle(.plain)
                         }
+                    }
+                } else {
+                    AppCard {
+                        HStack(spacing: 10) {
+                            Image(systemName: "hand.tap")
+                                .font(.system(size: 15, weight: .bold))
+                            Text("Najpierw wybierz rodzaj bulionu, a potem styl.")
+                                .font(.system(size: 14, weight: .semibold))
+                        }
+                        .foregroundStyle(AppTheme.textSecondary)
                     }
                 }
             }

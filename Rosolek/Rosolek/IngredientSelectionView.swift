@@ -150,7 +150,9 @@ struct IngredientSelectionView: View {
         .navigationDestination(isPresented: $navigateToSummary) {
             BrothResultView(
                 profile: selectedProfile,
-                selections: selectedIngredients
+                selections: selectedIngredients,
+                selectedKind: selectedKind,
+                selectedStyleName: selectedStyleName
             )
         }
     }
