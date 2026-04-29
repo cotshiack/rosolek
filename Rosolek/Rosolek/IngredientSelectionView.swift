@@ -4,6 +4,8 @@ enum IngredientCategory: String, CaseIterable, Identifiable, Hashable {
     case poultry = "Drób"
     case beef = "Wołowina"
     case offal = "Podroby"
+    case fish = "Ryby i owoce morza"
+    case veggies = "Warzywa bazowe"
 
     var id: String { rawValue }
 }
@@ -19,6 +21,7 @@ enum IngredientIllustrationKind: Hashable {
     case hearts
     case gizzards
     case liver
+    case fish
 }
 
 struct IngredientOption: Identifiable, Hashable {
@@ -106,7 +109,15 @@ struct IngredientSelectionView: View {
 
         .init(id: "serca", name: "Serca drobiowe", subtitle: "Głębia i lekko mineralny smak.", category: .offal, illustration: .hearts, fatScore: 1.1, gelatinScore: 0.4, clarityPenalty: 1.0, isPoultry: false, isBeef: false, isOffal: true, isLiver: false, isBoneHeavy: false),
         .init(id: "zoladki", name: "Żołądki drobiowe", subtitle: "Wytrawny smak i więcej charakteru.", category: .offal, illustration: .gizzards, fatScore: 0.8, gelatinScore: 0.8, clarityPenalty: 0.9, isPoultry: false, isBeef: false, isOffal: true, isLiver: false, isBoneHeavy: false),
-        .init(id: "watrobka", name: "Wątróbka drobiowa", subtitle: "Bardzo intensywna. Używaj ostrożnie.", category: .offal, illustration: .liver, fatScore: 1.0, gelatinScore: 0.3, clarityPenalty: 1.9, isPoultry: false, isBeef: false, isOffal: true, isLiver: true, isBoneHeavy: false)
+        .init(id: "watrobka", name: "Wątróbka drobiowa", subtitle: "Bardzo intensywna. Używaj ostrożnie.", category: .offal, illustration: .liver, fatScore: 1.0, gelatinScore: 0.3, clarityPenalty: 1.9, isPoultry: false, isBeef: false, isOffal: true, isLiver: true, isBoneHeavy: false),
+
+        .init(id: "kregoslup_rybny", name: "Kręgosłup / ości rybne", subtitle: "Lekka baza rybna.", category: .fish, illustration: .bones, fatScore: 0.5, gelatinScore: 0.7, clarityPenalty: 0.4, isPoultry: false, isBeef: false, isOffal: false, isLiver: false, isBoneHeavy: true),
+        .init(id: "glowy_rybne", name: "Głowy rybne", subtitle: "Intensywniejszy smak.", category: .fish, illustration: .bones, fatScore: 0.8, gelatinScore: 1.1, clarityPenalty: 0.7, isPoultry: false, isBeef: false, isOffal: false, isLiver: false, isBoneHeavy: true),
+        .init(id: "filet_rybny", name: "Filet rybny", subtitle: "Delikatny aromat i ciało.", category: .fish, illustration: .fish, fatScore: 0.7, gelatinScore: 0.4, clarityPenalty: 0.5, isPoultry: false, isBeef: false, isOffal: false, isLiver: false, isBoneHeavy: false),
+
+        .init(id: "cebula_baza", name: "Cebula", subtitle: "Klasyczna baza warzywna.", category: .veggies, illustration: .gizzards, fatScore: 0.1, gelatinScore: 0.1, clarityPenalty: 0.1, isPoultry: false, isBeef: false, isOffal: false, isLiver: false, isBoneHeavy: false),
+        .init(id: "seler_baza", name: "Seler korzeniowy", subtitle: "Głębia i słodycz.", category: .veggies, illustration: .gizzards, fatScore: 0.1, gelatinScore: 0.1, clarityPenalty: 0.1, isPoultry: false, isBeef: false, isOffal: false, isLiver: false, isBoneHeavy: false),
+        .init(id: "por_baza", name: "Por", subtitle: "Warzywna łagodność.", category: .veggies, illustration: .gizzards, fatScore: 0.1, gelatinScore: 0.1, clarityPenalty: 0.1, isPoultry: false, isBeef: false, isOffal: false, isLiver: false, isBoneHeavy: false)
     ]
 
     var body: some View {
@@ -157,9 +168,19 @@ struct IngredientSelectionView: View {
         }
     }
 
+    private var visibleCategories: [IngredientCategory] {
+        switch selectedKind {
+        case .rosol: return [.poultry, .beef, .offal]
+        case .ramen: return [.poultry, .beef, .offal]
+        case .beef: return [.beef, .offal]
+        case .veggie: return [.veggies]
+        case .fish: return [.fish, .veggies]
+        }
+    }
+
     private var categorySections: some View {
         VStack(spacing: 14) {
-            ForEach(IngredientCategory.allCases) { category in
+            ForEach(visibleCategories) { category in
                 IngredientCategorySection(
                     category: category,
                     items: ingredients.filter { $0.category == category },
@@ -208,7 +229,7 @@ struct IngredientSelectionView: View {
                         FloatingSummaryChip(title: totalWeight == 0 ? "0 g" : gramsString(totalWeight))
                     }
 
-                    FloatingStatusPanel(insight: quickInsight)
+                    CompactFloatingStatusRow(insight: quickInsight)
                 }
             }
             .appSoftShadow()
@@ -349,7 +370,7 @@ struct IngredientSelectionView: View {
             case .hardNoMeat:
                 return QuickInsight(
                     systemImage: "tray",
-                    shortText: "Dodaj mięso",
+                    shortText: selectedKind == .veggie ? "Dodaj bazę" : "Dodaj bazę",
                     detailText: "Wybierz przynajmniej jeden składnik, żeby aplikacja mogła policzyć bulion.",
                     tone: .danger
                 )
@@ -472,15 +493,15 @@ struct IngredientSelectionView: View {
         case .hardItemTooBig:
             return "Jedna z wag wygląda podejrzanie wysoko. Sprawdź, czy na pewno wpisujesz gramy."
         case .hardNoMeat:
-            return "Dodaj mięso. Bez mięsa nie ugotujesz rosołu."
+            return selectedKind == .veggie ? "Dodaj warzywa bazowe, żeby policzyć bulion." : "Dodaj bazę. Bez niej nie ugotujesz bulionu."
         case .hardNotFit:
             return "Ten zestaw fizycznie nie mieści się w tym garnku. Zmniejsz ilość mięsa albo użyj większego naczynia."
         case .premiumBlocked:
             return "Ten składnik jest dostępny dopiero w rozszerzonej wersji kalkulatora."
         case .undermeatLight:
-            return "Wybrałeś mniej mięsa niż zwykle mieści ten garnek. Aplikacja przeliczy rosół do tej ilości, ale jeśli chcesz ugotować większą porcję, możesz dodać jeszcze trochę mięsa."
+            return "Wybrałeś mniej mięsa niż zwykle mieści ten garnek. Aplikacja przeliczy bulion do tej ilości, ale jeśli chcesz ugotować większą porcję, możesz dodać jeszcze trochę mięsa."
         case .overmeatLight:
-            return "Jak na czystszy profil mięsa jest już sporo. Rosół może wyjść cięższy niż zwykle."
+            return "Jak na czystszy profil mięsa jest już sporo. Bulion może wyjść cięższy niż zwykle."
         case .undermeatIntense:
             return "To raczej mniejsza partia jak na tak głęboki profil. Aplikacja przeliczy całość do tej ilości, ale jeśli chcesz mocniejszy efekt i większy uzysk, możesz dodać jeszcze trochę mięsa."
         case .overmeatIntense:
@@ -488,7 +509,7 @@ struct IngredientSelectionView: View {
         case .overfatLight:
             return "Ten zestaw może wyjść tłusty. Do czystszego profilu lepiej sprawdza się więcej korpusu lub szyi i mniej cięższych elementów."
         case .wingsTooHighLight:
-            return "Skrzydełka w większej ilości podbijają tłuszcz. W czystszym rosole warto trzymać je z umiarem."
+            return "Skrzydełka w większej ilości podbijają tłuszcz. W czystszym bulionie warto trzymać je z umiarem."
         case .lowGelatinIntense:
             return "Smak może być głęboki, ale wywar będzie mniej sprężysty, bo jest tu mało kości i kolagenu."
         case .heavyBeefProfile:
@@ -730,7 +751,7 @@ struct IngredientRow: View {
     }
 }
 
-private struct FloatingStatusPanel: View {
+private struct CompactFloatingStatusRow: View {
     let insight: QuickInsight
 
     var body: some View {
@@ -754,7 +775,8 @@ private struct FloatingStatusPanel: View {
 
             Spacer(minLength: 0)
         }
-        .padding(14)
+         .padding(.horizontal, 12)
+        .padding(.vertical, 10)
         .background(backgroundColor)
         .overlay(
             RoundedRectangle(cornerRadius: 16, style: .continuous)
@@ -927,6 +949,10 @@ struct CategoryIllustrationBadge: View {
             BeefCategoryIllustration(selected: selected)
         case .offal:
             OffalCategoryIllustration(selected: selected)
+        case .fish:
+            BeefCategoryIllustration(selected: selected)
+        case .veggies:
+            ChickenCategoryIllustration(selected: selected)
         }
     }
 }
@@ -971,6 +997,8 @@ struct IngredientIllustrationBadge: View {
             GizzardsIllustration()
         case .liver:
             LiverIllustration()
+        case .fish:
+            BeefChunkIllustration()
         }
     }
 }
