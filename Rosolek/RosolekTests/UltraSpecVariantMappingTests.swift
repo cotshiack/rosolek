@@ -7,6 +7,12 @@ final class UltraSpecVariantMappingTests: XCTestCase {
         XCTAssertEqual(variant, .ramenTonkotsu)
     }
 
+    func testStyleNameResolver() {
+        XCTAssertEqual(UltraSpecStyleKeyResolver.resolve(kind: .ramen, styleName: "Tonkotsu"), "ramen_tonkotsu")
+        XCTAssertEqual(UltraSpecStyleKeyResolver.resolve(kind: .fish, styleName: "Intensywny"), "fish_intense")
+        XCTAssertEqual(UltraSpecStyleKeyResolver.resolve(kind: .rosol, styleName: nil), "rosol_light")
+    }
+
     func testRequestBuilderMapsIngredientIDs() {
         let request = UltraSpecRequestBuilder.build(
             kind: .rosol,

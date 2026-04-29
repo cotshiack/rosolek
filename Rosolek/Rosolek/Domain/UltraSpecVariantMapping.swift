@@ -66,3 +66,22 @@ struct UltraSpecRequestBuilder {
         }
     }
 }
+
+
+struct UltraSpecStyleKeyResolver {
+    static func resolve(kind: BrothKind, styleName: String?) -> String {
+        let normalized = (styleName ?? "").trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        switch kind {
+        case .rosol:
+            return normalized.contains("bogat") ? "rosol_rich" : "rosol_light"
+        case .ramen:
+            return normalized.contains("tonkotsu") ? "ramen_tonkotsu" : "ramen_shio"
+        case .beef:
+            return normalized.contains("moc") ? "beef_strong" : "beef_clean"
+        case .veggie:
+            return normalized.contains("umami") ? "veggie_umami" : "veggie_bright"
+        case .fish:
+            return normalized.contains("intens") ? "fish_intense" : "fish_delicate"
+        }
+    }
+}
