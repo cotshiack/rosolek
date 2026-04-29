@@ -35,6 +35,7 @@ struct UltraSpecCalculationResult: Hashable {
     let totalAnimalG: Int
     let densityGL: Double
     let warnings: [String]
+    let warningMessages: [UltraSpecWarningMessage]
 }
 
 enum UltraSpecEngine {
@@ -109,6 +110,21 @@ enum UltraSpecEngine {
             warnings.append("PAPER_FILTER_LOWER_INTENSITY")
         }
 
+        let warningMessages = UltraSpecWarnings.buildWarnings(request: request, result: UltraSpecCalculationResult(
+            waterRecipeL: waterRecipeL,
+            waterStartL: waterStartL,
+            estimatedYieldL: estimatedYieldL,
+            startSaltG: startSaltG,
+            targetSaltG: targetSaltG,
+            vegetableTotalG: vegetableTotalG,
+            vegetables: vegetables,
+            spices: spices,
+            totalAnimalG: totalAnimalG,
+            densityGL: densityGL,
+            warnings: warnings,
+            warningMessages: []
+        ), thresholds: thresholds)
+
         return UltraSpecCalculationResult(
             waterRecipeL: waterRecipeL,
             waterStartL: waterStartL,
@@ -120,7 +136,8 @@ enum UltraSpecEngine {
             spices: spices,
             totalAnimalG: totalAnimalG,
             densityGL: densityGL,
-            warnings: warnings
+            warnings: warnings,
+            warningMessages: warningMessages
         )
     }
 
