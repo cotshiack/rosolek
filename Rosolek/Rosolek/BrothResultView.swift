@@ -144,11 +144,12 @@ struct BrothResultView: View {
         }
 
         let timeline = UltraSpecTimelineCatalog.steps(for: variant).map {
-            CookingTimelineItem(
+            let drawerSubtitle = UltraSpecStepLibrary.all[$0.stepID]?.subtitle
+            return CookingTimelineItem(
                 minuteOffset: $0.minuteOffset,
                 timeLabel: $0.timeLabel,
                 title: $0.title,
-                subtitle: $0.subtitle
+                subtitle: drawerSubtitle ?? $0.subtitle
             )
         }
 
