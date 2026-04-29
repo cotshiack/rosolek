@@ -159,7 +159,7 @@ struct BrothResultView: View {
             bayLeafCount: ultra.spices.bayLeafCount,
             vegetables: vegRows,
             meatParts: resolvedSelections.map { MeatAmount(name: $0.name, grams: $0.grams, note: nil) },
-            timeline: timeline,
+            timeline: [],
             warnings: warningTexts,
             structuredWarnings: structured,
             validationFailure: nil,
