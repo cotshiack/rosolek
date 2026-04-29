@@ -66,6 +66,8 @@ struct QuickInsight {
 
 struct IngredientSelectionView: View {
     let selectedProfile: BrothProfile
+    let selectedKind: BrothKind
+    let selectedStyleName: String
 
     @AppStorage("potSizeLiters") private var potSizeLiters = 7
 
@@ -75,8 +77,10 @@ struct IngredientSelectionView: View {
 
     @FocusState private var focusedFieldID: String?
 
-    init(selectedProfile: BrothProfile) {
+    init(selectedProfile: BrothProfile, selectedKind: BrothKind = .rosol, selectedStyleName: String = "Klasyczny") {
         self.selectedProfile = selectedProfile
+        self.selectedKind = selectedKind
+        self.selectedStyleName = selectedStyleName
     }
 
     private let ingredients: [IngredientOption] = [
@@ -142,11 +146,11 @@ struct IngredientSelectionView: View {
 
     private var header: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("Dodaj mięso\ndo własnego rosołu")
+            Text(headerTitle)
                 .font(.system(size: 34, weight: .bold))
                 .foregroundStyle(AppTheme.textPrimary)
 
-            Text("Profil „\(selectedProfile.title)” ustawia kierunek wywaru. Teraz wybierz części i wagę.")
+            Text("Bulion: \(selectedKind.rawValue) • Styl: \(selectedStyleName). Zacznij od bazy, a warzywa i przyprawy policzymy automatycznie.")
                 .font(.system(size: 15, weight: .medium))
                 .foregroundStyle(AppTheme.textSecondary)
                 .fixedSize(horizontal: false, vertical: true)
@@ -198,13 +202,10 @@ struct IngredientSelectionView: View {
             AppCard {
                 VStack(alignment: .leading, spacing: 12) {
                     HStack(spacing: 8) {
-                        FloatingSummaryChip(
-                            title: selectedIngredientCount == 0 ? "0 skład." : "\(selectedIngredientCount) skład."
-                        )
-
-                        FloatingSummaryChip(
-                            title: totalWeight == 0 ? "0 g" : gramsString(totalWeight)
-                        )
+                        FloatingSummaryChip(title: selectedKind.rawValue)
+                        FloatingSummaryChip(title: selectedStyleName)
+                        FloatingSummaryChip(title: selectedIngredientCount == 0 ? "0 skład." : "\(selectedIngredientCount) skład.")
+                        FloatingSummaryChip(title: totalWeight == 0 ? "0 g" : gramsString(totalWeight))
                     }
 
                     FloatingStatusPanel(insight: quickInsight)
@@ -338,6 +339,10 @@ struct IngredientSelectionView: View {
         }
     }
 
+    private var headerTitle: String {
+        selectedKind == .veggie ? "Dodaj bazę\ndo własnego bulionu" : "Dodaj bazę\ndo własnego bulionu"
+    }
+
     private var quickInsight: QuickInsight {
         if let failure = previewResult.validationFailure {
             switch failure.code {
@@ -345,7 +350,7 @@ struct IngredientSelectionView: View {
                 return QuickInsight(
                     systemImage: "tray",
                     shortText: "Dodaj mięso",
-                    detailText: "Wybierz przynajmniej jeden składnik, żeby aplikacja mogła policzyć rosół.",
+                    detailText: "Wybierz przynajmniej jeden składnik, żeby aplikacja mogła policzyć bulion.",
                     tone: .danger
                 )
             default:
@@ -362,7 +367,7 @@ struct IngredientSelectionView: View {
             return QuickInsight(
                 systemImage: "questionmark.circle",
                 shortText: "Wybierz mięso",
-                detailText: "Dodaj przynajmniej jeden składnik, żeby zobaczyć proporcje i przewidywany uzysk.",
+                detailText: "Dodaj bazę, żeby zobaczyć proporcje i przewidywany uzysk.",
                 tone: .neutral
             )
         }
@@ -437,7 +442,7 @@ struct IngredientSelectionView: View {
         return QuickInsight(
             systemImage: "checkmark.circle",
             shortText: "Dobry balans",
-            detailText: "Zestaw wygląda sensownie i dobrze pasuje do wybranego profilu.",
+            detailText: "Zestaw wygląda sensownie i pasuje do wybranego bulionu.",
             tone: .good
         )
     }
