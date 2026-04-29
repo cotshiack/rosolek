@@ -90,15 +90,21 @@ struct BrothResultView: View {
             )
 
         case .custom(let profile):
-            if let kind = selectedKind,
-               let ultra = try? UltraSpecBridge.calculateFromCurrentFlow(
-                kind: kind,
-                styleName: selectedStyleName,
-                potCapacityL: Double(potSizeLiters),
-                selections: resolvedSelections,
-                clarityMode: clarityMode
-               ) {
-                return makeBrothResultFromUltraSpec(ultra, profile: profile)
+            if let kind = selectedKind {
+                do {
+                    let ultra = try UltraSpecBridge.calculateFromCurrentFlow(
+                        kind: kind,
+                        styleName: selectedStyleName,
+                        potCapacityL: Double(potSizeLiters),
+                        selections: resolvedSelections,
+                        clarityMode: clarityMode
+                    )
+                    return makeBrothResultFromUltraSpec(ultra, kind: kind, profile: profile)
+                } catch let error as UltraSpecEngineError {
+                    return makeUltraSpecFailureResult(error: error)
+                } catch {
+                    return makeUltraSpecFailureResult(error: .variantNotConfigured)
+                }
             }
 
             return BrothCalculator.calculate(
@@ -112,7 +118,7 @@ struct BrothResultView: View {
     }
 
 
-    private func makeBrothResultFromUltraSpec(_ ultra: UltraSpecCalculationResult, profile: BrothProfile) -> BrothCalculationResult {
+    private func makeBrothResultFromUltraSpec(_ ultra: UltraSpecCalculationResult, kind: BrothKind, profile: BrothProfile) -> BrothCalculationResult {
         let vegRows = ultra.vegetables.map {
             VegetableAmount(name: prettyIngredientName($0.ingredientID), amount: "\($0.grams) g", note: nil)
         }
@@ -130,9 +136,9 @@ struct BrothResultView: View {
 
         return BrothCalculationResult(
             waterLiters: ultra.waterStartL,
-            temperatureMin: 85,
-            temperatureMax: 95,
-            totalMinutes: 240,
+            temperatureMin: temperatureBounds(for: kind).0,
+            temperatureMax: temperatureBounds(for: kind).1,
+            totalMinutes: estimatedTotalMinutes(for: kind),
             estimatedYieldLiters: ultra.estimatedYieldL,
             startSaltGrams: ultra.startSaltG,
             finalSaltGrams: ultra.targetSaltG,
@@ -156,6 +162,75 @@ struct BrothResultView: View {
             microMode: ultra.waterStartL < 0.7,
             waterWasReducedToFit: ultra.waterStartL < ultra.waterRecipeL
         )
+    }
+
+
+    private func makeUltraSpecFailureResult(error: UltraSpecEngineError) -> BrothCalculationResult {
+        let failureCode: BrothWarningCode
+        let message: String
+        switch error {
+        case .hardPotTooSmall:
+            failureCode = .hardPotTooSmall
+            message = "Garnek jest za mały (min. 0,25 L)."
+        case .hardPotTooBig:
+            failureCode = .hardPotTooBig
+            message = "Pojemność garnka wygląda na literówkę (max. 30 L)."
+        case .hardNotFit:
+            failureCode = .hardNotFit
+            message = "Składniki nie mieszczą się w garnku z bezpiecznym marginesem."
+        case .variantNotConfigured:
+            failureCode = .premiumBlocked
+            message = "Nie udało się dopasować konfiguracji wariantu ULTRA-SPEC."
+        }
+
+        return BrothCalculationResult(
+            waterLiters: 0,
+            temperatureMin: 0,
+            temperatureMax: 0,
+            totalMinutes: 0,
+            estimatedYieldLiters: 0,
+            startSaltGrams: 0,
+            finalSaltGrams: 0,
+            appleCiderVinegarMl: 0,
+            peppercornCount: 0,
+            allspiceCount: 0,
+            bayLeafCount: 0,
+            vegetables: [],
+            meatParts: resolvedSelections.map { MeatAmount(name: $0.name, grams: $0.grams, note: nil) },
+            timeline: [],
+            warnings: [message],
+            structuredWarnings: [.init(code: failureCode, severity: .error, params: [])],
+            validationFailure: .init(code: failureCode, messageFallback: message),
+            scoring: nil,
+            recommendedMeatRange: nil,
+            clarityMode: clarityMode,
+            useVinegar: useVinegar,
+            targetYieldLiters: nil,
+            vegetableBreakdown: nil,
+            spiceBreakdown: nil,
+            microMode: false,
+            waterWasReducedToFit: false
+        )
+    }
+
+    private func temperatureBounds(for kind: BrothKind) -> (Int, Int) {
+        switch kind {
+        case .rosol: return (88, 90)
+        case .ramen: return selectedStyleName?.lowercased().contains("tonkotsu") == true ? (95, 100) : (88, 92)
+        case .beef: return selectedStyleName?.lowercased().contains("moc") == true ? (90, 94) : (88, 92)
+        case .veggie: return selectedStyleName?.lowercased().contains("umami") == true ? (88, 92) : (85, 88)
+        case .fish: return selectedStyleName?.lowercased().contains("intens") == true ? (85, 90) : (80, 85)
+        }
+    }
+
+    private func estimatedTotalMinutes(for kind: BrothKind) -> Int {
+        switch kind {
+        case .rosol: return selectedStyleName?.lowercased().contains("bogat") == true ? 345 : 315
+        case .ramen: return selectedStyleName?.lowercased().contains("tonkotsu") == true ? 480 : 240
+        case .beef: return selectedStyleName?.lowercased().contains("moc") == true ? 420 : 360
+        case .veggie: return selectedStyleName?.lowercased().contains("umami") == true ? 120 : 90
+        case .fish: return selectedStyleName?.lowercased().contains("intens") == true ? 60 : 45
+        }
     }
 
     private func mapSeverity(_ severity: UltraSpecSeverity) -> BrothWarningSeverity {
