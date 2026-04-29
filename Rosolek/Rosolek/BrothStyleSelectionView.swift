@@ -241,11 +241,11 @@ private struct BrothKindIllustration: View {
     
     private var assetName: String {
         switch kind {
-        case .rosol: return "HomeRecipeGrandma"
-        case .ramen: return "HomeChefRamen"
-        case .beef: return "HomeRecipePoultryBeef"
-        case .veggie: return "HomeRecipePoultry"
-        case .fish: return "HomeHeroCustomBroth"
+        case .rosol: return "BulionRosol"
+        case .ramen: return "BulionRamen"
+        case .beef: return "BulionWolowy"
+        case .veggie: return "BulionWarzywny"
+        case .fish: return "BulionRybny"
         }
     }
 
