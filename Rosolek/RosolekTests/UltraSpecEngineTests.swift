@@ -48,6 +48,22 @@ final class UltraSpecEngineTests: XCTestCase {
         XCTAssertEqual(info.severity, .info)
     }
 
+    func testWingsTooHighWarningAppears() throws {
+        let request = UltraSpecCalculationRequest(
+            variant: .rosolLekki,
+            potCapacityL: 7,
+            items: [
+                .init(ingredientID: "POULTRY_WINGS", grams: 1600),
+                .init(ingredientID: "POULTRY_CARCASS", grams: 200)
+            ],
+            clarityMode: .normal
+        )
+
+        let result = try UltraSpecEngine.calculate(request: request)
+        XCTAssertTrue(result.warnings.contains("WINGS_TOO_HIGH"))
+        XCTAssertTrue(result.warningMessages.contains(where: { $0.code == .wingsTooHigh }))
+    }
+
     func testHardPotTooSmallThrowsError() {
         let request = UltraSpecCalculationRequest(
             variant: .rosolLekki,

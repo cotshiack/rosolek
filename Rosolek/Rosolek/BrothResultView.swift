@@ -245,6 +245,9 @@ struct BrothResultView: View {
         case .hardPotTooSmall: return .hardPotTooSmall
         case .hardPotTooBig: return .hardPotTooBig
         case .hardNotFit: return .hardNotFit
+        case .wingsTooHigh: return .wingsTooHighLight
+        case .beefTooHigh: return .heavyBeefProfile
+        case .offalTooHigh: return .offalDominantRisk
         }
     }
 

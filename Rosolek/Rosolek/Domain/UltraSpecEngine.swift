@@ -52,6 +52,11 @@ enum UltraSpecEngine {
             .filter { $0.0.category != .veg && $0.0.category != .umami }
             .reduce(0) { $0 + max(0, $1.1) }
 
+        let poultryG = resolvedItems.filter { $0.0.category == .poultry }.reduce(0) { $0 + max(0, $1.1) }
+        let beefG = resolvedItems.filter { $0.0.category == .beef }.reduce(0) { $0 + max(0, $1.1) }
+        let offalG = resolvedItems.filter { $0.0.category == .offal }.reduce(0) { $0 + max(0, $1.1) }
+        let wingsG = resolvedItems.filter { $0.0.id == "POULTRY_WINGS" }.reduce(0) { $0 + max(0, $1.1) }
+
         let displacementL = Double(totalAnimalG) / 1000.0 * 0.55
         let foamReserveL = request.potCapacityL * 0.12
         let safetyReserveL = max(0.25, request.potCapacityL * 0.08)
@@ -104,6 +109,15 @@ enum UltraSpecEngine {
             if vegGL > thresholds.vegetableCapGL {
                 warnings.append("VEG_TOO_MUCH")
             }
+            if let limit = thresholds.wingsMaxShare, poultryG > 0, (Double(wingsG) / Double(poultryG)) > limit {
+                warnings.append("WINGS_TOO_HIGH")
+            }
+            if let limit = thresholds.beefMaxShare, totalAnimalG > 0, (Double(beefG) / Double(totalAnimalG)) > limit {
+                warnings.append("BEEF_TOO_HIGH")
+            }
+            if let limit = thresholds.offalMaxShare, totalAnimalG > 0, (Double(offalG) / Double(totalAnimalG)) > limit {
+                warnings.append("OFFAL_TOO_HIGH")
+            }
         }
 
         if request.clarityMode == .paperFilter {
@@ -116,7 +130,10 @@ enum UltraSpecEngine {
             waterStartL: waterStartL,
             totalAnimalG: totalAnimalG,
             vegetableTotalG: vegetableTotalG,
-            thresholds: thresholds
+            thresholds: thresholds,
+            wingsShare: poultryG > 0 ? (Double(wingsG) / Double(poultryG)) : 0,
+            beefShare: totalAnimalG > 0 ? (Double(beefG) / Double(totalAnimalG)) : 0,
+            offalShare: totalAnimalG > 0 ? (Double(offalG) / Double(totalAnimalG)) : 0
         )
 
         return UltraSpecCalculationResult(

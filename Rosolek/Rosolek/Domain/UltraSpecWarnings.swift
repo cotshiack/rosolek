@@ -9,6 +9,9 @@ enum UltraSpecWarningCode: String, Hashable {
     case overpower = "OVERPOWER"
     case vegTooMuch = "VEG_TOO_MUCH"
     case paperFilterLowerIntensity = "PAPER_FILTER_LOWER_INTENSITY"
+    case wingsTooHigh = "WINGS_TOO_HIGH"
+    case beefTooHigh = "BEEF_TOO_HIGH"
+    case offalTooHigh = "OFFAL_TOO_HIGH"
 }
 
 struct UltraSpecWarningSuggestion: Hashable {
@@ -34,7 +37,10 @@ enum UltraSpecWarnings {
         waterStartL: Double,
         totalAnimalG: Int,
         vegetableTotalG: Int,
-        thresholds: UltraSpecWarningThresholds?
+        thresholds: UltraSpecWarningThresholds?,
+        wingsShare: Double,
+        beefShare: Double,
+        offalShare: Double
     ) -> [UltraSpecWarningMessage] {
         var warnings: [UltraSpecWarningMessage] = []
 
@@ -100,7 +106,48 @@ enum UltraSpecWarnings {
             }
         }
 
-        if request.clarityMode == .paperFilter {
+
+
+            if let maxWings = thresholds.wingsMaxShare, wingsShare > maxWings {
+                warnings.append(
+                    .init(
+                        code: .wingsTooHigh,
+                        severity: .warn,
+                        title: "Za duży udział skrzydeł",
+                        message: "Skrzydła mogą podnieść tłustość i obniżyć klarowność.",
+                        fixNow: "Zamień część skrzydeł na korpus lub szyje.",
+                        suggestion: nil
+                    )
+                )
+            }
+
+            if let maxBeef = thresholds.beefMaxShare, beefShare > maxBeef {
+                warnings.append(
+                    .init(
+                        code: .beefTooHigh,
+                        severity: .warn,
+                        title: "Wołowina dominuje profil",
+                        message: "Zbyt wysoki udział wołowiny może zrobić bulion ciężkim.",
+                        fixNow: "Zmniejsz wołowinę lub zwiększ udział drobiu.",
+                        suggestion: nil
+                    )
+                )
+            }
+
+            if let maxOffal = thresholds.offalMaxShare, offalShare > maxOffal {
+                warnings.append(
+                    .init(
+                        code: .offalTooHigh,
+                        severity: .warn,
+                        title: "Za dużo podrobów",
+                        message: "Podroby mogą zdominować smak i pogorszyć klarowność.",
+                        fixNow: "Zmniejsz podroby lub zwiększ bazę neutralną.",
+                        suggestion: nil
+                    )
+                )
+            }
+
+                if request.clarityMode == .paperFilter {
             warnings.append(
                 .init(
                     code: .paperFilterLowerIntensity,
