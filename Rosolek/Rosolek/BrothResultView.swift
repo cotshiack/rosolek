@@ -805,6 +805,10 @@ extension BrothResultView {
                 return "Dodawaj ostrożnie — trafia pod koniec gotowania."
             }
             return "Dodatek pogłębiający smak."
+        case .fish:
+            return "Delikatna baza rybna, gotuj krócej i łagodniej."
+        case .veggies:
+            return "Warzywna baza budująca czysty profil bulionu."
         }
     }
 
@@ -922,6 +926,8 @@ extension BrothResultView {
         case .poultry: return 0
         case .beef: return 1
         case .offal: return 2
+        case .fish: return 3
+        case .veggies: return 4
         }
     }
 
