@@ -131,12 +131,14 @@ struct BrothResultView: View {
             bayLeafCount: ultra.spices.bayLeafCount
         )
 
-        let warningTexts = ultra.warningMessages.map {
+        var warningTexts = ultra.warningMessages.map {
             if let suggestion = $0.suggestion?.text, !suggestion.isEmpty {
                 return "\($0.title): \($0.message) \(suggestion)"
             }
             return "\($0.title): \($0.message)"
         }
+        warningTexts.append(contentsOf: UltraSpecLiveBanners.hints(for: variant).map { "LIVE: \($0)" })
+
         let structured: [BrothWarning] = ultra.warningMessages.map {
             BrothWarning(code: mapWarningCode($0.code), severity: mapSeverity($0.severity), params: [])
         }
