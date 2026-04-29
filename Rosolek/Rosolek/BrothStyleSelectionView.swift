@@ -179,7 +179,9 @@ private struct BrothKindCard: View {
                             .font(.system(size: 14, weight: .bold))
                             .foregroundStyle(AppTheme.textPrimary)
                     }
+                    .contentShape(Rectangle())
                 }
+                .frame(maxWidth: .infinity, alignment: .leading)
                 .buttonStyle(.plain)
 
                 if isSelected {
