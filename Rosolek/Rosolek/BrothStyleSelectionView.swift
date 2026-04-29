@@ -226,10 +226,10 @@ private struct BrothKindCard: View {
                                         .font(.system(size: 12, weight: .medium))
                                         .foregroundStyle(AppTheme.textSecondary)
                                         .lineLimit(2)
-                                        .fixedSize(horizontal: false, vertical: true)
+                                        .frame(maxWidth: .infinity, minHeight: 34, alignment: .topLeading)
                                 }
                                 .padding(12)
-                                .frame(maxWidth: .infinity, minHeight: 130, alignment: .topLeading)
+                                .frame(maxWidth: .infinity, minHeight: 116, alignment: .topLeading)
                                 .background(
                                     RoundedRectangle(cornerRadius: 14, style: .continuous)
                                         .fill(selectedStyleID == style.id ? AppTheme.accentSoft.opacity(0.2) : AppTheme.surface)
