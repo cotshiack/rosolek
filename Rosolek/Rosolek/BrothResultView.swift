@@ -264,6 +264,13 @@ struct BrothResultView: View {
         return sortedSelections(syntheticSelections())
     }
 
+    private var isUltraSpecActive: Bool {
+        if case .custom = mode {
+            return selectedKind != nil
+        }
+        return false
+    }
+
     private var usesUserSelections: Bool {
         if case .custom = mode {
             return !resolvedSelections.isEmpty
@@ -541,6 +548,20 @@ struct BrothResultView: View {
                 .font(.system(size: 15, weight: .medium))
                 .foregroundStyle(AppTheme.textSecondary)
                 .fixedSize(horizontal: false, vertical: true)
+
+            if isUltraSpecActive {
+                HStack(spacing: 8) {
+                    Image(systemName: "checkmark.seal.fill")
+                        .foregroundStyle(AppTheme.accent)
+                    Text("ULTRA-SPEC aktywny")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(AppTheme.textPrimary)
+                }
+                .padding(.horizontal, 10)
+                .padding(.vertical, 6)
+                .background(AppTheme.surface)
+                .clipShape(Capsule())
+            }
         }
     }
 
