@@ -8,6 +8,11 @@ final class UltraSpecStepLibraryTests: XCTestCase {
         XCTAssertNotNil(UltraSpecStepLibrary.all["strain_season"])
     }
 
+    func testLibraryContainsRestAndAddVegSteps() {
+        XCTAssertNotNil(UltraSpecStepLibrary.all["rest_settle"])
+        XCTAssertNotNil(UltraSpecStepLibrary.all["add_veg_spices"])
+    }
+
     func testTonkotsuStepMentionsWaterLevel() {
         let step = UltraSpecStepLibrary.tonkotsuBoil
         XCTAssertTrue(step.extendedHint.lowercased().contains("przykryte"))

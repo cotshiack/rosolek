@@ -75,6 +75,26 @@ enum UltraSpecStepLibrary {
         recoveryAction: "Zakończ wcześniej i dopraw finalnie już po cedzeniu."
     )
 
+
+
+    static let restSettle = UltraSpecStepDetail(
+        stepID: "rest_settle",
+        title: "Odstaw i pozwól opaść osadowi",
+        subtitle: "Nie ruszaj garnka po wyłączeniu.",
+        extendedHint: "Po wyłączeniu grzania osad powinien opaść na dno. Ruch garnka pogarsza klarowność.",
+        commonMistakes: "Przelewanie od razu, mieszanie, potrząsanie garnkiem.",
+        recoveryAction: "Jeśli poruszyłeś garnek, odstaw ponownie na 10 minut."
+    )
+
+    static let addVegSpices = UltraSpecStepDetail(
+        stepID: "add_veg_spices",
+        title: "Dodaj warzywa i przyprawy",
+        subtitle: "W odpowiednim momencie i bez mieszania dna.",
+        extendedHint: "Warzywa i przyprawy dodaj etapowo zgodnie z wariantem. Nie wyciskaj składników po etapie.",
+        commonMistakes: "Za wczesne dodanie warzyw, zbyt długi kontakt z wysoką temperaturą.",
+        recoveryAction: "Jeśli smak idzie w gorycz/słodycz, skróć etap i przecedź wcześniej."
+    )
+
     static let fishPoachLimit = UltraSpecStepDetail(
         stepID: "fish_poach_limit",
         title: "Rybny: gotuj krótko",
@@ -112,6 +132,8 @@ enum UltraSpecStepLibrary {
         simmerClear.stepID: simmerClear,
         finishClear.stepID: finishClear,
         tonkotsuAromaticsEnd.stepID: tonkotsuAromaticsEnd,
-        vegSimmerLimit.stepID: vegSimmerLimit
+        vegSimmerLimit.stepID: vegSimmerLimit,
+        restSettle.stepID: restSettle,
+        addVegSpices.stepID: addVegSpices
     ]
 }
