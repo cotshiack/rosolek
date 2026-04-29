@@ -275,11 +275,10 @@ struct BrothResultView: View {
         return sortedSelections(syntheticSelections())
     }
 
-    private var isUltraSpecActive: Bool {
-        if case .custom = mode {
-            return selectedKind != nil
-        }
-        return false
+    private var activeUltraVariant: UltraSpecVariantID? {
+        guard case .custom = mode, let kind = selectedKind else { return nil }
+        let styleKey = UltraSpecStyleKeyResolver.resolve(kind: kind, styleName: selectedStyleName)
+        return UltraSpecVariantResolver.resolve(kind: kind, styleKey: styleKey)
     }
 
     private var usesUserSelections: Bool {
@@ -301,7 +300,7 @@ struct BrothResultView: View {
     }
 
     private var spiceRows: [ResultListRowData] {
-        [
+        var rows: [ResultListRowData] = [
             ResultListRowData(
                 icon: .salt,
                 title: "Sól",
@@ -313,26 +312,17 @@ struct BrothResultView: View {
                 title: "Pieprz czarny ziarnisty",
                 subtitle: "Czysty aromat",
                 value: "\(result.peppercornCount) \(result.peppercornCount == 1 ? "ziarno" : "ziaren")"
-            ),
-            ResultListRowData(
-                icon: .allspice,
-                title: "Ziele angielskie",
-                subtitle: "Głębia smaku",
-                value: "\(result.allspiceCount) \(result.allspiceCount == 1 ? "ziarno" : "ziaren")"
-            ),
-            ResultListRowData(
-                icon: .bayLeaf,
-                title: "Liść laurowy",
-                subtitle: "Tło aromatu",
-                value: result.bayLeafCount == 1 ? "1 liść" : "\(result.bayLeafCount) liście"
-            ),
-            ResultListRowData(
-                icon: .vinegar,
-                title: "Ocet jabłkowy",
-                subtitle: useVinegar ? "dodatek startowy" : "wyłączony",
-                value: "\(result.appleCiderVinegarMl) ml"
             )
         ]
+
+        if result.allspiceCount > 0 { rows.append(ResultListRowData(icon: .allspice, title: "Ziele angielskie", subtitle: "Głębia smaku", value: "\(result.allspiceCount) \(result.allspiceCount == 1 ? "ziarno" : "ziaren")")) }
+        if result.bayLeafCount > 0 { rows.append(ResultListRowData(icon: .bayLeaf, title: "Liść laurowy", subtitle: "Tło aromatu", value: result.bayLeafCount == 1 ? "1 liść" : "\(result.bayLeafCount) liście")) }
+
+        if let variant = activeUltraVariant, variant != .ramenTonkotsu {
+            rows.append(ResultListRowData(icon: .vinegar, title: "Ocet jabłkowy", subtitle: useVinegar ? "dodatek startowy" : "wyłączony", value: "\(result.appleCiderVinegarMl) ml"))
+        }
+
+        return rows
     }
 
     private var meatRows: [MeatShoppingRowData] {
@@ -559,20 +549,6 @@ struct BrothResultView: View {
                 .font(.system(size: 15, weight: .medium))
                 .foregroundStyle(AppTheme.textSecondary)
                 .fixedSize(horizontal: false, vertical: true)
-
-            if isUltraSpecActive {
-                HStack(spacing: 8) {
-                    Image(systemName: "checkmark.seal.fill")
-                        .foregroundStyle(AppTheme.accent)
-                    Text("ULTRA-SPEC aktywny")
-                        .font(.system(size: 13, weight: .semibold))
-                        .foregroundStyle(AppTheme.textPrimary)
-                }
-                .padding(.horizontal, 10)
-                .padding(.vertical, 6)
-                .background(AppTheme.surface)
-                .clipShape(Capsule())
-            }
         }
     }
 
