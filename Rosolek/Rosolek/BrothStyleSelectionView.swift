@@ -32,38 +32,39 @@ enum BrothKind: String, CaseIterable, Identifiable {
         switch self {
         case .rosol:
             return [
-                .init(title: "Lekki", subtitle: "Delikatny i klarowny na co dzień.", profile: .cleaner),
-                .init(title: "Bogaty", subtitle: "Pełniejszy, gdy bulion gra główną rolę.", profile: .richer)
+                .init(key: "rosol_light", title: "Lekki", subtitle: "Klarowny i subtelny na co dzień.", profile: .cleaner),
+                .init(key: "rosol_rich", title: "Bogaty", subtitle: "Pełny smak do wyrazistych dań.", profile: .richer)
             ]
         case .ramen:
             return [
-                .init(title: "Lekka baza", subtitle: "Czystsza baza do lżejszych ramenów.", profile: .cleaner),
-                .init(title: "Mocna baza", subtitle: "Głębsza baza do wyrazistszych misek.", profile: .richer)
+                .init(key: "ramen_shio", title: "Shio", subtitle: "Lżejsza, czystsza baza ramenowa.", profile: .cleaner),
+                .init(key: "ramen_tonkotsu", title: "Tonkotsu", subtitle: "Gęsta i głęboka baza umami.", profile: .richer)
             ]
         case .beef:
             return [
-                .init(title: "Czysty", subtitle: "Lżejszy wołowy finisz.", profile: .cleaner),
-                .init(title: "Mocny", subtitle: "Intensywny profil pod sosy i dania.", profile: .richer)
+                .init(key: "beef_clean", title: "Czysty", subtitle: "Lżejszy charakter bulionu wołowego.", profile: .cleaner),
+                .init(key: "beef_strong", title: "Mocny", subtitle: "Intensywny fundament do sosów.", profile: .richer)
             ]
         case .veggie:
             return [
-                .init(title: "Jasny", subtitle: "Świeży i delikatny profil warzywny.", profile: .cleaner),
-                .init(title: "Głęboki", subtitle: "Mocniejsze umami i pełniejsze body.", profile: .richer)
+                .init(key: "veggie_bright", title: "Jasny", subtitle: "Świeży i lekki profil warzywny.", profile: .cleaner),
+                .init(key: "veggie_umami", title: "Umami", subtitle: "Głębszy i pełniejszy smak warzyw.", profile: .richer)
             ]
         case .fish:
             return [
-                .init(title: "Delikatny", subtitle: "Lekki fumet do subtelnych dań.", profile: .cleaner),
-                .init(title: "Intensywny", subtitle: "Wyraźniejsza baza do mocniejszych kompozycji.", profile: .richer)
+                .init(key: "fish_delicate", title: "Delikatny", subtitle: "Lekki fumet do subtelnych potraw.", profile: .cleaner),
+                .init(key: "fish_intense", title: "Intensywny", subtitle: "Mocniejszy profil do głębszych dań.", profile: .richer)
             ]
         }
     }
 }
 struct BrothStyleOption: Identifiable, Hashable {
+    let key: String
     let title: String
     let subtitle: String
     let profile: BrothProfile
 
-    var id: String { "\(title)-\(subtitle)-\(profile.rawValue)" }
+    var id: String { key }
 }
 
 struct BrothStyleSelectionView: View {
@@ -103,7 +104,7 @@ struct BrothStyleSelectionView: View {
                                         selectedStyle = nil
                                     } else {
                                         selectedKind = kind
-                                        selectedStyle = nil
+                                        selectedStyle = kind.styles.first
                                     }
                                 }
                             },
@@ -156,10 +157,12 @@ private struct BrothKindCard: View {
     let onStyleTap: (BrothStyleOption) -> Void
 
     private func iconName(for style: BrothStyleOption) -> String {
-        let normalized = style.title.lowercased()
-        if normalized.contains("lek") || normalized.contains("jas") || normalized.contains("czyst") || normalized.contains("delikat") { return "drop" }
-        if normalized.contains("klasy") { return "circle.grid.2x1" }
-        return "flame"
+        switch style.key {
+        case "rosol_light", "beef_clean", "veggie_bright", "fish_delicate", "ramen_shio":
+            return "drop"
+        default:
+            return "flame"
+        }
     }
 
     var body: some View {
@@ -220,12 +223,13 @@ private struct BrothKindCard: View {
                                         
 
                                     Text(style.subtitle)
-                                        .font(.system(size: 11, weight: .medium))
+                                        .font(.system(size: 12, weight: .medium))
                                         .foregroundStyle(AppTheme.textSecondary)
-                                        .lineLimit(3)
+                                        .lineLimit(2)
+                                        .fixedSize(horizontal: false, vertical: true)
                                 }
                                 .padding(12)
-                                .frame(maxWidth: .infinity, minHeight: 122, alignment: .topLeading)
+                                .frame(maxWidth: .infinity, minHeight: 130, alignment: .topLeading)
                                 .background(
                                     RoundedRectangle(cornerRadius: 14, style: .continuous)
                                         .fill(selectedStyleID == style.id ? AppTheme.accentSoft.opacity(0.2) : AppTheme.surface)
@@ -238,7 +242,7 @@ private struct BrothKindCard: View {
                             .buttonStyle(.plain)
                         }
                     }
-                    .transition(.move(edge: .top).combined(with: .opacity))
+                    .transition(.opacity)
                 }
             }
         }
