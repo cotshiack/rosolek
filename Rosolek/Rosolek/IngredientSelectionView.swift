@@ -998,8 +998,33 @@ struct IngredientIllustrationBadge: View {
         case .liver:
             LiverIllustration()
         case .fish:
-            BeefChunkIllustration()
+            FishIllustration()
         }
+    }
+}
+
+struct FishIllustration: View {
+    var body: some View {
+        ZStack {
+            Ellipse()
+                .fill(Color(hex: "9EB5C7"))
+                .frame(width: 24, height: 12)
+
+            Path { path in
+                path.move(to: CGPoint(x: 26, y: 0))
+                path.addLine(to: CGPoint(x: 34, y: 6))
+                path.addLine(to: CGPoint(x: 26, y: 12))
+                path.closeSubpath()
+            }
+            .fill(Color(hex: "86A1B5"))
+            .offset(x: 2)
+
+            Circle()
+                .fill(Color(hex: "2C3E4D"))
+                .frame(width: 2.5, height: 2.5)
+                .offset(x: -7, y: -1)
+        }
+        .frame(width: 34, height: 16)
     }
 }
 
