@@ -12,9 +12,7 @@ final class UltraSpecTimelineTests: XCTestCase {
         for variant in UltraSpecVariantID.allCases {
             let steps = UltraSpecTimelineCatalog.steps(for: variant)
             for step in steps {
-                // some step IDs are timeline-only at this stage; keep strict set explicit
-                let allowedTimelineOnly: Set<String> = ["stabilize_base", "simmer_clear", "finish_clear", "tonkotsu_aromatics_end", "veg_simmer_limit"]
-                XCTAssertTrue(UltraSpecStepLibrary.all[step.stepID] != nil || allowedTimelineOnly.contains(step.stepID), "Missing drawer definition for stepID: \(step.stepID)")
+                XCTAssertNotNil(UltraSpecStepLibrary.all[step.stepID], "Missing drawer definition for stepID: \(step.stepID)")
             }
         }
     }
