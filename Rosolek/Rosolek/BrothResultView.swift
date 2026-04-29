@@ -92,6 +92,8 @@ struct BrothResultView: View {
         case .custom(let profile):
             if let kind = selectedKind {
                 do {
+                    let styleKey = UltraSpecStyleKeyResolver.resolve(kind: kind, styleName: selectedStyleName)
+                    let variant = UltraSpecVariantResolver.resolve(kind: kind, styleKey: styleKey)
                     let ultra = try UltraSpecBridge.calculateFromCurrentFlow(
                         kind: kind,
                         styleName: selectedStyleName,
@@ -99,7 +101,7 @@ struct BrothResultView: View {
                         selections: resolvedSelections,
                         clarityMode: clarityMode
                     )
-                    return makeBrothResultFromUltraSpec(ultra, kind: kind, profile: profile)
+                    return makeBrothResultFromUltraSpec(ultra, variant: variant, profile: profile)
                 } catch let error as UltraSpecEngineError {
                     return makeUltraSpecFailureResult(error: error)
                 } catch {
@@ -118,7 +120,7 @@ struct BrothResultView: View {
     }
 
 
-    private func makeBrothResultFromUltraSpec(_ ultra: UltraSpecCalculationResult, kind: BrothKind, profile: BrothProfile) -> BrothCalculationResult {
+    private func makeBrothResultFromUltraSpec(_ ultra: UltraSpecCalculationResult, variant: UltraSpecVariantID, profile: BrothProfile) -> BrothCalculationResult {
         let vegRows = ultra.vegetables.map {
             VegetableAmount(name: prettyIngredientName($0.ingredientID), amount: "\($0.grams) g", note: nil)
         }
@@ -136,9 +138,9 @@ struct BrothResultView: View {
 
         return BrothCalculationResult(
             waterLiters: ultra.waterStartL,
-            temperatureMin: temperatureBounds(for: kind).0,
-            temperatureMax: temperatureBounds(for: kind).1,
-            totalMinutes: estimatedTotalMinutes(for: kind),
+            temperatureMin: variantConfig(for: variant)?.temperature.minC ?? 88,
+            temperatureMax: variantConfig(for: variant)?.temperature.maxC ?? 92,
+            totalMinutes: variantConfig(for: variant)?.totalMinutes ?? 240,
             estimatedYieldLiters: ultra.estimatedYieldL,
             startSaltGrams: ultra.startSaltG,
             finalSaltGrams: ultra.targetSaltG,
@@ -213,24 +215,8 @@ struct BrothResultView: View {
         )
     }
 
-    private func temperatureBounds(for kind: BrothKind) -> (Int, Int) {
-        switch kind {
-        case .rosol: return (88, 90)
-        case .ramen: return selectedStyleName?.lowercased().contains("tonkotsu") == true ? (95, 100) : (88, 92)
-        case .beef: return selectedStyleName?.lowercased().contains("moc") == true ? (90, 94) : (88, 92)
-        case .veggie: return selectedStyleName?.lowercased().contains("umami") == true ? (88, 92) : (85, 88)
-        case .fish: return selectedStyleName?.lowercased().contains("intens") == true ? (85, 90) : (80, 85)
-        }
-    }
-
-    private func estimatedTotalMinutes(for kind: BrothKind) -> Int {
-        switch kind {
-        case .rosol: return selectedStyleName?.lowercased().contains("bogat") == true ? 345 : 315
-        case .ramen: return selectedStyleName?.lowercased().contains("tonkotsu") == true ? 480 : 240
-        case .beef: return selectedStyleName?.lowercased().contains("moc") == true ? 420 : 360
-        case .veggie: return selectedStyleName?.lowercased().contains("umami") == true ? 120 : 90
-        case .fish: return selectedStyleName?.lowercased().contains("intens") == true ? 60 : 45
-        }
+    private func variantConfig(for variant: UltraSpecVariantID) -> UltraSpecVariantConfig? {
+        UltraSpecCatalog.variants.first(where: { $0.id == variant })
     }
 
     private func mapSeverity(_ severity: UltraSpecSeverity) -> BrothWarningSeverity {
