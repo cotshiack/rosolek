@@ -161,6 +161,13 @@ private struct BrothKindCard: View {
     let onKindTap: () -> Void
     let onStyleTap: (BrothStyleOption) -> Void
 
+    private func iconName(for style: BrothStyleOption) -> String {
+        let normalized = style.title.lowercased()
+        if normalized.contains("lek") || normalized.contains("jas") || normalized.contains("czyst") || normalized.contains("delikat") { return "drop" }
+        if normalized.contains("klasy") { return "circle.grid.2x1" }
+        return "flame"
+    }
+
     var body: some View {
         AppCard(
             background: isSelected ? AppTheme.accentSoft.opacity(0.4) : AppTheme.surface,
@@ -192,44 +199,46 @@ private struct BrothKindCard: View {
                 .buttonStyle(.plain)
 
                 if isSelected {
-                    VStack(spacing: 8) {
-                        ForEach(kind.styles) { style in
-                            Button {
-                                onStyleTap(style)
-                            } label: {
-                                HStack {
-                                    VStack(alignment: .leading, spacing: 2) {
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 10) {
+                            ForEach(kind.styles) { style in
+                                Button {
+                                    onStyleTap(style)
+                                } label: {
+                                    VStack(alignment: .leading, spacing: 8) {
+                                        HStack {
+                                            Image(systemName: iconName(for: style))
+                                                .font(.system(size: 13, weight: .bold))
+                                                .foregroundStyle(selectedStyleID == style.id ? AppTheme.accent : AppTheme.textSecondary)
+                                            Spacer()
+                                            if selectedStyleID == style.id {
+                                                Image(systemName: "checkmark.circle.fill")
+                                                    .font(.system(size: 17, weight: .bold))
+                                                    .foregroundStyle(AppTheme.accent)
+                                            }
+                                        }
+
                                         Text(style.title)
-                                            .font(.system(size: 15, weight: .bold))
+                                            .font(.system(size: 16, weight: .bold))
+                                            .foregroundStyle(AppTheme.textPrimary)
+
                                         Text(style.subtitle)
                                             .font(.system(size: 12, weight: .medium))
                                             .foregroundStyle(AppTheme.textSecondary)
+                                            .lineLimit(2)
                                     }
-                                    Spacer()
-                                    if selectedStyleID == style.id {
-                                        Image(systemName: "checkmark.circle.fill")
-                                            .font(.system(size: 18, weight: .bold))
-                                            .foregroundStyle(AppTheme.accent)
-                                    }
+                                    .padding(12)
+                                    .frame(width: 156, height: 118, alignment: .topLeading)
+                                    .background(
+                                        RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                            .fill(selectedStyleID == style.id ? AppTheme.accentSoft.opacity(0.45) : AppTheme.surface)
+                                    )
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                            .stroke(selectedStyleID == style.id ? AppTheme.accent : AppTheme.border, lineWidth: selectedStyleID == style.id ? 1.5 : 1)
+                                    )
                                 }
-                                .foregroundStyle(AppTheme.textPrimary)
-                                .padding(.horizontal, 12)
-                                .padding(.vertical, 8)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                                                                .fill(selectedStyleID == style.id ? AppTheme.accentSoft.opacity(0.45) : AppTheme.surface)
-                                )
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                                                                .stroke(selectedStyleID == style.id ? AppTheme.accent : AppTheme.border, lineWidth: selectedStyleID == style.id ? 1.5 : 1)
-                                )
-                            }
-                            .buttonStyle(.plain)
-
-                            if style.id != kind.styles.last?.id {
-                                Divider()
-                                    .overlay(AppTheme.border)
-                                    .padding(.horizontal, 4)
+                                .buttonStyle(.plain)
                             }
                         }
                     }
