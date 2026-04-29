@@ -90,6 +90,17 @@ struct BrothResultView: View {
             )
 
         case .custom(let profile):
+            if let kind = selectedKind,
+               let ultra = try? UltraSpecBridge.calculateFromCurrentFlow(
+                kind: kind,
+                styleName: selectedStyleName,
+                potCapacityL: Double(potSizeLiters),
+                selections: resolvedSelections,
+                clarityMode: clarityMode
+               ) {
+                return makeBrothResultFromUltraSpec(ultra, profile: profile)
+            }
+
             return BrothCalculator.calculate(
                 profile: profile,
                 meatItems: resolvedSelections,
@@ -98,6 +109,77 @@ struct BrothResultView: View {
                 useVinegar: useVinegar
             )
         }
+    }
+
+
+    private func makeBrothResultFromUltraSpec(_ ultra: UltraSpecCalculationResult, profile: BrothProfile) -> BrothCalculationResult {
+        let vegRows = ultra.vegetables.map {
+            VegetableAmount(name: prettyIngredientName($0.ingredientID), amount: "\($0.grams) g", note: nil)
+        }
+
+        let spice = BrothSpiceBreakdown(
+            peppercornCount: ultra.spices.peppercornCount,
+            allspiceCount: ultra.spices.allspiceCount,
+            bayLeafCount: ultra.spices.bayLeafCount
+        )
+
+        let warningTexts = ultra.warningMessages.map { "\($0.title): \($0.message)" }
+        let structured: [BrothWarning] = ultra.warningMessages.map {
+            BrothWarning(code: mapWarningCode($0.code), severity: mapSeverity($0.severity), params: [])
+        }
+
+        return BrothCalculationResult(
+            waterLiters: ultra.waterStartL,
+            temperatureMin: 85,
+            temperatureMax: 95,
+            totalMinutes: 240,
+            estimatedYieldLiters: ultra.estimatedYieldL,
+            startSaltGrams: ultra.startSaltG,
+            finalSaltGrams: ultra.targetSaltG,
+            appleCiderVinegarMl: useVinegar ? max(5, Int((ultra.waterStartL * 2).rounded())) : 0,
+            peppercornCount: ultra.spices.peppercornCount,
+            allspiceCount: ultra.spices.allspiceCount,
+            bayLeafCount: ultra.spices.bayLeafCount,
+            vegetables: vegRows,
+            meatParts: resolvedSelections.map { MeatAmount(name: $0.name, grams: $0.grams, note: nil) },
+            timeline: [],
+            warnings: warningTexts,
+            structuredWarnings: structured,
+            validationFailure: nil,
+            scoring: nil,
+            recommendedMeatRange: nil,
+            clarityMode: clarityMode,
+            useVinegar: useVinegar,
+            targetYieldLiters: nil,
+            vegetableBreakdown: nil,
+            spiceBreakdown: spice,
+            microMode: ultra.waterStartL < 0.7,
+            waterWasReducedToFit: ultra.waterStartL < ultra.waterRecipeL
+        )
+    }
+
+    private func mapSeverity(_ severity: UltraSpecSeverity) -> BrothWarningSeverity {
+        switch severity {
+        case .info: return .info
+        case .warn: return .warn
+        case .error: return .error
+        }
+    }
+
+    private func mapWarningCode(_ code: UltraSpecWarningCode) -> BrothWarningCode {
+        switch code {
+        case .underpower: return .undermeatLight
+        case .overpower: return .overmeatIntense
+        case .vegTooMuch: return .singleIngredientRisk
+        case .paperFilterLowerIntensity: return .paperFilterLowerIntensity
+        case .hardPotTooSmall: return .hardPotTooSmall
+        case .hardPotTooBig: return .hardPotTooBig
+        case .hardNotFit: return .hardNotFit
+        }
+    }
+
+    private func prettyIngredientName(_ id: String) -> String {
+        UltraSpecCatalog.ingredients.first(where: { $0.id == id })?.name ?? id
     }
 
     private var resolvedSelections: [BrothIngredientSelection] {

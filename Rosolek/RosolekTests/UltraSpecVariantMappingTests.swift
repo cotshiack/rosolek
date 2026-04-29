@@ -13,6 +13,18 @@ final class UltraSpecVariantMappingTests: XCTestCase {
         XCTAssertEqual(UltraSpecStyleKeyResolver.resolve(kind: .rosol, styleName: nil), "rosol_light")
     }
 
+    func testBridgeAcceptsStyleName() throws {
+        let result = try UltraSpecBridge.calculateFromCurrentFlow(
+            kind: .ramen,
+            styleName: "Tonkotsu",
+            potCapacityL: 7,
+            selections: [.init(ingredientID: "kosci_wieprzowe", ingredientName: "Kości", category: .pork, grams: 2000)],
+            clarityMode: .normal
+        )
+
+        XCTAssertGreaterThan(result.waterStartL, 0)
+    }
+
     func testRequestBuilderMapsIngredientIDs() {
         let request = UltraSpecRequestBuilder.build(
             kind: .rosol,
