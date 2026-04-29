@@ -75,6 +75,15 @@ struct BrothStyleOption: Identifiable, Hashable {
 struct BrothStyleSelectionView: View {
     @State private var selectedKind: BrothKind? = nil
     @State private var selectedStyle: BrothStyleOption?
+    private var selectionSummary: String {
+        if let kind = selectedKind, let style = selectedStyle {
+            return "Wybrano: \(kind.rawValue) · \(style.title)"
+        }
+        if let kind = selectedKind {
+            return "Wybierz styl dla: \(kind.rawValue)"
+        }
+        return "Wybierz rodzaj bulionu"
+    }
 
     var body: some View {
         ScrollView(showsIndicators: false) {
@@ -82,6 +91,10 @@ struct BrothStyleSelectionView: View {
                 Text("Wybierz rodzaj bulionu")
                     .font(AppTypography.flowHeader)
                     .foregroundStyle(AppTheme.textPrimary)
+
+                Text(selectionSummary)
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(AppTheme.textSecondary)
 
                 VStack(spacing: 12) {
                     ForEach(BrothKind.allCases) { kind in
@@ -115,16 +128,25 @@ struct BrothStyleSelectionView: View {
         .navigationTitle("Własny bulion")
         .navigationBarTitleDisplayMode(.inline)
         .safeAreaInset(edge: .bottom) {
-            NavigationLink {
+            VStack(spacing: 8) {
+                if selectedKind == nil || selectedStyle == nil {
+                    Text("Wybierz rodzaj i styl, aby przejść dalej.")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(AppTheme.textSecondary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+
+                NavigationLink {
                 IngredientSelectionView(
                     selectedProfile: selectedStyle?.profile ?? .cleaner,
                     selectedKind: selectedKind ?? .rosol,
                     selectedStyleName: selectedStyle?.title ?? "Lekki"
                 )
-            } label: {
-                AppPrimaryButtonLabel(title: "Przejdź do składników", disabled: selectedKind == nil || selectedStyle == nil)
+                } label: {
+                    AppPrimaryButtonLabel(title: "Przejdź do składników", disabled: selectedKind == nil || selectedStyle == nil)
+                }
+                .disabled(selectedKind == nil || selectedStyle == nil)
             }
-            .disabled(selectedKind == nil || selectedStyle == nil)
             .padding(.horizontal, AppSpacing.screen)
             .padding(.vertical, 8)
             .background(AppTheme.background.opacity(0.98).ignoresSafeArea(edges: .bottom))
@@ -162,14 +184,6 @@ private struct BrothKindCard: View {
 
                         Spacer()
 
-                        if isSelected {
-                            Text("Wybrany")
-                                .font(.system(size: 12, weight: .bold))
-                                .padding(.horizontal, 8)
-                                .padding(.vertical, 4)
-                                .background(Capsule().fill(AppTheme.accentSoft))
-                        }
-
                         Image(systemName: isSelected ? "chevron.up" : "chevron.down")
                             .font(.system(size: 14, weight: .bold))
                             .foregroundStyle(AppTheme.textPrimary)
@@ -200,7 +214,7 @@ private struct BrothKindCard: View {
                                 }
                                 .foregroundStyle(AppTheme.textPrimary)
                                 .padding(.horizontal, 12)
-                                .padding(.vertical, 10)
+                                .padding(.vertical, 8)
                                 .background(
                                     RoundedRectangle(cornerRadius: 12, style: .continuous)
                                                                                 .fill(selectedStyleID == style.id ? AppTheme.accentSoft.opacity(0.45) : AppTheme.surface)
