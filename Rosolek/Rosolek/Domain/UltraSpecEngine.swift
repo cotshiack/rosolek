@@ -110,20 +110,14 @@ enum UltraSpecEngine {
             warnings.append("PAPER_FILTER_LOWER_INTENSITY")
         }
 
-        let warningMessages = UltraSpecWarnings.buildWarnings(request: request, result: UltraSpecCalculationResult(
-            waterRecipeL: waterRecipeL,
-            waterStartL: waterStartL,
-            estimatedYieldL: estimatedYieldL,
-            startSaltG: startSaltG,
-            targetSaltG: targetSaltG,
-            vegetableTotalG: vegetableTotalG,
-            vegetables: vegetables,
-            spices: spices,
-            totalAnimalG: totalAnimalG,
+        let warningMessages = UltraSpecWarnings.buildWarnings(
+            request: request,
             densityGL: densityGL,
-            warnings: warnings,
-            warningMessages: []
-        ), thresholds: thresholds)
+            waterStartL: waterStartL,
+            totalAnimalG: totalAnimalG,
+            vegetableTotalG: vegetableTotalG,
+            thresholds: thresholds
+        )
 
         return UltraSpecCalculationResult(
             waterRecipeL: waterRecipeL,
@@ -149,7 +143,7 @@ enum UltraSpecEngine {
     }
 }
 
-enum UltraSpecEngineError: Error {
+enum UltraSpecEngineError: Error, Equatable {
     case variantNotConfigured
     case hardPotTooSmall
     case hardPotTooBig

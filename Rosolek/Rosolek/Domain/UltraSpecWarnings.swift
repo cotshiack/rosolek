@@ -30,15 +30,18 @@ struct UltraSpecWarningMessage: Hashable {
 enum UltraSpecWarnings {
     static func buildWarnings(
         request: UltraSpecCalculationRequest,
-        result: UltraSpecCalculationResult,
+        densityGL: Double,
+        waterStartL: Double,
+        totalAnimalG: Int,
+        vegetableTotalG: Int,
         thresholds: UltraSpecWarningThresholds?
     ) -> [UltraSpecWarningMessage] {
         var warnings: [UltraSpecWarningMessage] = []
 
         if let thresholds {
-            if result.densityGL < thresholds.density.minGL {
-                let deltaMeat = Int((thresholds.density.minGL * result.waterStartL - Double(result.totalAnimalG)).rounded(.up))
-                let deltaWater = max(0, result.waterStartL - (Double(result.totalAnimalG) / thresholds.density.minGL))
+            if densityGL < thresholds.density.minGL {
+                let deltaMeat = Int((thresholds.density.minGL * waterStartL - Double(totalAnimalG)).rounded(.up))
+                let deltaWater = max(0, waterStartL - (Double(totalAnimalG) / thresholds.density.minGL))
                 warnings.append(
                     .init(
                         code: .underpower,
@@ -56,8 +59,8 @@ enum UltraSpecWarnings {
                 )
             }
 
-            if result.densityGL > thresholds.density.maxGL {
-                let deltaWater = max(0, (Double(result.totalAnimalG) / thresholds.density.maxGL) - result.waterStartL)
+            if densityGL > thresholds.density.maxGL {
+                let deltaWater = max(0, (Double(totalAnimalG) / thresholds.density.maxGL) - waterStartL)
                 warnings.append(
                     .init(
                         code: .overpower,
@@ -75,10 +78,10 @@ enum UltraSpecWarnings {
                 )
             }
 
-            let vegGL = result.waterStartL > 0 ? Double(result.vegetableTotalG) / result.waterStartL : 0
+            let vegGL = waterStartL > 0 ? Double(vegetableTotalG) / waterStartL : 0
             if vegGL > thresholds.vegetableCapGL {
-                let targetVegG = Int((thresholds.vegetableCapGL * result.waterStartL).rounded(.down))
-                let deltaVeg = max(0, result.vegetableTotalG - targetVegG)
+                let targetVegG = Int((thresholds.vegetableCapGL * waterStartL).rounded(.down))
+                let deltaVeg = max(0, vegetableTotalG - targetVegG)
                 warnings.append(
                     .init(
                         code: .vegTooMuch,
