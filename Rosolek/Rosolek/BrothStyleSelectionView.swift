@@ -93,7 +93,7 @@ struct BrothStyleSelectionView: View {
                     .foregroundStyle(AppTheme.textPrimary)
 
                 Text(selectionSummary)
-                    .font(.system(size: 14, weight: .semibold))
+                    .font(.system(size: 14, weight: .medium))
                     .foregroundStyle(AppTheme.textSecondary)
 
                 VStack(spacing: 12) {
@@ -130,7 +130,7 @@ struct BrothStyleSelectionView: View {
         .safeAreaInset(edge: .bottom) {
             VStack(spacing: 8) {
                 if selectedKind == nil || selectedStyle == nil {
-                    Text("Wybierz rodzaj i styl, aby przejść dalej.")
+                    Text(selectedKind == nil ? "Wybierz rodzaj bulionu, aby kontynuować." : "Wybierz styl, aby przejść dalej.")
                         .font(.system(size: 13, weight: .semibold))
                         .foregroundStyle(AppTheme.textSecondary)
                         .frame(maxWidth: .infinity, alignment: .leading)
@@ -163,7 +163,7 @@ private struct BrothKindCard: View {
 
     var body: some View {
         AppCard(
-            background: isSelected ? AppTheme.accentSoft.opacity(0.68) : AppTheme.surface,
+            background: isSelected ? AppTheme.accentSoft.opacity(0.4) : AppTheme.surface,
             border: isSelected ? AppTheme.accent : AppTheme.border,
             lineWidth: isSelected ? 1.5 : 1
         ) {
@@ -200,15 +200,15 @@ private struct BrothKindCard: View {
                                 HStack {
                                     VStack(alignment: .leading, spacing: 2) {
                                         Text(style.title)
-                                            .font(.system(size: 16, weight: .bold))
+                                            .font(.system(size: 15, weight: .bold))
                                         Text(style.subtitle)
-                                            .font(.system(size: 13, weight: .medium))
+                                            .font(.system(size: 12, weight: .medium))
                                             .foregroundStyle(AppTheme.textSecondary)
                                     }
                                     Spacer()
                                     if selectedStyleID == style.id {
-                                        Label("Wybrano", systemImage: "checkmark.circle.fill")
-                                            .font(.system(size: 12, weight: .bold))
+                                        Image(systemName: "checkmark.circle.fill")
+                                            .font(.system(size: 18, weight: .bold))
                                             .foregroundStyle(AppTheme.accent)
                                     }
                                 }
@@ -225,6 +225,12 @@ private struct BrothKindCard: View {
                                 )
                             }
                             .buttonStyle(.plain)
+
+                            if style.id != kind.styles.last?.id {
+                                Divider()
+                                    .overlay(AppTheme.border)
+                                    .padding(.horizontal, 4)
+                            }
                         }
                     }
                     .transition(.move(edge: .top).combined(with: .opacity))
