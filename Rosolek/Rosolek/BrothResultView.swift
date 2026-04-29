@@ -137,8 +137,6 @@ struct BrothResultView: View {
             }
             return "\($0.title): \($0.message)"
         }
-        warningTexts.append(contentsOf: UltraSpecLiveBanners.hints(for: variant).map { "LIVE: \($0)" })
-
         let structured: [BrothWarning] = ultra.warningMessages.map {
             BrothWarning(code: mapWarningCode($0.code), severity: mapSeverity($0.severity), params: [])
         }
@@ -167,7 +165,7 @@ struct BrothResultView: View {
             bayLeafCount: ultra.spices.bayLeafCount,
             vegetables: vegRows,
             meatParts: resolvedSelections.map { MeatAmount(name: $0.name, grams: $0.grams, note: nil) },
-            timeline: [],
+            timeline: timeline,
             warnings: warningTexts,
             structuredWarnings: structured,
             validationFailure: nil,
