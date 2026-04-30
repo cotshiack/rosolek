@@ -286,11 +286,11 @@ struct LastBatchDetailView: View {
                             selectedIngredientCount: replayIngredientIDs.count,
                             selectedIDs: replayIngredientIDs,
                             initialSelections: replaySelections(from: batch),
-                            selectedKind: replayBrothKind(from: batch),
-                            selectedStyleName: batch.selectedStyleName,
                             meatOverrides: batch.meatOverrides,
                             vegetableOverrides: batch.vegetableOverrides,
-                            spiceOverrides: batch.spiceOverrides
+                            spiceOverrides: batch.spiceOverrides,
+                            selectedKind: replayBrothKind(from: batch),
+                            selectedStyleName: batch.selectedStyleName
                         )
                     } label: {
                         AppPrimaryButtonLabel(title: "Ugotuj ponownie 1:1")
@@ -303,11 +303,11 @@ struct LastBatchDetailView: View {
                             selectedIngredientCount: replayIngredientIDs.count,
                             selectedIDs: replayIngredientIDs,
                             initialSelections: replaySelections(from: batch),
-                            selectedKind: replayBrothKind(from: batch),
-                            selectedStyleName: batch.selectedStyleName,
                             meatOverrides: nil,
                             vegetableOverrides: nil,
-                            spiceOverrides: nil
+                            spiceOverrides: nil,
+                            selectedKind: replayBrothKind(from: batch),
+                            selectedStyleName: batch.selectedStyleName
                         )
                     } label: {
                         AppSecondaryButtonLabel(title: "Przelicz od nowa")
