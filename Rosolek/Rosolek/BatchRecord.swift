@@ -316,6 +316,10 @@ extension BatchRecord {
     }
 
     var defaultTitle: String {
+        if let named = preferredKindTitle {
+            return named
+        }
+
         if let preset = selectedPreset {
             switch preset {
             case .poultryReady:
@@ -332,6 +336,25 @@ extension BatchRecord {
             return "Rosół czystszy"
         case .richer:
             return "Rosół głębszy"
+        }
+    }
+
+    private var preferredKindTitle: String? {
+        guard let kind = BrothKind(rawValue: brothKindRawValue ?? "") else { return nil }
+        let style = selectedStyleName?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+
+        switch kind {
+        case .ramen:
+            if !style.isEmpty { return "Ramen \(style)" }
+            return "Ramen"
+        case .rosol:
+            return "Rosół klasyczny"
+        case .beef:
+            return "Bulion wołowy"
+        case .veggie:
+            return "Bulion warzywny"
+        case .fish:
+            return "Bulion rybny"
         }
     }
 

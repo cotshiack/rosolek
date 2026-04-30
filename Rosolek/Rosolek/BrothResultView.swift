@@ -340,7 +340,7 @@ struct BrothResultView: View {
         if allspiceCount > 0 { rows.append(ResultListRowData(icon: .allspice, title: "Ziele angielskie", subtitle: "Głębia smaku", value: "\(allspiceCount) \(allspiceCount == 1 ? "ziarno" : "ziaren")")) }
         if bayLeafCount > 0 { rows.append(ResultListRowData(icon: .bayLeaf, title: "Liść laurowy", subtitle: "Tło aromatu", value: bayLeafCount == 1 ? "1 liść" : "\(bayLeafCount) liście")) }
 
-        if let variant = activeUltraVariant, variant != .ramenTonkotsu {
+        if supportsVinegar {
             rows.append(ResultListRowData(icon: .vinegar, title: "Ocet jabłkowy", subtitle: useVinegar ? "dodatek startowy" : "wyłączony", value: "\(vinegarMl) ml"))
         }
 
@@ -361,7 +361,7 @@ struct BrothResultView: View {
         let pepperCount = spiceOverrides["pepper"] ?? baseResult.peppercornCount
         let allspiceCount = spiceOverrides["allspice"] ?? baseResult.allspiceCount
         let bayLeafCount = spiceOverrides["bay"] ?? baseResult.bayLeafCount
-        let vinegarMl = spiceOverrides["vinegar"] ?? baseResult.appleCiderVinegarMl
+        let vinegarMl = supportsVinegar ? (spiceOverrides["vinegar"] ?? baseResult.appleCiderVinegarMl) : 0
 
         return BrothCalculationResult(
             waterLiters: baseResult.waterLiters,
@@ -802,24 +802,7 @@ struct BrothResultView: View {
                     ? "To jest dokładnie Twój zestaw."
                     : "To jest gotowy zestaw z przepisu."
             )
-            .overlay(alignment: .topTrailing) {
-                if usesUserSelections {
-                    Button {
-                        showMeatEditor = true
-                    } label: {
-                        Image(systemName: "square.and.pencil")
-                            .font(.system(size: 14, weight: .semibold))
-                            .foregroundStyle(AppTheme.textSecondary)
-                            .frame(width: 30, height: 30)
-                            .background(
-                                RoundedRectangle(cornerRadius: 10, style: .continuous)
-                                    .fill(AppTheme.surfaceMuted)
-                            )
-                    }
-                    .buttonStyle(.plain)
-                    .padding(10)
-                }
-            }
+            .overlay(alignment: .topTrailing) { sectionEditButton(show: usesUserSelections) { showMeatEditor = true } }
 
             AppCard {
                 VStack(alignment: .leading, spacing: 12) {
@@ -829,20 +812,6 @@ struct BrothResultView: View {
                             .foregroundStyle(AppTheme.textPrimary)
 
                         Spacer()
-
-                        Button {
-                            showVegetableEditor = true
-                        } label: {
-                            Image(systemName: "square.and.pencil")
-                                .font(.system(size: 14, weight: .semibold))
-                                .foregroundStyle(AppTheme.textSecondary)
-                                .frame(width: 30, height: 30)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 10, style: .continuous)
-                                        .fill(AppTheme.surfaceMuted)
-                                )
-                        }
-                        .buttonStyle(.plain)
 
                         ResultMetaChip(title: "\(vegetableRows.count) pozycji")
                     }
@@ -861,49 +830,24 @@ struct BrothResultView: View {
                 }
             }
             .appSoftShadow()
+            .overlay(alignment: .topTrailing) { sectionEditButton { showVegetableEditor = true } }
         }
         .sheet(isPresented: $showVegetableEditor) {
-            NavigationStack {
-                List {
-                    ForEach(result.vegetables, id: \.name) { item in
-                        let baseValue = parseGrams(from: item.amount)
-                        Stepper(
-                            value: Binding(
-                                get: { vegetableOverrides[item.name] ?? baseValue },
-                                set: { vegetableOverrides[item.name] = max(0, $0) }
-                            ),
-                            in: 0...2500,
-                            step: 5
-                        ) {
-                            HStack {
-                                VStack(alignment: .leading, spacing: 4) {
-                                    Text(item.name)
-                                        .font(.system(size: 16, weight: .semibold))
-                                    if let subtitle = vegetableSubtitle(for: item) {
-                                        Text(subtitle)
-                                            .font(.system(size: 12, weight: .medium))
-                                            .foregroundStyle(AppTheme.textSecondary)
-                                    }
-                                }
-                                Spacer()
-                                Text("\(vegetableOverrides[item.name] ?? baseValue) g")
-                                    .font(.system(size: 15, weight: .bold))
-                            }
-                        }
-                    }
-                }
-                .navigationTitle("Edytuj warzywa")
-                .toolbar {
-                    ToolbarItem(placement: .cancellationAction) {
-                        Button("Reset") {
-                            vegetableOverrides.removeAll()
-                        }
-                    }
-                    ToolbarItem(placement: .confirmationAction) {
-                        Button("Gotowe") {
-                            showVegetableEditor = false
-                        }
-                    }
+            editorSheet(
+                title: "Edytuj warzywa",
+                onReset: { vegetableOverrides.removeAll() },
+                onDone: { showVegetableEditor = false }
+            ) {
+                ForEach(result.vegetables, id: \.name) { item in
+                    let baseValue = parseGrams(from: item.amount)
+                    editorRow(
+                        title: item.name,
+                        subtitle: vegetableSubtitle(for: item),
+                        value: vegetableOverrides[item.name] ?? baseValue,
+                        suffix: "g",
+                        step: 5,
+                        range: 0...2500
+                    ) { vegetableOverrides[item.name] = $0 }
                 }
             }
         }
@@ -961,19 +905,6 @@ struct BrothResultView: View {
 
                     Spacer()
 
-                    Button {
-                        showSpiceEditor = true
-                    } label: {
-                        Image(systemName: "square.and.pencil")
-                            .font(.system(size: 14, weight: .semibold))
-                            .foregroundStyle(AppTheme.textSecondary)
-                            .frame(width: 30, height: 30)
-                            .background(
-                                RoundedRectangle(cornerRadius: 10, style: .continuous)
-                                    .fill(AppTheme.surfaceMuted)
-                            )
-                    }
-                    .buttonStyle(.plain)
                 }
 
                 Text("Przygotuj wcześniej.")
@@ -995,34 +926,101 @@ struct BrothResultView: View {
                 }
             }
             .appSoftShadow()
+            .overlay(alignment: .topTrailing) { sectionEditButton { showSpiceEditor = true } }
         }
         .sheet(isPresented: $showSpiceEditor) {
-            NavigationStack {
-                List {
-                    spiceStepperRow(title: "Sól start", key: "salt_start", defaultValue: Int(result.startSaltGrams.rounded()), suffix: "g", range: 0...200)
-                    spiceStepperRow(title: "Sól końcowa", key: "salt_final", defaultValue: Int(result.finalSaltGrams.rounded()), suffix: "g", range: 0...250)
-                    spiceStepperRow(title: "Pieprz", key: "pepper", defaultValue: result.peppercornCount, suffix: "ziaren", range: 0...200)
-                    spiceStepperRow(title: "Ziele angielskie", key: "allspice", defaultValue: result.allspiceCount, suffix: "ziaren", range: 0...100)
-                    spiceStepperRow(title: "Liść laurowy", key: "bay", defaultValue: result.bayLeafCount, suffix: "liści", range: 0...50)
-                    if activeUltraVariant != .ramenTonkotsu {
-                        spiceStepperRow(title: "Ocet jabłkowy", key: "vinegar", defaultValue: result.appleCiderVinegarMl, suffix: "ml", range: 0...200)
-                    }
-                }
-                .navigationTitle("Edytuj przyprawy")
-                .toolbar {
-                    ToolbarItem(placement: .cancellationAction) {
-                        Button("Reset") {
-                            spiceOverrides.removeAll()
-                        }
-                    }
-                    ToolbarItem(placement: .confirmationAction) {
-                        Button("Gotowe") {
-                            showSpiceEditor = false
-                        }
-                    }
+            editorSheet(
+                title: "Edytuj przyprawy",
+                onReset: { spiceOverrides.removeAll() },
+                onDone: { showSpiceEditor = false }
+            ) {
+                spiceStepperRow(title: "Sól start", key: "salt_start", defaultValue: Int(result.startSaltGrams.rounded()), suffix: "g", range: 0...200)
+                spiceStepperRow(title: "Sól końcowa", key: "salt_final", defaultValue: Int(result.finalSaltGrams.rounded()), suffix: "g", range: 0...250)
+                spiceStepperRow(title: "Pieprz", key: "pepper", defaultValue: result.peppercornCount, suffix: "ziaren", range: 0...200)
+                spiceStepperRow(title: "Ziele angielskie", key: "allspice", defaultValue: result.allspiceCount, suffix: "ziaren", range: 0...100)
+                spiceStepperRow(title: "Liść laurowy", key: "bay", defaultValue: result.bayLeafCount, suffix: "liści", range: 0...50)
+                if supportsVinegar {
+                    spiceStepperRow(title: "Ocet jabłkowy", key: "vinegar", defaultValue: result.appleCiderVinegarMl, suffix: "ml", range: 0...200)
                 }
             }
         }
+    }
+
+    private var supportsVinegar: Bool {
+        activeUltraVariant != .ramenTonkotsu
+    }
+
+    @ViewBuilder
+    private func sectionEditButton(show: Bool = true, action: @escaping () -> Void) -> some View {
+        if show {
+            Button(action: action) {
+                Image(systemName: "square.and.pencil")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(AppTheme.textSecondary)
+                    .frame(width: 30, height: 30)
+                    .background(
+                        RoundedRectangle(cornerRadius: 10, style: .continuous)
+                            .fill(AppTheme.surfaceMuted)
+                    )
+            }
+            .buttonStyle(.plain)
+            .padding(10)
+        }
+    }
+
+    private func editorSheet<Content: View>(
+        title: String,
+        onReset: @escaping () -> Void,
+        onDone: @escaping () -> Void,
+        @ViewBuilder content: () -> Content
+    ) -> some View {
+        NavigationStack {
+            ScrollView(showsIndicators: false) {
+                AppCard {
+                    VStack(spacing: 0) {
+                        content()
+                    }
+                }
+                .appSoftShadow()
+                .padding(AppSpacing.screen)
+            }
+            .background(AppTheme.background)
+            .navigationTitle(title)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) { Button("Reset", action: onReset) }
+                ToolbarItem(placement: .confirmationAction) { Button("Gotowe", action: onDone) }
+            }
+        }
+    }
+
+    private func editorRow(
+        title: String,
+        subtitle: String?,
+        value: Int,
+        suffix: String,
+        step: Int,
+        range: ClosedRange<Int>,
+        onChange: @escaping (Int) -> Void
+    ) -> some View {
+        HStack(spacing: 12) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(title).font(.system(size: 16, weight: .bold))
+                if let subtitle { Text(subtitle).font(.system(size: 13, weight: .medium)).foregroundStyle(AppTheme.textSecondary) }
+            }
+            Spacer()
+            Text("\(value) \(suffix)").font(.system(size: 15, weight: .bold))
+            HStack(spacing: 0) {
+                Button("−") { onChange(max(range.lowerBound, value - step)) }
+                Divider().frame(height: 26)
+                Button("+") { onChange(min(range.upperBound, value + step)) }
+            }
+            .font(.system(size: 22, weight: .medium))
+            .frame(width: 104, height: 44)
+            .background(AppTheme.surfaceMuted)
+            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+        }
+        .padding(.vertical, 12)
+        .overlay(alignment: .bottom) { Divider().overlay(AppTheme.border) }
     }
 
     private func spiceStepperRow(
