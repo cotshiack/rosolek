@@ -852,44 +852,20 @@ struct BrothResultView: View {
             }
         }
         .sheet(isPresented: $showMeatEditor) {
-            NavigationStack {
-                List {
-                    ForEach(resolvedSelections, id: \.ingredientID) { selection in
-                        Stepper(
-                            value: Binding(
-                                get: { meatOverrides[selection.ingredientID] ?? selection.grams },
-                                set: { meatOverrides[selection.ingredientID] = max(0, $0) }
-                            ),
-                            in: 0...6000,
-                            step: 10
-                        ) {
-                            HStack {
-                                VStack(alignment: .leading, spacing: 4) {
-                                    Text(selection.ingredientName)
-                                        .font(.system(size: 16, weight: .semibold))
-                                    Text(subtitleForSelection(selection))
-                                        .font(.system(size: 12, weight: .medium))
-                                        .foregroundStyle(AppTheme.textSecondary)
-                                }
-                                Spacer()
-                                Text(gramsString(meatOverrides[selection.ingredientID] ?? selection.grams))
-                                    .font(.system(size: 15, weight: .bold))
-                            }
-                        }
-                    }
-                }
-                .navigationTitle("Edytuj bazę")
-                .toolbar {
-                    ToolbarItem(placement: .cancellationAction) {
-                        Button("Reset") {
-                            meatOverrides.removeAll()
-                        }
-                    }
-                    ToolbarItem(placement: .confirmationAction) {
-                        Button("Gotowe") {
-                            showMeatEditor = false
-                        }
-                    }
+            editorSheet(
+                title: "Edytuj bazę",
+                onReset: { meatOverrides.removeAll() },
+                onDone: { showMeatEditor = false }
+            ) {
+                ForEach(resolvedSelections, id: \.ingredientID) { selection in
+                    editorRow(
+                        title: selection.ingredientName,
+                        subtitle: subtitleForSelection(selection),
+                        value: meatOverrides[selection.ingredientID] ?? selection.grams,
+                        suffix: "g",
+                        step: 50,
+                        range: 0...6000
+                    ) { meatOverrides[selection.ingredientID] = $0 }
                 }
             }
         }
@@ -931,13 +907,13 @@ struct BrothResultView: View {
                 onReset: { spiceOverrides.removeAll() },
                 onDone: { showSpiceEditor = false }
             ) {
-                spiceStepperRow(title: "Sól start", key: "salt_start", defaultValue: Int(result.startSaltGrams.rounded()), suffix: "g", range: 0...200)
-                spiceStepperRow(title: "Sól końcowa", key: "salt_final", defaultValue: Int(result.finalSaltGrams.rounded()), suffix: "g", range: 0...250)
-                spiceStepperRow(title: "Pieprz", key: "pepper", defaultValue: result.peppercornCount, suffix: "ziaren", range: 0...200)
-                spiceStepperRow(title: "Ziele angielskie", key: "allspice", defaultValue: result.allspiceCount, suffix: "ziaren", range: 0...100)
-                spiceStepperRow(title: "Liść laurowy", key: "bay", defaultValue: result.bayLeafCount, suffix: "liści", range: 0...50)
+                spiceStepperRow(title: "Sól start", key: "salt_start", defaultValue: Int(result.startSaltGrams.rounded()), suffix: "g", range: 0...200, step: 1)
+                spiceStepperRow(title: "Sól końcowa", key: "salt_final", defaultValue: Int(result.finalSaltGrams.rounded()), suffix: "g", range: 0...250, step: 1)
+                spiceStepperRow(title: "Pieprz", key: "pepper", defaultValue: result.peppercornCount, suffix: "ziaren", range: 0...200, step: 1)
+                spiceStepperRow(title: "Ziele angielskie", key: "allspice", defaultValue: result.allspiceCount, suffix: "ziaren", range: 0...100, step: 1)
+                spiceStepperRow(title: "Liść laurowy", key: "bay", defaultValue: result.bayLeafCount, suffix: "liści", range: 0...50, step: 1)
                 if supportsVinegar {
-                    spiceStepperRow(title: "Ocet jabłkowy", key: "vinegar", defaultValue: result.appleCiderVinegarMl, suffix: "ml", range: 0...200)
+                    spiceStepperRow(title: "Ocet jabłkowy", key: "vinegar", defaultValue: result.appleCiderVinegarMl, suffix: "ml", range: 0...200, step: 5)
                 }
             }
         }
@@ -1004,10 +980,13 @@ struct BrothResultView: View {
             Text("\(value) \(suffix)").font(.system(size: 15, weight: .bold))
             HStack(spacing: 0) {
                 Button("−") { onChange(max(range.lowerBound, value - step)) }
+                    .disabled(value <= range.lowerBound)
                 Divider().frame(height: 26)
                 Button("+") { onChange(min(range.upperBound, value + step)) }
+                    .disabled(value >= range.upperBound)
             }
             .font(.system(size: 22, weight: .medium))
+            .foregroundStyle(AppTheme.textPrimary)
             .frame(width: 104, height: 44)
             .background(AppTheme.surfaceMuted)
             .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
@@ -1021,24 +1000,17 @@ struct BrothResultView: View {
         key: String,
         defaultValue: Int,
         suffix: String,
-        range: ClosedRange<Int>
+        range: ClosedRange<Int>,
+        step: Int
     ) -> some View {
-        Stepper(
-            value: Binding(
-                get: { spiceOverrides[key] ?? defaultValue },
-                set: { spiceOverrides[key] = max(range.lowerBound, min(range.upperBound, $0)) }
-            ),
-            in: range,
-            step: 1
-        ) {
-            HStack {
-                Text(title)
-                Spacer()
-                Text("\(spiceOverrides[key] ?? defaultValue) \(suffix)")
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(AppTheme.textSecondary)
-            }
-        }
+        editorRow(
+            title: title,
+            subtitle: nil,
+            value: spiceOverrides[key] ?? defaultValue,
+            suffix: suffix,
+            step: step,
+            range: range
+        ) { spiceOverrides[key] = $0 }
     }
 
     private var timelineSection: some View {
