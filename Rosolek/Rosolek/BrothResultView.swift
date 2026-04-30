@@ -971,27 +971,51 @@ struct BrothResultView: View {
         range: ClosedRange<Int>,
         onChange: @escaping (Int) -> Void
     ) -> some View {
-        HStack(spacing: 12) {
+        HStack(alignment: .center, spacing: 12) {
             VStack(alignment: .leading, spacing: 4) {
-                Text(title).font(.system(size: 16, weight: .bold))
-                if let subtitle { Text(subtitle).font(.system(size: 13, weight: .medium)).foregroundStyle(AppTheme.textSecondary) }
+                Text(title)
+                    .font(.system(size: 16, weight: .bold))
+                    .lineLimit(2)
+                    .truncationMode(.tail)
+                    .fixedSize(horizontal: false, vertical: true)
+                if let subtitle {
+                    Text(subtitle)
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundStyle(AppTheme.textSecondary)
+                        .lineLimit(1)
+                        .truncationMode(.tail)
+                }
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
+
             Spacer()
-            Text("\(value) \(suffix)").font(.system(size: 15, weight: .bold))
+            Text("\(value) \(suffix)")
+                .font(.system(size: 15, weight: .bold))
+                .frame(minWidth: 78, alignment: .trailing)
+
             HStack(spacing: 0) {
                 Button("−") { onChange(max(range.lowerBound, value - step)) }
                     .disabled(value <= range.lowerBound)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
                 Divider().frame(height: 26)
                 Button("+") { onChange(min(range.upperBound, value + step)) }
                     .disabled(value >= range.upperBound)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
-            .font(.system(size: 22, weight: .medium))
+            .font(.system(size: 28, weight: .semibold))
             .foregroundStyle(AppTheme.textPrimary)
-            .frame(width: 104, height: 44)
-            .background(AppTheme.surfaceMuted)
-            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .frame(width: 116, height: 50)
+            .background(
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .fill(AppTheme.surfaceSoft)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .stroke(AppTheme.border, lineWidth: 1)
+            )
+            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
         }
-        .padding(.vertical, 12)
+        .padding(.vertical, 14)
         .overlay(alignment: .bottom) { Divider().overlay(AppTheme.border) }
     }
 
