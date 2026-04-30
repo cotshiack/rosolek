@@ -727,53 +727,59 @@ struct BrothResultView: View {
 
             AppCard {
                 VStack(alignment: .leading, spacing: 18) {
-                    VStack(alignment: .leading, spacing: 10) {
-                        Text("Filtrowanie")
-                            .font(.system(size: 16, weight: .bold))
-                            .foregroundStyle(AppTheme.textPrimary)
+                    if supportsFiltering {
+                        VStack(alignment: .leading, spacing: 10) {
+                            Text("Filtrowanie")
+                                .font(.system(size: 16, weight: .bold))
+                                .foregroundStyle(AppTheme.textPrimary)
 
-                        BinaryChoiceControl(
-                            falseTitle: "Nie",
-                            trueTitle: "Tak",
-                            isOn: isFiltered,
-                            onFalse: {
-                                clarityMode = .normal
-                            },
-                            onTrue: {
-                                clarityMode = filteredClarityMode
-                            }
-                        )
+                            BinaryChoiceControl(
+                                falseTitle: "Nie",
+                                trueTitle: "Tak",
+                                isOn: isFiltered,
+                                onFalse: {
+                                    clarityMode = .normal
+                                },
+                                onTrue: {
+                                    clarityMode = filteredClarityMode
+                                }
+                            )
 
-                        Text(filteringDescription)
-                            .font(.system(size: 13, weight: .medium))
-                            .foregroundStyle(AppTheme.textSecondary)
-                            .fixedSize(horizontal: false, vertical: true)
+                            Text(filteringDescription)
+                                .font(.system(size: 13, weight: .medium))
+                                .foregroundStyle(AppTheme.textSecondary)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
                     }
 
-                    Divider()
-                        .overlay(AppTheme.border)
+                    if supportsVinegar {
+                        if supportsFiltering {
+                            Divider()
+                                .overlay(AppTheme.border)
+                        }
 
-                    VStack(alignment: .leading, spacing: 10) {
-                        Text("Ocet jabłkowy")
-                            .font(.system(size: 16, weight: .bold))
-                            .foregroundStyle(AppTheme.textPrimary)
+                        VStack(alignment: .leading, spacing: 10) {
+                            Text("Ocet jabłkowy")
+                                .font(.system(size: 16, weight: .bold))
+                                .foregroundStyle(AppTheme.textPrimary)
 
-                        BinaryChoiceControl(
-                            falseTitle: "Nie",
-                            trueTitle: "Tak",
-                            isOn: useVinegar,
-                            onFalse: {
-                                useVinegar = false
-                            },
-                            onTrue: {
-                                useVinegar = true
-                            }
-                        )
+                            BinaryChoiceControl(
+                                falseTitle: "Nie",
+                                trueTitle: "Tak",
+                                isOn: useVinegar,
+                                onFalse: {
+                                    useVinegar = false
+                                },
+                                onTrue: {
+                                    useVinegar = true
+                                }
+                            )
 
-                        Text(vinegarDescription)
-                            .font(.system(size: 13, weight: .medium))
-                            .foregroundStyle(AppTheme.textSecondary)
-                            .fixedSize(horizontal: false, vertical: true)
+                            Text(vinegarDescription)
+                                .font(.system(size: 13, weight: .medium))
+                                .foregroundStyle(AppTheme.textSecondary)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
                     }
                 }
             }
@@ -920,6 +926,15 @@ struct BrothResultView: View {
     }
 
     private var supportsVinegar: Bool {
+        switch activeUltraVariant {
+        case .some(.ramenTonkotsu), .some(.warzywnyJasny), .some(.warzywnyUmami), .some(.rybnyDelikatny), .some(.rybnyIntensywny):
+            return false
+        default:
+            return true
+        }
+    }
+
+    private var supportsFiltering: Bool {
         activeUltraVariant != .ramenTonkotsu
     }
 
