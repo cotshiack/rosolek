@@ -305,7 +305,7 @@ struct BrothResultView: View {
         result.vegetables.map { item in
             let baseValue = parseGrams(from: item.amount)
             let grams = vegetableOverrides[item.name] ?? baseValue
-            ResultListRowData(
+            return ResultListRowData(
                 icon: iconKind(for: item.name),
                 title: item.name,
                 subtitle: vegetableSubtitle(for: item),
