@@ -800,9 +800,9 @@ struct BrothResultView: View {
                 rows: meatRows,
                 description: usesUserSelections
                     ? "To jest dokładnie Twój zestaw."
-                    : "To jest gotowy zestaw z przepisu."
+                    : "To jest gotowy zestaw z przepisu.",
+                onEdit: usesUserSelections ? { showMeatEditor = true } : nil
             )
-            .overlay(alignment: .topTrailing) { sectionEditButton(show: usesUserSelections) { showMeatEditor = true } }
 
             AppCard {
                 VStack(alignment: .leading, spacing: 12) {
@@ -814,6 +814,7 @@ struct BrothResultView: View {
                         Spacer()
 
                         ResultMetaChip(title: "\(vegetableRows.count) pozycji")
+                        editHeaderButton { showVegetableEditor = true }
                     }
 
                     VStack(spacing: 0) {
@@ -830,7 +831,6 @@ struct BrothResultView: View {
                 }
             }
             .appSoftShadow()
-            .overlay(alignment: .topTrailing) { sectionEditButton { showVegetableEditor = true } }
         }
         .sheet(isPresented: $showVegetableEditor) {
             editorSheet(
@@ -897,23 +897,20 @@ struct BrothResultView: View {
 
     private var spicesSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            VStack(alignment: .leading, spacing: 4) {
-                HStack(spacing: 10) {
-                    Text("Przyprawy")
-                        .font(.system(size: 22, weight: .bold))
-                        .foregroundStyle(AppTheme.textPrimary)
-
-                    Spacer()
-
-                }
-
-                Text("Przygotuj wcześniej.")
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundStyle(AppTheme.textSecondary)
-            }
-
             AppCard {
-                VStack(spacing: 0) {
+                VStack(alignment: .leading, spacing: 12) {
+                    HStack {
+                        Text("Przyprawy")
+                            .font(.system(size: 17, weight: .bold))
+                            .foregroundStyle(AppTheme.textPrimary)
+                        Spacer()
+                        editHeaderButton { showSpiceEditor = true }
+                    }
+                    Text("Przygotuj wcześniej.")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundStyle(AppTheme.textSecondary)
+
+                    VStack(spacing: 0) {
                     ForEach(Array(spiceRows.enumerated()), id: \.offset) { index, item in
                         ResultListRow(item: item)
 
@@ -924,9 +921,9 @@ struct BrothResultView: View {
                         }
                     }
                 }
+                }
             }
             .appSoftShadow()
-            .overlay(alignment: .topTrailing) { sectionEditButton { showSpiceEditor = true } }
         }
         .sheet(isPresented: $showSpiceEditor) {
             editorSheet(
@@ -950,22 +947,18 @@ struct BrothResultView: View {
         activeUltraVariant != .ramenTonkotsu
     }
 
-    @ViewBuilder
-    private func sectionEditButton(show: Bool = true, action: @escaping () -> Void) -> some View {
-        if show {
-            Button(action: action) {
-                Image(systemName: "square.and.pencil")
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(AppTheme.textSecondary)
-                    .frame(width: 30, height: 30)
-                    .background(
-                        RoundedRectangle(cornerRadius: 10, style: .continuous)
-                            .fill(AppTheme.surfaceMuted)
-                    )
-            }
-            .buttonStyle(.plain)
-            .padding(10)
+    private func editHeaderButton(action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: "square.and.pencil")
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundStyle(AppTheme.textSecondary)
+                .frame(width: 30, height: 30)
+                .background(
+                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        .fill(AppTheme.surfaceMuted)
+                )
         }
+        .buttonStyle(.plain)
     }
 
     private func editorSheet<Content: View>(
@@ -1835,6 +1828,7 @@ private struct MeatShoppingCard: View {
     let totalWeight: String
     let rows: [MeatShoppingRowData]
     let description: String
+    let onEdit: (() -> Void)?
 
     var body: some View {
         AppCard {
@@ -1853,6 +1847,19 @@ private struct MeatShoppingCard: View {
                     Spacer()
 
                     ResultMetaChip(title: totalWeight, accent: true)
+                    if let onEdit {
+                        Button(action: onEdit) {
+                            Image(systemName: "square.and.pencil")
+                                .font(.system(size: 14, weight: .semibold))
+                                .foregroundStyle(AppTheme.textSecondary)
+                                .frame(width: 30, height: 30)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                        .fill(AppTheme.surfaceMuted)
+                                )
+                        }
+                        .buttonStyle(.plain)
+                    }
                 }
 
                 VStack(spacing: 0) {
