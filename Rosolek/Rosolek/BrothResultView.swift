@@ -478,13 +478,13 @@ struct BrothResultView: View {
         if !structured.isEmpty {
             let hasWaterReduction = structured.contains(where: { $0.code == .waterReducedToFit })
 
-            let filtered = structured.filter { warning in
-                if hasWaterReduction {
-                    if warning.code == .undermeatLight || warning.code == .undermeatIntense {
-                        return false
-                    }
+            let filtered: [BrothWarning]
+            if hasWaterReduction {
+                filtered = structured.filter { warning in
+                    warning.code != .undermeatLight && warning.code != .undermeatIntense
                 }
-                return true
+            } else {
+                filtered = structured
             }
 
             return filtered.map {
