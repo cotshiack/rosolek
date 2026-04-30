@@ -813,7 +813,7 @@ struct BrothResultView: View {
                             .frame(width: 30, height: 30)
                             .background(
                                 RoundedRectangle(cornerRadius: 10, style: .continuous)
-                                    .fill(AppTheme.backgroundSecondary)
+                                    .fill(AppTheme.surfaceMuted)
                             )
                     }
                     .buttonStyle(.plain)
@@ -839,7 +839,7 @@ struct BrothResultView: View {
                                 .frame(width: 30, height: 30)
                                 .background(
                                     RoundedRectangle(cornerRadius: 10, style: .continuous)
-                                        .fill(AppTheme.backgroundSecondary)
+                                        .fill(AppTheme.surfaceMuted)
                                 )
                         }
                         .buttonStyle(.plain)
@@ -970,7 +970,7 @@ struct BrothResultView: View {
                             .frame(width: 30, height: 30)
                             .background(
                                 RoundedRectangle(cornerRadius: 10, style: .continuous)
-                                    .fill(AppTheme.backgroundSecondary)
+                                    .fill(AppTheme.surfaceMuted)
                             )
                     }
                     .buttonStyle(.plain)
