@@ -974,7 +974,7 @@ struct BrothResultView: View {
         let displayTitle = shortenedEditorTitle(for: title)
         let displaySubtitle = subtitle?.trimmingCharacters(in: .whitespacesAndNewlines)
 
-        HStack(alignment: .center, spacing: 12) {
+        return HStack(alignment: .center, spacing: 12) {
             VStack(alignment: .leading, spacing: 4) {
                 Text(displayTitle)
                     .font(.system(size: 16, weight: .bold))
@@ -1049,7 +1049,7 @@ struct BrothResultView: View {
         range: ClosedRange<Int>,
         step: Int
     ) -> some View {
-        editorRow(
+        return editorRow(
             title: title,
             subtitle: nil,
             value: spiceOverrides[key] ?? defaultValue,
