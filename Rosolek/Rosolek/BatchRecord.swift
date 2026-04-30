@@ -56,6 +56,8 @@ struct BatchRecord: Identifiable, Codable, Hashable {
     let modeRawValue: String
     let presetRawValue: String?
     let profileRawValue: String
+    let brothKindRawValue: String?
+    let selectedStyleName: String?
     let clarityModeRawValue: String
     let useVinegar: Bool
 
@@ -76,6 +78,9 @@ struct BatchRecord: Identifiable, Codable, Hashable {
 
     var selectedIngredientIDs: [String]?
     var selectedIngredientsSnapshot: [BatchIngredientSnapshot]?
+    var meatOverrides: [String: Int]?
+    var vegetableOverrides: [String: Int]?
+    var spiceOverrides: [String: Int]?
     var customTitle: String?
     var cookingOutcomeRawValue: String
     var interruptedAt: Date?
@@ -93,6 +98,8 @@ struct BatchRecord: Identifiable, Codable, Hashable {
         modeRawValue: String = "legacy",
         presetRawValue: String? = nil,
         profileRawValue: String? = nil,
+        brothKindRawValue: String? = nil,
+        selectedStyleName: String? = nil,
         clarityModeRawValue: String = BrothClarityMode.normal.rawValue,
         useVinegar: Bool = false,
         totalWeightGrams: Int,
@@ -105,6 +112,9 @@ struct BatchRecord: Identifiable, Codable, Hashable {
         hasThermometer: Bool,
         selectedIngredientIDs: [String]? = nil,
         selectedIngredientsSnapshot: [BatchIngredientSnapshot]? = nil,
+        meatOverrides: [String: Int]? = nil,
+        vegetableOverrides: [String: Int]? = nil,
+        spiceOverrides: [String: Int]? = nil,
         customTitle: String? = nil,
         cookingOutcomeRawValue: String = CookingOutcome.completed.rawValue,
         interruptedAt: Date? = nil,
@@ -120,6 +130,8 @@ struct BatchRecord: Identifiable, Codable, Hashable {
         self.modeRawValue = modeRawValue
         self.presetRawValue = presetRawValue
         self.profileRawValue = profileRawValue ?? Self.legacyProfileRawValue(from: styleRawValue)
+        self.brothKindRawValue = brothKindRawValue
+        self.selectedStyleName = selectedStyleName
         self.clarityModeRawValue = clarityModeRawValue
         self.useVinegar = useVinegar
         self.totalWeightGrams = totalWeightGrams
@@ -132,6 +144,9 @@ struct BatchRecord: Identifiable, Codable, Hashable {
         self.hasThermometer = hasThermometer
         self.selectedIngredientIDs = selectedIngredientIDs
         self.selectedIngredientsSnapshot = selectedIngredientsSnapshot
+        self.meatOverrides = meatOverrides
+        self.vegetableOverrides = vegetableOverrides
+        self.spiceOverrides = spiceOverrides
         self.customTitle = customTitle
         self.cookingOutcomeRawValue = cookingOutcomeRawValue
         self.interruptedAt = interruptedAt
@@ -149,6 +164,8 @@ struct BatchRecord: Identifiable, Codable, Hashable {
         case modeRawValue
         case presetRawValue
         case profileRawValue
+        case brothKindRawValue
+        case selectedStyleName
         case clarityModeRawValue
         case useVinegar
         case totalWeightGrams
@@ -161,6 +178,9 @@ struct BatchRecord: Identifiable, Codable, Hashable {
         case hasThermometer
         case selectedIngredientIDs
         case selectedIngredientsSnapshot
+        case meatOverrides
+        case vegetableOverrides
+        case spiceOverrides
         case customTitle
         case cookingOutcomeRawValue
         case interruptedAt
@@ -196,6 +216,8 @@ struct BatchRecord: Identifiable, Codable, Hashable {
         self.modeRawValue = try container.decodeIfPresent(String.self, forKey: .modeRawValue) ?? fallbackModeRawValue
         self.presetRawValue = try container.decodeIfPresent(String.self, forKey: .presetRawValue)
         self.profileRawValue = try container.decodeIfPresent(String.self, forKey: .profileRawValue) ?? fallbackProfileRawValue
+        self.brothKindRawValue = try container.decodeIfPresent(String.self, forKey: .brothKindRawValue)
+        self.selectedStyleName = try container.decodeIfPresent(String.self, forKey: .selectedStyleName)
         self.clarityModeRawValue = try container.decodeIfPresent(String.self, forKey: .clarityModeRawValue) ?? BrothClarityMode.normal.rawValue
         self.useVinegar = try container.decodeIfPresent(Bool.self, forKey: .useVinegar) ?? false
         self.totalWeightGrams = try container.decodeIfPresent(Int.self, forKey: .totalWeightGrams) ?? 0
@@ -208,6 +230,9 @@ struct BatchRecord: Identifiable, Codable, Hashable {
         self.hasThermometer = try container.decodeIfPresent(Bool.self, forKey: .hasThermometer) ?? false
         self.selectedIngredientIDs = decodedSelectedIngredientIDs
         self.selectedIngredientsSnapshot = try container.decodeIfPresent([BatchIngredientSnapshot].self, forKey: .selectedIngredientsSnapshot)
+        self.meatOverrides = try container.decodeIfPresent([String: Int].self, forKey: .meatOverrides)
+        self.vegetableOverrides = try container.decodeIfPresent([String: Int].self, forKey: .vegetableOverrides)
+        self.spiceOverrides = try container.decodeIfPresent([String: Int].self, forKey: .spiceOverrides)
         self.customTitle = try container.decodeIfPresent(String.self, forKey: .customTitle)
         self.cookingOutcomeRawValue = try container.decodeIfPresent(String.self, forKey: .cookingOutcomeRawValue) ?? CookingOutcome.completed.rawValue
         self.interruptedAt = try container.decodeIfPresent(Date.self, forKey: .interruptedAt)
@@ -227,6 +252,8 @@ struct BatchRecord: Identifiable, Codable, Hashable {
         try container.encode(modeRawValue, forKey: .modeRawValue)
         try container.encodeIfPresent(presetRawValue, forKey: .presetRawValue)
         try container.encode(profileRawValue, forKey: .profileRawValue)
+        try container.encodeIfPresent(brothKindRawValue, forKey: .brothKindRawValue)
+        try container.encodeIfPresent(selectedStyleName, forKey: .selectedStyleName)
         try container.encode(clarityModeRawValue, forKey: .clarityModeRawValue)
         try container.encode(useVinegar, forKey: .useVinegar)
         try container.encode(totalWeightGrams, forKey: .totalWeightGrams)
@@ -239,6 +266,9 @@ struct BatchRecord: Identifiable, Codable, Hashable {
         try container.encode(hasThermometer, forKey: .hasThermometer)
         try container.encodeIfPresent(selectedIngredientIDs, forKey: .selectedIngredientIDs)
         try container.encodeIfPresent(selectedIngredientsSnapshot, forKey: .selectedIngredientsSnapshot)
+        try container.encodeIfPresent(meatOverrides, forKey: .meatOverrides)
+        try container.encodeIfPresent(vegetableOverrides, forKey: .vegetableOverrides)
+        try container.encodeIfPresent(spiceOverrides, forKey: .spiceOverrides)
         try container.encodeIfPresent(customTitle, forKey: .customTitle)
         try container.encode(cookingOutcomeRawValue, forKey: .cookingOutcomeRawValue)
         try container.encodeIfPresent(interruptedAt, forKey: .interruptedAt)
@@ -251,6 +281,10 @@ struct BatchRecord: Identifiable, Codable, Hashable {
 }
 
 extension BatchRecord {
+    var hasManualOverrides: Bool {
+        !(meatOverrides ?? [:]).isEmpty || !(vegetableOverrides ?? [:]).isEmpty || !(spiceOverrides ?? [:]).isEmpty
+    }
+
     var brothMode: BrothMode? {
         switch modeRawValue {
         case "preset":

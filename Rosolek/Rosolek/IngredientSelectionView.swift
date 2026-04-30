@@ -169,7 +169,7 @@ struct IngredientSelectionView: View {
                 .font(.system(size: 34, weight: .bold))
                 .foregroundStyle(AppTheme.textPrimary)
 
-            Text("Bulion: \(selectedKind.rawValue) • Styl: \(selectedStyleName). Dodaj bazę, a warzywa możesz też edytować ręcznie.")
+            Text("Bulion: \(selectedKind.rawValue) • Styl: \(selectedStyleName). Na tym etapie wybierasz tylko bazę bulionu.")
                 .font(.system(size: 15, weight: .medium))
                 .foregroundStyle(AppTheme.textSecondary)
                 .fixedSize(horizontal: false, vertical: true)
@@ -178,20 +178,30 @@ struct IngredientSelectionView: View {
 
     private var visibleCategories: [IngredientCategory] {
         switch selectedKind {
-        case .rosol: return [.poultry, .beef, .offal, .veggies]
-        case .ramen: return [.pork, .poultry, .beef, .offal, .veggies]
-        case .beef: return [.beef, .offal, .veggies]
-        case .veggie: return [.veggies]
-        case .fish: return [.fish, .veggies]
+        case .rosol:
+            return [.poultry, .beef, .offal]
+        case .ramen:
+            let styleKey = UltraSpecStyleKeyResolver.resolve(kind: .ramen, styleName: selectedStyleName)
+            if styleKey == "ramen_tonkotsu" {
+                return [.pork]
+            }
+            return [.poultry, .beef, .offal]
+        case .beef:
+            return [.beef, .offal]
+        case .veggie:
+            return [.veggies]
+        case .fish:
+            return [.fish]
         }
     }
 
     private var categorySections: some View {
+        let categoriesWithItems = visibleCategories.filter { !visibleItems(for: $0).isEmpty }
         VStack(spacing: 14) {
-            ForEach(visibleCategories) { category in
+            ForEach(categoriesWithItems) { category in
                 IngredientCategorySection(
                     category: category,
-                    items: ingredients.filter { $0.category == category },
+                    items: visibleItems(for: category),
                     isExpanded: expandedCategory == category,
                     amounts: $amounts,
                     focusedFieldID: $focusedFieldID,
@@ -203,6 +213,26 @@ struct IngredientSelectionView: View {
                 )
             }
         }
+    }
+
+    private func visibleItems(for category: IngredientCategory) -> [IngredientOption] {
+        let options = ingredients.filter { $0.category == category }
+        guard let variant = activeUltraVariant else { return options }
+
+        let allowedCanonicalIDs = Set(
+            UltraSpecCatalog.ingredients
+                .filter { $0.allowedVariants.contains(variant) }
+                .map(\.id)
+        )
+
+        return options.filter { option in
+            allowedCanonicalIDs.contains(UltraSpecRequestBuilder.mapIngredientID(option.id))
+        }
+    }
+
+    private var activeUltraVariant: UltraSpecVariantID? {
+        let styleKey = UltraSpecStyleKeyResolver.resolve(kind: selectedKind, styleName: selectedStyleName)
+        return UltraSpecVariantResolver.resolve(kind: selectedKind, styleKey: styleKey)
     }
 
     private var diagnosticsSection: some View {

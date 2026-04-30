@@ -196,6 +196,9 @@ private struct BatchHistoryCompactCard: View {
                     HistoryMetaChip(kind: .time, title: batch.timeDisplayText)
                     HistoryMetaChip(kind: .yield, title: batch.yieldDisplayText)
                     HistoryMetaChip(kind: .profile, title: batch.profileTitle)
+                    if batch.hasManualOverrides {
+                        HistoryMetaChip(kind: .adjusted, title: "Modyfikacje")
+                    }
                 }
 
                 if !batch.notes.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
@@ -247,6 +250,7 @@ private enum HistoryMetaKind {
     case time
     case yield
     case profile
+    case adjusted
 }
 
 private struct HistoryMetaChip: View {
@@ -289,6 +293,9 @@ private struct HistoryMetaGlyph: View {
                 AppYieldGlyph()
             case .profile:
                 AppProfileGlyph()
+            case .adjusted:
+                Image(systemName: "slider.horizontal.3")
+                    .font(.system(size: 10, weight: .semibold))
             }
         }
         .frame(width: 12, height: 12)

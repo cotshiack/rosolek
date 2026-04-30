@@ -22,6 +22,7 @@ struct LastBatchDetailView: View {
                         header
                         summaryCard(batch)
                         cookingSection(batch)
+                        adjustmentsSection(batch)
                         qualitySection(batch)
                         notesSection(batch)
                         replaySection(batch)
@@ -134,6 +135,12 @@ struct LastBatchDetailView: View {
             AppCard {
                 VStack(alignment: .leading, spacing: 12) {
                     AppInfoRow(title: "Styl", value: batch.profileTitle.lowercased())
+                    if let kind = batch.brothKindRawValue {
+                        AppInfoRow(title: "Rodzaj bulionu", value: kind)
+                    }
+                    if let styleName = batch.selectedStyleName, !styleName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                        AppInfoRow(title: "Wybrany wariant", value: styleName)
+                    }
                     AppInfoRow(title: "Masa mięsa", value: batch.weightDisplayText)
                     AppInfoRow(title: "Woda start", value: batch.waterDisplayText)
                     AppInfoRow(title: "Szacowany uzysk", value: batch.yieldDisplayText)
@@ -195,6 +202,61 @@ struct LastBatchDetailView: View {
         }
     }
 
+    private func adjustmentsSection(_ batch: BatchRecord) -> some View {
+        let hasVeg = !(batch.vegetableOverrides ?? [:]).isEmpty
+        let hasSpice = !(batch.spiceOverrides ?? [:]).isEmpty
+        let hasMeat = !(batch.meatOverrides ?? [:]).isEmpty
+
+        return Group {
+            if hasVeg || hasSpice || hasMeat {
+                VStack(alignment: .leading, spacing: 10) {
+                    AppSectionLabel(text: "Modyfikacje")
+
+                    AppCard {
+                        VStack(alignment: .leading, spacing: 12) {
+                            if hasMeat {
+                                AppInfoRow(title: "Baza", value: "\(batch.meatOverrides?.count ?? 0) zmian")
+                                VStack(alignment: .leading, spacing: 6) {
+                                    ForEach(sortedMeatOverrides(batch).prefix(4), id: \.key) { entry in
+                                        AppInfoRow(
+                                            title: meatLabel(for: entry.key, batch: batch),
+                                            value: "\(entry.value) g"
+                                        )
+                                    }
+                                }
+                            }
+
+                            if hasVeg {
+                                AppInfoRow(title: "Warzywa", value: "\(batch.vegetableOverrides?.count ?? 0) zmian")
+                                VStack(alignment: .leading, spacing: 6) {
+                                    ForEach(sortedVegetableOverrides(batch).prefix(4), id: \.key) { entry in
+                                        AppInfoRow(
+                                            title: entry.key,
+                                            value: "\(entry.value) g"
+                                        )
+                                    }
+                                }
+                            }
+
+                            if hasSpice {
+                                AppInfoRow(title: "Przyprawy", value: "\(batch.spiceOverrides?.count ?? 0) zmian")
+                                VStack(alignment: .leading, spacing: 6) {
+                                    ForEach(sortedSpiceOverrides(batch).prefix(6), id: \.key) { entry in
+                                        AppInfoRow(
+                                            title: spiceLabel(for: entry.key),
+                                            value: spiceValueLabel(for: entry.key, value: entry.value)
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    .appSoftShadow()
+                }
+            }
+        }
+    }
+
     private func notesSection(_ batch: BatchRecord) -> some View {
         Group {
             if !batch.notes.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
@@ -216,23 +278,40 @@ struct LastBatchDetailView: View {
     private func replaySection(_ batch: BatchRecord) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             if let replayIngredientIDs = batch.selectedIngredientIDs, !replayIngredientIDs.isEmpty {
-                NavigationLink {
-                    BrothResultView(
-                        mode: .custom(batch.brothProfile),
-                        totalWeight: batch.totalWeightGrams,
-                        selectedIngredientCount: replayIngredientIDs.count,
-                        selectedIDs: replayIngredientIDs,
-                        initialSelections: batch.selectedIngredientsSnapshot?.map {
-                            BrothIngredientSelection(
-                                ingredientID: $0.ingredientID,
-                                ingredientName: $0.ingredientName,
-                                category: IngredientCategory(rawValue: $0.categoryRawValue) ?? .poultry,
-                                grams: $0.grams
-                            )
-                        } ?? []
-                    )
-                } label: {
-                    AppPrimaryButtonLabel(title: "Ugotuj ponownie")
+                VStack(alignment: .leading, spacing: 8) {
+                    NavigationLink {
+                        BrothResultView(
+                            mode: .custom(batch.brothProfile),
+                            totalWeight: batch.totalWeightGrams,
+                            selectedIngredientCount: replayIngredientIDs.count,
+                            selectedIDs: replayIngredientIDs,
+                            initialSelections: replaySelections(from: batch),
+                            selectedKind: replayBrothKind(from: batch),
+                            selectedStyleName: batch.selectedStyleName,
+                            meatOverrides: batch.meatOverrides,
+                            vegetableOverrides: batch.vegetableOverrides,
+                            spiceOverrides: batch.spiceOverrides
+                        )
+                    } label: {
+                        AppPrimaryButtonLabel(title: "Ugotuj ponownie 1:1")
+                    }
+
+                    NavigationLink {
+                        BrothResultView(
+                            mode: .custom(batch.brothProfile),
+                            totalWeight: batch.totalWeightGrams,
+                            selectedIngredientCount: replayIngredientIDs.count,
+                            selectedIDs: replayIngredientIDs,
+                            initialSelections: replaySelections(from: batch),
+                            selectedKind: replayBrothKind(from: batch),
+                            selectedStyleName: batch.selectedStyleName,
+                            meatOverrides: nil,
+                            vegetableOverrides: nil,
+                            spiceOverrides: nil
+                        )
+                    } label: {
+                        AppSecondaryButtonLabel(title: "Przelicz od nowa")
+                    }
                 }
             } else {
                 AppCard {
@@ -299,6 +378,79 @@ struct LastBatchDetailView: View {
     private func clarityValue(for batch: BatchRecord) -> String? {
         guard let raw = batch.clarityFeedbackRawValue else { return nil }
         return BatchClarityFeedback(rawValue: raw)?.title
+    }
+
+    private func sortedVegetableOverrides(_ batch: BatchRecord) -> [(key: String, value: Int)] {
+        (batch.vegetableOverrides ?? [:])
+            .sorted { $0.key.localizedCaseInsensitiveCompare($1.key) == .orderedAscending }
+    }
+
+    private func sortedMeatOverrides(_ batch: BatchRecord) -> [(key: String, value: Int)] {
+        (batch.meatOverrides ?? [:])
+            .sorted { $0.key.localizedCaseInsensitiveCompare($1.key) == .orderedAscending }
+    }
+
+    private func sortedSpiceOverrides(_ batch: BatchRecord) -> [(key: String, value: Int)] {
+        let order: [String] = ["salt_start", "salt_final", "pepper", "allspice", "bay", "vinegar"]
+        return (batch.spiceOverrides ?? [:])
+            .sorted { lhs, rhs in
+                let li = order.firstIndex(of: lhs.key) ?? Int.max
+                let ri = order.firstIndex(of: rhs.key) ?? Int.max
+                if li == ri {
+                    return lhs.key < rhs.key
+                }
+                return li < ri
+            }
+    }
+
+    private func spiceLabel(for key: String) -> String {
+        switch key {
+        case "salt_start": return "Sól start"
+        case "salt_final": return "Sól końcowa"
+        case "pepper": return "Pieprz"
+        case "allspice": return "Ziele angielskie"
+        case "bay": return "Liść laurowy"
+        case "vinegar": return "Ocet jabłkowy"
+        default: return key
+        }
+    }
+
+    private func meatLabel(for key: String, batch: BatchRecord) -> String {
+        if let match = batch.selectedIngredientsSnapshot?.first(where: { $0.ingredientID == key }) {
+            return match.ingredientName
+        }
+        return key
+    }
+
+    private func spiceValueLabel(for key: String, value: Int) -> String {
+        switch key {
+        case "salt_start", "salt_final":
+            return "\(value) g"
+        case "pepper", "allspice":
+            return "\(value) ziaren"
+        case "bay":
+            return value == 1 ? "1 liść" : "\(value) liści"
+        case "vinegar":
+            return "\(value) ml"
+        default:
+            return "\(value)"
+        }
+    }
+
+    private func replaySelections(from batch: BatchRecord) -> [BrothIngredientSelection] {
+        batch.selectedIngredientsSnapshot?.map {
+            BrothIngredientSelection(
+                ingredientID: $0.ingredientID,
+                ingredientName: $0.ingredientName,
+                category: IngredientCategory(rawValue: $0.categoryRawValue) ?? .poultry,
+                grams: $0.grams
+            )
+        } ?? []
+    }
+
+    private func replayBrothKind(from batch: BatchRecord) -> BrothKind? {
+        guard let raw = batch.brothKindRawValue else { return nil }
+        return BrothKind(rawValue: raw)
     }
 }
 

@@ -50,7 +50,7 @@ struct UltraSpecRequestBuilder {
         )
     }
 
-    private static func mapIngredientID(_ id: String) -> String {
+    static func mapIngredientID(_ id: String) -> String {
         switch id {
         case "kura": return "POULTRY_OLD_HEN"
         case "korpus_kurczaka": return "POULTRY_CARCASS"
