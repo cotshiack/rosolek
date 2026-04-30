@@ -971,15 +971,18 @@ struct BrothResultView: View {
         range: ClosedRange<Int>,
         onChange: @escaping (Int) -> Void
     ) -> some View {
+        let displayTitle = shortenedEditorTitle(for: title)
+        let displaySubtitle = subtitle?.trimmingCharacters(in: .whitespacesAndNewlines)
+
         HStack(alignment: .center, spacing: 12) {
             VStack(alignment: .leading, spacing: 4) {
-                Text(title)
+                Text(displayTitle)
                     .font(.system(size: 16, weight: .bold))
                     .lineLimit(2)
                     .truncationMode(.tail)
                     .fixedSize(horizontal: false, vertical: true)
-                if let subtitle {
-                    Text(subtitle)
+                if let displaySubtitle, !displaySubtitle.isEmpty {
+                    Text(displaySubtitle)
                         .font(.system(size: 13, weight: .medium))
                         .foregroundStyle(AppTheme.textSecondary)
                         .lineLimit(1)
@@ -994,15 +997,24 @@ struct BrothResultView: View {
                 .frame(minWidth: 78, alignment: .trailing)
 
             HStack(spacing: 0) {
-                Button("−") { onChange(max(range.lowerBound, value - step)) }
+                Button {
+                    onChange(max(range.lowerBound, value - step))
+                } label: {
+                    Image(systemName: "minus")
+                        .font(.system(size: 20, weight: .semibold))
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                }
                     .disabled(value <= range.lowerBound)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
                 Divider().frame(height: 26)
-                Button("+") { onChange(min(range.upperBound, value + step)) }
+                Button {
+                    onChange(min(range.upperBound, value + step))
+                } label: {
+                    Image(systemName: "plus")
+                        .font(.system(size: 20, weight: .semibold))
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                }
                     .disabled(value >= range.upperBound)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
-            .font(.system(size: 28, weight: .semibold))
             .foregroundStyle(AppTheme.textPrimary)
             .frame(width: 116, height: 50)
             .background(
@@ -1014,9 +1026,19 @@ struct BrothResultView: View {
                     .stroke(AppTheme.border, lineWidth: 1)
             )
             .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .contentShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
         }
         .padding(.vertical, 14)
         .overlay(alignment: .bottom) { Divider().overlay(AppTheme.border) }
+    }
+
+    private func shortenedEditorTitle(for title: String) -> String {
+        let normalized = title.lowercased()
+        if normalized.contains("kura rosołowa / porcja rosołowa") { return "Kura rosołowa" }
+        if normalized.contains("kości wieprzowe stawowe") { return "Kości wieprzowe" }
+        if normalized.contains("kręgosłup / ości rybne") { return "Kręgosłup / ości" }
+        if normalized.contains("pietruszka korzeń") { return "Pietruszka korzeń" }
+        return title
     }
 
     private func spiceStepperRow(
