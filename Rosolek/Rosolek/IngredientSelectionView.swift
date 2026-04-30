@@ -197,7 +197,7 @@ struct IngredientSelectionView: View {
 
     private var categorySections: some View {
         let categoriesWithItems = visibleCategories.filter { !visibleItems(for: $0).isEmpty }
-        VStack(spacing: 14) {
+        return VStack(spacing: 14) {
             ForEach(categoriesWithItems) { category in
                 IngredientCategorySection(
                     category: category,
