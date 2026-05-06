@@ -146,13 +146,20 @@ struct BrothResultView: View {
             bayLeafCount: ultra.spices.bayLeafCount
         )
 
-        var warningTexts = ultra.warningMessages.map {
+        let filteredWarnings = ultra.warningMessages.filter { warning in
+            if variant == .warzywnyJasny || variant == .warzywnyUmami {
+                return warning.code != .underpower && warning.code != .overpower
+            }
+            return true
+        }
+
+        var warningTexts = filteredWarnings.map {
             if let suggestion = $0.suggestion?.text, !suggestion.isEmpty {
                 return "\($0.title): \($0.message) \(suggestion)"
             }
             return "\($0.title): \($0.message)"
         }
-        let structured: [BrothWarning] = ultra.warningMessages.map {
+        let structured: [BrothWarning] = filteredWarnings.map {
             BrothWarning(code: mapWarningCode($0.code), severity: mapSeverity($0.severity), params: [])
         }
 
@@ -1231,7 +1238,7 @@ extension BrothResultView {
         case .custom:
             if let selectedStyleName {
                 if selectedKind == .veggie {
-                    return "Podsumowanie dla stylu \(selectedStyleName.lowercased()) i wyliczonego koszyka warzyw."
+                    return "Podsumowanie dla stylu \(selectedStyleName.lowercased()) i wyliczonego koszyka warzyw. Pominęliśmy krok wyboru bazy, bo w warzywnym koszyk liczymy automatycznie z wielkości garnka."
                 }
                 return "Podsumowanie dla stylu \(selectedStyleName.lowercased()) i wybranej bazy."
             }
