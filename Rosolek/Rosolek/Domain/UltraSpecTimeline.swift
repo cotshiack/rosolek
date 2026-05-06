@@ -67,13 +67,13 @@ enum UltraSpecTimelineCatalog {
             return [
                 .init(stepID: "prep", timeLabel: "0 min", title: "Przygotuj stanowisko", subtitle: "Pracuj w niższej temperaturze.", minuteOffset: 0),
                 .init(stepID: "veg_simmer_limit", timeLabel: "60 min", title: "Kontrolowane gotowanie", subtitle: "Nie przeciągaj czasu.", minuteOffset: 60),
-                .init(stepID: "strain_season", timeLabel: "90 min", title: "Przecedź i dopraw", subtitle: "Sprawdź słodycz profilu.", minuteOffset: 90)
+                .init(stepID: "strain_season", timeLabel: "90+ min", title: "Przecedź i dopraw", subtitle: "Sprawdź słodycz profilu.", minuteOffset: 90, isManual: true)
             ]
         case .warzywnyUmami:
             return [
                 .init(stepID: "prep", timeLabel: "0 min", title: "Przygotuj stanowisko", subtitle: "Umami bez przesady czasu.", minuteOffset: 0),
                 .init(stepID: "veg_simmer_limit", timeLabel: "75 min", title: "Kontrolowane gotowanie", subtitle: "Pilnuj czasu — zbyt długie gotowanie spłaszcza umami.", minuteOffset: 75),
-                .init(stepID: "strain_season", timeLabel: "120 min", title: "Przecedź i dopraw", subtitle: "Korekta soli po cedzeniu.", minuteOffset: 120)
+                .init(stepID: "strain_season", timeLabel: "120+ min", title: "Przecedź i dopraw", subtitle: "Korekta soli po cedzeniu.", minuteOffset: 120, isManual: true)
             ]
         case .rybnyDelikatny:
             return [

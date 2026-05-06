@@ -713,7 +713,7 @@ struct BrothResultView: View {
             ResultMetricCard(
                 title: "Wsad",
                 value: loadDisplay,
-                subtitle: "mięso + warzywa",
+                subtitle: selectedKind == .veggie ? "warzywa + woda" : "mięso + warzywa",
                 tooltipKey: .load,
                 onInfoTap: {
                     withAnimation(.easeInOut(duration: 0.18)) {
@@ -743,7 +743,7 @@ struct BrothResultView: View {
                     .font(.system(size: 22, weight: .bold))
                     .foregroundStyle(AppTheme.textPrimary)
 
-                Text("Te opcje zmieniają finalny efekt po ugotowaniu, ale nie zmieniają doboru mięsa.")
+                Text(selectedKind == .veggie ? "Te opcje zmieniają finalny efekt po ugotowaniu, ale nie zmieniają wyliczonego koszyka." : "Te opcje zmieniają finalny efekt po ugotowaniu, ale nie zmieniają doboru mięsa.")
                     .font(.system(size: 14, weight: .medium))
                     .foregroundStyle(AppTheme.textSecondary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -1194,7 +1194,7 @@ extension BrothResultView {
         if isFiltered {
             return "Po przecedzeniu użyj filtra papierowego albo bardzo drobnego filtra. Rosół wyjdzie czystszy, ale finalnie zostanie go trochę mniej."
         } else {
-            return "Bez dodatkowego filtrowania rosół będzie pełniejszy i zostanie go trochę więcej. Wystarczy zwykłe cedzenie przez sito."
+            return selectedKind == .veggie ? "Bez dodatkowego filtrowania bulion będzie pełniejszy i zostanie go trochę więcej. Wystarczy zwykłe cedzenie przez sito." : "Bez dodatkowego filtrowania rosół będzie pełniejszy i zostanie go trochę więcej. Wystarczy zwykłe cedzenie przez sito."
         }
     }
 
@@ -1536,7 +1536,9 @@ extension BrothResultView {
         case .premiumBlocked:
             return "Ten składnik jest dostępny dopiero w rozszerzonej wersji kalkulatora."
         case .undermeatLight:
-            return "Wybrałeś mniej mięsa, niż spokojnie pomieści ten garnek. Aplikacja dopasuje wodę i dodatki do tej ilości, ale jeśli chcesz mocniejszy rosół, możesz dodać jeszcze trochę mięsa."
+            return selectedKind == .veggie
+                ? "Ten garnek pozwala na większy wsad warzywny. Aplikacja dopasowała wodę i dodatki do aktualnej ilości, ale jeśli chcesz mocniejszy profil, możesz zwiększyć gramaturę warzyw."
+                : "Wybrałeś mniej mięsa, niż spokojnie pomieści ten garnek. Aplikacja dopasuje wodę i dodatki do tej ilości, ale jeśli chcesz mocniejszy rosół, możesz dodać jeszcze trochę mięsa."
         case .overmeatLight:
             return "Jak na czystszy profil mięsa jest bardzo dużo. Wywar może wyjść zbyt ciężki."
         case .undermeatIntense:
