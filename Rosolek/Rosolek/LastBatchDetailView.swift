@@ -409,7 +409,7 @@ struct LastBatchDetailView: View {
             .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
 
         let vegetables = snapshot
-            .filter { $0.categoryRawValue == IngredientCategory.vegetables.rawValue }
+            .filter { $0.categoryRawValue == IngredientCategory.veggies.rawValue }
             .map {
                 IngredientEntry(
                     id: $0.ingredientID,
@@ -426,7 +426,7 @@ struct LastBatchDetailView: View {
     private func isBaseCategory(rawValue: String) -> Bool {
         guard let category = IngredientCategory(rawValue: rawValue) else { return false }
         switch category {
-        case .poultry, .beef, .veal, .lamb, .pork, .fish, .seafood:
+        case .poultry, .beef, .pork, .offal, .fish, .seafood:
             return true
         default:
             return false
