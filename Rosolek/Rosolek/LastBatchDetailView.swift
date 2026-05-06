@@ -22,7 +22,7 @@ struct LastBatchDetailView: View {
                         header
                         summaryCard(batch)
                         cookingSection(batch)
-                        adjustmentsSection(batch)
+                        ingredientsSection(batch)
                         qualitySection(batch)
                         notesSection(batch)
                         replaySection(batch)
@@ -202,53 +202,27 @@ struct LastBatchDetailView: View {
         }
     }
 
-    private func adjustmentsSection(_ batch: BatchRecord) -> some View {
-        let hasVeg = !(batch.vegetableOverrides ?? [:]).isEmpty
-        let hasSpice = !(batch.spiceOverrides ?? [:]).isEmpty
-        let hasMeat = !(batch.meatOverrides ?? [:]).isEmpty
+    private func ingredientsSection(_ batch: BatchRecord) -> some View {
+        let entries = ingredientEntries(for: batch)
+        let hasSnapshot = batch.selectedIngredientsSnapshot?.isEmpty == false
+        let hasSpices = !(batch.spiceOverrides ?? [:]).isEmpty
 
         return Group {
-            if hasVeg || hasSpice || hasMeat {
+            if hasSnapshot || hasSpices {
                 VStack(alignment: .leading, spacing: 10) {
-                    AppSectionLabel(text: "Modyfikacje")
+                    AppSectionLabel(text: "Użyte składniki")
 
                     AppCard {
-                        VStack(alignment: .leading, spacing: 12) {
-                            if hasMeat {
-                                AppInfoRow(title: "Baza", value: "\(batch.meatOverrides?.count ?? 0) zmian")
-                                VStack(alignment: .leading, spacing: 6) {
-                                    ForEach(sortedMeatOverrides(batch).prefix(4), id: \.key) { entry in
-                                        AppInfoRow(
-                                            title: meatLabel(for: entry.key, batch: batch),
-                                            value: "\(entry.value) g"
-                                        )
-                                    }
-                                }
+                        VStack(alignment: .leading, spacing: 14) {
+                            if !hasSnapshot {
+                                Text("Brak pełnego zapisu listy składników (stara wersja aplikacji).")
+                                    .font(.system(size: 14, weight: .medium))
+                                    .foregroundStyle(AppTheme.textSecondary)
                             }
 
-                            if hasVeg {
-                                AppInfoRow(title: "Warzywa", value: "\(batch.vegetableOverrides?.count ?? 0) zmian")
-                                VStack(alignment: .leading, spacing: 6) {
-                                    ForEach(sortedVegetableOverrides(batch).prefix(4), id: \.key) { entry in
-                                        AppInfoRow(
-                                            title: entry.key,
-                                            value: "\(entry.value) g"
-                                        )
-                                    }
-                                }
-                            }
-
-                            if hasSpice {
-                                AppInfoRow(title: "Przyprawy", value: "\(batch.spiceOverrides?.count ?? 0) zmian")
-                                VStack(alignment: .leading, spacing: 6) {
-                                    ForEach(sortedSpiceOverrides(batch).prefix(6), id: \.key) { entry in
-                                        AppInfoRow(
-                                            title: spiceLabel(for: entry.key),
-                                            value: spiceValueLabel(for: entry.key, value: entry.value)
-                                        )
-                                    }
-                                }
-                            }
+                            ingredientGroupView(title: "Baza", entries: entries.base)
+                            ingredientGroupView(title: "Warzywa", entries: entries.vegetables)
+                            spiceGroupView(batch)
                         }
                     }
                     .appSoftShadow()
@@ -293,24 +267,7 @@ struct LastBatchDetailView: View {
                             selectedStyleName: batch.selectedStyleName
                         )
                     } label: {
-                        AppPrimaryButtonLabel(title: "Ugotuj ponownie 1:1")
-                    }
-
-                    NavigationLink {
-                        BrothResultView(
-                            mode: .custom(batch.brothProfile),
-                            totalWeight: batch.totalWeightGrams,
-                            selectedIngredientCount: replayIngredientIDs.count,
-                            selectedIDs: replayIngredientIDs,
-                            initialSelections: replaySelections(from: batch),
-                            meatOverrides: nil,
-                            vegetableOverrides: nil,
-                            spiceOverrides: nil,
-                            selectedKind: replayBrothKind(from: batch),
-                            selectedStyleName: batch.selectedStyleName
-                        )
-                    } label: {
-                        AppSecondaryButtonLabel(title: "Przelicz od nowa")
+                        AppPrimaryButtonLabel(title: "Ugotuj jeszcze raz")
                     }
                 }
             } else {
@@ -437,6 +394,80 @@ struct LastBatchDetailView: View {
         }
     }
 
+    private func ingredientEntries(for batch: BatchRecord) -> (base: [IngredientEntry], vegetables: [IngredientEntry]) {
+        let snapshot = batch.selectedIngredientsSnapshot ?? []
+        let base = snapshot
+            .filter { isBaseCategory(rawValue: $0.categoryRawValue) }
+            .map {
+                IngredientEntry(
+                    id: $0.ingredientID,
+                    name: $0.ingredientName,
+                    initialValue: $0.grams,
+                    finalValue: batch.meatOverrides?[$0.ingredientID] ?? $0.grams
+                )
+            }
+            .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+
+        let vegetables = snapshot
+            .filter { $0.categoryRawValue == IngredientCategory.vegetables.rawValue }
+            .map {
+                IngredientEntry(
+                    id: $0.ingredientID,
+                    name: $0.ingredientName,
+                    initialValue: $0.grams,
+                    finalValue: batch.vegetableOverrides?[$0.ingredientName] ?? $0.grams
+                )
+            }
+            .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+
+        return (base, vegetables)
+    }
+
+    private func isBaseCategory(rawValue: String) -> Bool {
+        guard let category = IngredientCategory(rawValue: rawValue) else { return false }
+        switch category {
+        case .poultry, .beef, .veal, .lamb, .pork, .fish, .seafood:
+            return true
+        default:
+            return false
+        }
+    }
+
+    @ViewBuilder
+    private func ingredientGroupView(title: String, entries: [IngredientEntry]) -> some View {
+        if !entries.isEmpty {
+            VStack(alignment: .leading, spacing: 6) {
+                AppInfoRow(title: title, value: "\(entries.count)")
+                ForEach(entries) { entry in
+                    VStack(alignment: .leading, spacing: 2) {
+                        AppInfoRow(title: entry.name, value: "\(entry.finalValue) g")
+                        if entry.isChanged {
+                            Text("z \(entry.initialValue) g na \(entry.finalValue) g")
+                                .font(.system(size: 12, weight: .medium))
+                                .foregroundStyle(AppTheme.textSecondary)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func spiceGroupView(_ batch: BatchRecord) -> some View {
+        let spices = sortedSpiceOverrides(batch)
+        if !spices.isEmpty {
+            VStack(alignment: .leading, spacing: 6) {
+                AppInfoRow(title: "Przyprawy i dodatki", value: "\(spices.count)")
+                ForEach(spices, id: \.key) { entry in
+                    AppInfoRow(
+                        title: spiceLabel(for: entry.key),
+                        value: spiceValueLabel(for: entry.key, value: entry.value)
+                    )
+                }
+            }
+        }
+    }
+
     private func replaySelections(from batch: BatchRecord) -> [BrothIngredientSelection] {
         batch.selectedIngredientsSnapshot?.map {
             BrothIngredientSelection(
@@ -452,6 +483,15 @@ struct LastBatchDetailView: View {
         guard let raw = batch.brothKindRawValue else { return nil }
         return BrothKind(rawValue: raw)
     }
+}
+
+private struct IngredientEntry: Identifiable {
+    let id: String
+    let name: String
+    let initialValue: Int
+    let finalValue: Int
+
+    var isChanged: Bool { initialValue != finalValue }
 }
 
 private struct DetailRatingBadge: View {
