@@ -690,6 +690,8 @@ struct IngredientSelectionView: View {
             return "To raczej mniejsza partia jak na tak głęboki profil. Aplikacja przeliczy całość do tej ilości, ale jeśli chcesz mocniejszy efekt i większy uzysk, możesz dodać jeszcze trochę mięsa."
         case .overmeatIntense:
             return "Mięsa jest bardzo dużo. Rosół może wyjść ciężki i trudniejszy do zbalansowania."
+        case .baseTooHighForWater:
+            return selectedKind == .fish ? "Baza rybna jest bardzo gęsta względem ilości wody. Bulion może wyjść ciężki lub gorzkawy." : (selectedKind == .veggie ? "Koszyk warzyw jest bardzo gęsty względem ilości wody. Bulion może wyjść ciężki." : "Baza jest bardzo gęsta względem ilości wody. Bulion może wyjść zbyt ciężki.")
         case .overfatLight:
             return "Ten zestaw może wyjść tłusty. Do czystszego profilu lepiej sprawdza się więcej korpusu lub szyi i mniej cięższych elementów."
         case .wingsTooHighLight:
