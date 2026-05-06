@@ -420,7 +420,15 @@ struct LastBatchDetailView: View {
             }
             .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
 
-        return (base, vegetables)
+        if !vegetables.isEmpty {
+            return (base, vegetables)
+        }
+
+        let fallbackVegetables = (batch.vegetableOverrides ?? [:])
+            .map { IngredientEntry(id: $0.key, name: $0.key, initialValue: $0.value, finalValue: $0.value) }
+            .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+
+        return (base, fallbackVegetables)
     }
 
     private func isBaseCategory(rawValue: String) -> Bool {
@@ -459,30 +467,25 @@ struct LastBatchDetailView: View {
             VStack(alignment: .leading, spacing: 6) {
                 AppInfoRow(title: "Przyprawy i dodatki", value: "\(spices.count)")
                 ForEach(spices) { entry in
-                    VStack(alignment: .leading, spacing: 2) {
-                        AppInfoRow(
-                            title: spiceLabel(for: entry.key),
-                            value: spiceValueLabel(for: entry.key, value: entry.value)
-                        )
-                        if !entry.isRecorded {
-                            Text("Wartość domyślna nie była zapisana dla tego batcha.")
-                                .font(.system(size: 12, weight: .medium))
-                                .foregroundStyle(AppTheme.textSecondary)
-                        }
-                    }
+                    AppInfoRow(
+                        title: spiceLabel(for: entry.key),
+                        value: spiceValueLabel(for: entry.key, value: entry.value)
+                    )
                 }
             }
+        } else {
+            Text("Brak zapisu przypraw dla tego batcha.")
+                .font(.system(size: 13, weight: .medium))
+                .foregroundStyle(AppTheme.textSecondary)
         }
     }
 
     private func fullSpiceEntries(_ batch: BatchRecord) -> [SpiceEntry] {
         let order: [String] = ["salt_start", "salt_final", "pepper", "allspice", "bay", "vinegar"]
         let overrides = batch.spiceOverrides ?? [:]
-        return order.map { key in
-            if let value = overrides[key] {
-                return SpiceEntry(key: key, value: value, isRecorded: true)
-            }
-            return SpiceEntry(key: key, value: 0, isRecorded: false)
+        return order.compactMap { key in
+            guard let value = overrides[key] else { return nil }
+            return SpiceEntry(key: key, value: value)
         }
     }
 
@@ -515,7 +518,6 @@ private struct IngredientEntry: Identifiable {
 private struct SpiceEntry: Identifiable {
     let key: String
     let value: Int
-    let isRecorded: Bool
 
     var id: String { key }
 }
