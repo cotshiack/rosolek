@@ -60,12 +60,15 @@ private struct InstructionSheetContent: Identifiable {
     let hasPoultry: Bool
     let hasLiver: Bool
     let isGrandmaStyle: Bool
+    let stepID: String?
+    let isRamenTonkotsu: Bool
 }
 
 private struct TemperatureSheetContent: Identifiable {
     let id = UUID()
     let hasThermometer: Bool
     let targetLabel: String
+    let allowsBoiling: Bool
 }
 
 private struct IngredientsReminderSheetContent: Identifiable {
@@ -724,7 +727,12 @@ struct CookingModeView: View {
     }
 
     private var shouldShowIngredientReminderButton: Bool {
-        currentPhase.kind == .addVegetables && (!vegetableReminderRows.isEmpty || !spiceReminderRows.isEmpty)
+        if isRamenUltraVariant {
+            let id = currentPhase.stepID
+            return (id == "add_veg_spices" || id == "tonkotsu_aromatics_end")
+                && (!vegetableReminderRows.isEmpty || !spiceReminderRows.isEmpty)
+        }
+        return currentPhase.kind == .addVegetables && (!vegetableReminderRows.isEmpty || !spiceReminderRows.isEmpty)
     }
 
     private var shouldShowFoamCard: Bool {
@@ -1230,7 +1238,9 @@ struct CookingModeView: View {
                 useVinegar: batchUsesVinegar,
                 hasPoultry: hasPoultry,
                 hasLiver: hasLiver,
-                isGrandmaStyle: isGrandmaPreset
+                isGrandmaStyle: isGrandmaPreset,
+                stepID: phases[index].stepID,
+                isRamenTonkotsu: activeUltraVariant == .ramenTonkotsu
             )
         )
     }
@@ -1239,7 +1249,8 @@ struct CookingModeView: View {
         activeSheet = .temperature(
             TemperatureSheetContent(
                 hasThermometer: hasThermometer,
-                targetLabel: targetTemperaturePillText
+                targetLabel: targetTemperaturePillText,
+                allowsBoiling: activeUltraVariant == .ramenTonkotsu
             )
         )
     }
@@ -1247,8 +1258,10 @@ struct CookingModeView: View {
     private func openIngredientsReminderSheet() {
         activeSheet = .ingredients(
             IngredientsReminderSheetContent(
-                title: "Lista składników do dodania",
-                subtitle: "Sprawdź dokładnie, co i ile powinieneś teraz dodać.",
+                title: currentPhase.stepID == "tonkotsu_aromatics_end" ? "Aromaty końcowe — dodaj teraz" : "Lista składników do dodania",
+                subtitle: currentPhase.stepID == "tonkotsu_aromatics_end"
+                    ? "Dodaj cebulę, por, imbir i czosnek w ilościach z listy. To krótki etap przed cedzeniem."
+                    : "Sprawdź dokładnie, co i ile powinieneś teraz dodać.",
                 vegetableRows: vegetableReminderRows,
                 spiceRows: spiceReminderRows
             )
@@ -2657,12 +2670,18 @@ private struct TemperatureDetailsSheet: View {
     let content: TemperatureSheetContent
 
     private var heroText: String {
+        if content.allowsBoiling {
+            return "W tonkotsu aktywne wrzenie jest celem — budujesz emulsję i mleczność. Pilnuj, by kości były stale przykryte wodą."
+        }
         content.hasThermometer
             ? "Zakres 88–90°C pomaga budować smak równomiernie, utrzymać klarowność i nie rozbijać osadu."
             : "Szukasz spokojnej pracy bez pełnego wrzenia. Liczy się stabilność powierzchni, nie szybkie bulgotanie."
     }
 
     private var foamSupportText: String {
+        if content.allowsBoiling {
+            return "W tonkotsu wrzenie jest celowe. Najważniejsze: kontroluj poziom płynu i dolewaj gorącą wodę małymi porcjami, gdy kości zaczynają się odsłaniać."
+        }
         "Najwięcej szumowin pojawia się zwykle podczas dochodzenia wywaru od zimnej wody do około 75–90°C. Zbieraj je delikatnie tylko wtedy, gdy same wypływają na powierzchnię."
     }
 
@@ -2681,7 +2700,8 @@ private struct TemperatureDetailsSheet: View {
                     )
 
                     TemperatureMechanicsPanel(
-                        hasThermometer: content.hasThermometer
+                        hasThermometer: content.hasThermometer,
+                        allowsBoiling: content.allowsBoiling
                     )
 
                     SheetSupportStrip(
@@ -2703,54 +2723,70 @@ private struct TemperatureDetailsSheet: View {
 
 private struct TemperatureMechanicsPanel: View {
     let hasThermometer: Bool
+    let allowsBoiling: Bool
 
     private var lowRange: String {
+        if allowsBoiling { return "Poniżej aktywnego wrzenia" }
         hasThermometer ? "Poniżej 88°C" : "Za słaba praca"
     }
 
     private var goodRange: String {
+        if allowsBoiling { return "Mocne, stabilne wrzenie" }
         hasThermometer ? "88–90°C" : "Spokojna praca"
     }
 
     private var highRange: String {
+        if allowsBoiling { return "Za gwałtowne / ryzyko wykipienia" }
         hasThermometer ? "Powyżej 92°C lub wrzenie" : "Za mocno lub wrzenie"
     }
 
     private var introText: String {
+        if allowsBoiling {
+            return "W tonkotsu celem jest aktywne wrzenie, które buduje emulsję. Kontrolujesz intensywność tak, aby gotowanie było mocne, ale stabilne i bez wykipienia."
+        }
         "Temperatura steruje nie tylko tempem gotowania, ale też klarownością, ciężarem smaku i zachowaniem osadu. Najlepszy efekt daje spokojna, stabilna praca."
     }
 
     private var lowExplanation: String {
+        if allowsBoiling { return "Ekstrakcja i emulgacja są za słabe — bulion będzie mniej kremowy i płytszy w smaku." }
         hasThermometer
             ? "Ekstrakcja zwalnia, mięso oddaje smak wolniej, a etap zaczyna się rozmywać."
             : "Powierzchnia jest zbyt spokojna, więc wywar buduje się wolniej i trudniej utrzymać rytm etapu."
     }
 
     private var goodExplanation: String {
+        if allowsBoiling { return "Wrzenie jest aktywne i równomierne, kości pozostają przykryte, a emulsja buduje się stabilnie." }
         hasThermometer
             ? "To zakres, w którym smak przechodzi do wywaru równomiernie, a osad ma szansę spokojnie opaść."
             : "Powierzchnia delikatnie drży, przy brzegu pojawiają się pojedyncze bąble, ale środek nie bulgocze."
     }
 
     private var highExplanation: String {
+        if allowsBoiling { return "Za agresywne bulgotanie zwiększa ryzyko wykipienia i nadmiernej utraty wody." }
         hasThermometer
             ? "Białka i tłuszcz są mocniej rozbijane, rośnie ryzyko mętności, a profil robi się cięższy."
             : "Pełne bulgotanie rozbija szumowiny i miesza je w płynie, przez co rosół łatwo traci klarowność."
     }
 
     private var lowAction: String {
+        if allowsBoiling { return "Lekko zwiększ moc i obserwuj, czy wrzenie staje się stałe." }
         "Lekko zwiększ ogień i obserwuj zmiany spokojnie, bez gwałtownego skoku."
     }
 
     private var goodAction: String {
+        if allowsBoiling { return "Utrzymuj stabilne wrzenie. Dolewaj gorącą wodę, gdy poziom opada." }
         "Nie zmieniaj ustawień. Utrzymuj równą pracę i nie mieszaj garnka."
     }
 
     private var highAction: String {
+        if allowsBoiling { return "Zmniejsz moc o jeden krok, żeby utrzymać stabilne wrzenie bez wykipienia." }
         "Zmniejsz ogień albo zdejmij garnek na 60–120 sekund, aż powierzchnia wróci do spokojnej pracy."
     }
 
     private var sensoryNote: String {
+        if allowsBoiling {
+            return "Dla tonkotsu obserwuj poziom płynu i charakter wrzenia: ma być stałe i mocne, ale kontrolowane."
+        }
         hasThermometer
             ? "Termometr daje punkt odniesienia, ale nadal obserwuj powierzchnię: stabilna praca jest ważniejsza niż pojedynczy odczyt."
             : "Bez termometru patrz na powierzchnię. Szukasz delikatnego drżenia i pojedynczych bąbli przy brzegu — nie pełnego wrzenia."
@@ -2975,6 +3011,28 @@ private struct PhaseDetailsSheet: View {
             )
 
         case .stabilization:
+            if content.isRamenTonkotsu, content.stepID == "tonkotsu_boil_emulsify" {
+                return PhaseSheetModel(
+                    eyebrow: "Tonkotsu — etap główny",
+                    intro: "W tym wariancie aktywne wrzenie jest celem. Budujesz emulsję tłuszczu i kolagenu, która da kremowy, mleczny bulion.",
+                    sections: [
+                        PhaseSheetSection(
+                            title: "Jak prowadzić etap",
+                            systemImage: "flame",
+                            text: "Utrzymuj mocne, stabilne wrzenie przez cały etap.",
+                            bullets: ["Kości muszą być stale przykryte płynem.", "Gdy poziom spada, dolewaj gorącą wodę małymi porcjami.", "Mieszaj tylko delikatnie, żeby zapobiec przywieraniu."]
+                        ),
+                        PhaseSheetSection(
+                            title: "Czego unikać",
+                            systemImage: "exclamationmark.triangle",
+                            text: "Problemem nie jest samo wrzenie, tylko utrata kontroli nad garnkiem.",
+                            bullets: ["Nie dopuszczaj do wykipienia.", "Nie zostawiaj odkrytych kości.", "Nie osłabiaj zbyt mocno ognia na dłużej."]
+                        )
+                    ],
+                    footer: "To etap o największym wpływie na finalną kremowość tonkotsu.",
+                    footerLabel: "Wrzenie celowe"
+                )
+            }
             if content.isGrandmaStyle {
                 return PhaseSheetModel(
                     eyebrow: "30 minut samo mięso",
