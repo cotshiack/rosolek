@@ -865,7 +865,7 @@ struct BrothResultView: View {
                 description: usesUserSelections
                     ? "To jest dokładnie Twój zestaw."
                     : "To jest gotowy zestaw z przepisu.",
-                onEdit: usesUserSelections ? { showMeatEditor = true } : nil
+                onEdit: { showMeatEditor = true }
             )
 
             AppCard {
