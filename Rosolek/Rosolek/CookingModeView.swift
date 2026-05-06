@@ -2673,7 +2673,7 @@ private struct TemperatureDetailsSheet: View {
         if content.allowsBoiling {
             return "W tonkotsu aktywne wrzenie jest celem — budujesz emulsję i mleczność. Pilnuj, by kości były stale przykryte wodą."
         }
-        content.hasThermometer
+        return content.hasThermometer
             ? "Zakres 88–90°C pomaga budować smak równomiernie, utrzymać klarowność i nie rozbijać osadu."
             : "Szukasz spokojnej pracy bez pełnego wrzenia. Liczy się stabilność powierzchni, nie szybkie bulgotanie."
     }
@@ -2682,7 +2682,7 @@ private struct TemperatureDetailsSheet: View {
         if content.allowsBoiling {
             return "W tonkotsu wrzenie jest celowe. Najważniejsze: kontroluj poziom płynu i dolewaj gorącą wodę małymi porcjami, gdy kości zaczynają się odsłaniać."
         }
-        "Najwięcej szumowin pojawia się zwykle podczas dochodzenia wywaru od zimnej wody do około 75–90°C. Zbieraj je delikatnie tylko wtedy, gdy same wypływają na powierzchnię."
+        return "Najwięcej szumowin pojawia się zwykle podczas dochodzenia wywaru od zimnej wody do około 75–90°C. Zbieraj je delikatnie tylko wtedy, gdy same wypływają na powierzchnię."
     }
 
     var body: some View {
