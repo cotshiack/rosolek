@@ -290,7 +290,7 @@ struct CookingModeView: View {
     private var spiceReminderRows: [LiveIngredientReminderRowData] {
         var rows: [LiveIngredientReminderRowData] = []
 
-        if !isGrandmaPreset {
+        if !isGrandmaPreset, result.startSaltGrams > 0 {
             rows.append(
                 LiveIngredientReminderRowData(
                     icon: .salt,
@@ -782,13 +782,17 @@ struct CookingModeView: View {
     }
 
     private var manualCompletionNote: String? {
-        guard !currentPhaseHasTimer, let actionTitle = currentPhase.bottomActionTitle, sessionStarted else { return nil }
+        guard !currentPhaseHasTimer, currentPhase.bottomActionTitle != nil, sessionStarted else { return nil }
 
-        if currentPhase.kind == .strainAndSeason {
-            return "Gdy skończysz, naciśnij „\(actionTitle)” w dolnym panelu."
+        if phaseIndex == phases.count - 1 {
+            return "Gdy skończysz, naciśnij „\(nextButtonTitle)” w dolnym panelu."
         }
 
-        return "Po wykonaniu tego kroku naciśnij „\(actionTitle)” w dolnym panelu."
+        if currentPhase.kind == .strainAndSeason {
+            return "Gdy skończysz, naciśnij „\(nextButtonTitle)” w dolnym panelu."
+        }
+
+        return "Po wykonaniu tego kroku naciśnij „\(nextButtonTitle)” w dolnym panelu."
     }
 
     var body: some View {
@@ -2956,6 +2960,69 @@ private struct PhaseDetailsSheet: View {
     let content: InstructionSheetContent
 
     private var model: PhaseSheetModel {
+        if content.isRamenTonkotsu, content.stepID == "prep" {
+            return PhaseSheetModel(
+                eyebrow: "Start tonkotsu",
+                intro: "Przygotuj stanowisko i ustaw proces pod długie, aktywne wrzenie.",
+                sections: [
+                    PhaseSheetSection(
+                        title: "Przed uruchomieniem",
+                        systemImage: "checklist",
+                        text: "Miej pod ręką narzędzia i naczynie z gorącą wodą do dolewek.",
+                        bullets: ["Kości i dodatki przygotuj wcześniej.", "Sito/gaza przyda się na końcu do cedzenia.", "Pilnuj, by po starcie nie szukać sprzętu."]
+                    ),
+                    PhaseSheetSection(
+                        title: "Temperatura etapu",
+                        systemImage: "thermometer.medium",
+                        text: "W tonkotsu docelowo pracujesz na aktywnym wrzeniu (95–100°C).",
+                        bullets: ["Wrzenie jest celem.", "Kontroluj poziom wody przez cały proces."]
+                    )
+                ],
+                footer: "Po starcie przechodzisz do długiego etapu emulsyfikacji.",
+                footerLabel: "Gotowość"
+            )
+        }
+
+        if content.stepID == "strain_season" {
+            return PhaseSheetModel(
+                eyebrow: "Końcowy etap",
+                intro: "Najpierw dokładnie przecedź, dopiero potem ustaw końcowy smak.",
+                sections: [
+                    PhaseSheetSection(
+                        title: "Kolejność",
+                        systemImage: "line.3.horizontal.decrease.circle",
+                        text: "Przecedź bulion bez wyciskania składników i bez podnoszenia osadu z dna.",
+                        bullets: ["Nie wyciskaj zawartości sita.", "Lej spokojnie, cienkim strumieniem."]
+                    ),
+                    PhaseSheetSection(
+                        title: "Doprawianie",
+                        systemImage: "fork.knife",
+                        text: "Doprawiaj po cedzeniu, stopniowo.",
+                        bullets: ["W ramenie końcową słoność ustawiaj przez tare.", "Jeśli przesolisz, rozcieńcz porcję."]
+                    )
+                ],
+                footer: "Po tym kroku kończysz gotowanie.",
+                footerLabel: "Finalizacja"
+            )
+        }
+
+        if content.isRamenTonkotsu, content.stepID == "tonkotsu_aromatics_end" {
+            return PhaseSheetModel(
+                eyebrow: "Zmiana w garnku",
+                intro: "To krótki etap przed cedzeniem: dodajesz końcowe aromaty tonkotsu.",
+                sections: [
+                    PhaseSheetSection(
+                        title: "Co dodać",
+                        systemImage: "list.bullet",
+                        text: "Dodaj aromaty z listy etapu: cebula, por, imbir, czosnek (zgodnie z wyliczeniami).",
+                        bullets: ["Po dodaniu utrzymuj aktywną, ale kontrolowaną pracę.", "Nie przeciągaj tego etapu."]
+                    )
+                ],
+                footer: "Po tym etapie przechodzisz od razu do cedzenia.",
+                footerLabel: "Krótki finisz"
+            )
+        }
+
         switch content.phaseKind {
         case .prep:
             if content.isGrandmaStyle {
