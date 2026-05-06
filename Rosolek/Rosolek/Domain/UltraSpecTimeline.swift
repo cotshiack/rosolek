@@ -78,14 +78,18 @@ enum UltraSpecTimelineCatalog {
         case .rybnyDelikatny:
             return [
                 .init(stepID: "prep", timeLabel: "0 min", title: "Przygotuj stanowisko", subtitle: "Niska temperatura, krótki czas.", minuteOffset: 0),
-                .init(stepID: "fish_poach_limit", timeLabel: "25 min", title: "Gotuj krótko (limit czasu)", subtitle: "Nie przekraczaj 30 min.", minuteOffset: 25),
-                .init(stepID: "strain_season", timeLabel: "45+ min", title: "Przecedź", subtitle: "Nie redukuj rybnego.", minuteOffset: 45, isManual: true)
+                .init(stepID: "heat_up_clear", timeLabel: "do temp.", title: "Podgrzewaj delikatnie", subtitle: "Wejdź w zakres 80–85°C bez wrzenia.", minuteOffset: 0, isManual: true),
+                .init(stepID: "fish_poach_limit", timeLabel: "25 min", title: "Krótka ekstrakcja rybna", subtitle: "Maks. 30 min (cel: ~25 min).", minuteOffset: 25),
+                .init(stepID: "rest_settle", timeLabel: "5–10 min", title: "Daj bulionowi odpocząć", subtitle: "Nie mieszaj, osad opadnie na dno.", minuteOffset: 35, isManual: true),
+                .init(stepID: "strain_season", timeLabel: "10–20 min", title: "Przecedź i dopraw", subtitle: "Najpierw cedzenie, potem sól.", minuteOffset: 45, isManual: true)
             ]
         case .rybnyIntensywny:
             return [
                 .init(stepID: "prep", timeLabel: "0 min", title: "Przygotuj stanowisko", subtitle: "Kontrola temperatury i czasu.", minuteOffset: 0),
-                .init(stepID: "fish_poach_limit", timeLabel: "35 min", title: "Gotuj krótko (limit czasu)", subtitle: "Nie przekraczaj 40 min.", minuteOffset: 35),
-                .init(stepID: "strain_season", timeLabel: "60+ min", title: "Przecedź", subtitle: "Bez redukcji po gotowaniu.", minuteOffset: 60, isManual: true)
+                .init(stepID: "heat_up_clear", timeLabel: "do temp.", title: "Podgrzewaj delikatnie", subtitle: "Wejdź w zakres 85–90°C bez wrzenia.", minuteOffset: 0, isManual: true),
+                .init(stepID: "fish_poach_limit", timeLabel: "35 min", title: "Krótka ekstrakcja rybna", subtitle: "Maks. 40 min (cel: ~35 min).", minuteOffset: 35),
+                .init(stepID: "rest_settle", timeLabel: "5–10 min", title: "Daj bulionowi odpocząć", subtitle: "Nie mieszaj, osad opadnie na dno.", minuteOffset: 45, isManual: true),
+                .init(stepID: "strain_season", timeLabel: "10–20 min", title: "Przecedź i dopraw", subtitle: "Najpierw cedzenie, potem sól.", minuteOffset: 60, isManual: true)
             ]
         }
     }

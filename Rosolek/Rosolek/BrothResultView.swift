@@ -504,7 +504,15 @@ struct BrothResultView: View {
                 filtered = structured
             }
 
-            return filtered.map {
+            var seenCodes = Set<BrothWarningCode>()
+            var uniqueWarnings: [BrothWarning] = []
+            for warning in filtered {
+                if seenCodes.insert(warning.code).inserted {
+                    uniqueWarnings.append(warning)
+                }
+            }
+
+            return uniqueWarnings.map {
                 WarningCardModel(
                     text: warningText(for: $0),
                     severity: $0.severity
@@ -687,6 +695,9 @@ struct BrothResultView: View {
         }
         if selectedKind == .veggie || activeUltraVariant == .warzywnyJasny || activeUltraVariant == .warzywnyUmami {
             return "Twój bulion warzywny"
+        }
+        if selectedKind == .fish || activeUltraVariant == .rybnyDelikatny || activeUltraVariant == .rybnyIntensywny {
+            return "Twój bulion rybny"
         }
         return "Twój rosół"
     }
@@ -1554,7 +1565,7 @@ extension BrothResultView {
         case .hardItemTooBig:
             return "Jedna z wag wygląda podejrzanie wysoko. Sprawdź, czy na pewno wpisujesz gramy."
         case .hardNoMeat:
-            return "Dodaj mięso. Bez mięsa nie ugotujesz rosołu."
+            return selectedKind == .fish ? "Dodaj bazę rybną. Bez ryb/owoców morza nie policzymy bulionu rybnego." : "Dodaj mięso. Bez mięsa nie ugotujesz rosołu."
         case .hardNotFit:
             return "Ten zestaw fizycznie nie mieści się w tym garnku. Zmniejsz ilość mięsa albo użyj większego naczynia."
         case .premiumBlocked:
@@ -1562,13 +1573,13 @@ extension BrothResultView {
         case .undermeatLight:
             return selectedKind == .veggie
                 ? "Ten garnek pozwala na większy wsad warzywny. Aplikacja dopasowała wodę i dodatki do aktualnej ilości, ale jeśli chcesz mocniejszy profil, możesz zwiększyć gramaturę warzyw."
-                : "Wybrałeś mniej mięsa, niż spokojnie pomieści ten garnek. Aplikacja dopasuje wodę i dodatki do tej ilości, ale jeśli chcesz mocniejszy rosół, możesz dodać jeszcze trochę mięsa."
+                : (selectedKind == .fish ? "Wybrałeś mało bazy rybnej jak na ten garnek. Aplikacja dopasuje wodę i dodatki, ale dla mocniejszego profilu możesz dodać trochę ryb lub owoców morza." : "Wybrałeś mniej mięsa, niż spokojnie pomieści ten garnek. Aplikacja dopasuje wodę i dodatki do tej ilości, ale jeśli chcesz mocniejszy rosół, możesz dodać jeszcze trochę mięsa.")
         case .overmeatLight:
             return "Jak na czystszy profil mięsa jest bardzo dużo. Wywar może wyjść zbyt ciężki."
         case .undermeatIntense:
-            return "Jak na głębszy profil mięsa jest tu raczej mało. Aplikacja dopasuje proporcje do tej ilości, ale jeśli chcesz pełniejszy efekt, możesz dodać jeszcze trochę mięsa."
+            return selectedKind == .fish ? "Jak na intensywniejszy bulion rybny baza jest raczej mała. Aplikacja dopasuje proporcje, ale pełniejszy efekt da większa ilość ryb/owoców morza." : "Jak na głębszy profil mięsa jest tu raczej mało. Aplikacja dopasuje proporcje do tej ilości, ale jeśli chcesz pełniejszy efekt, możesz dodać jeszcze trochę mięsa."
         case .overmeatIntense:
-            return "Mięsa jest bardzo dużo. Wywar może wyjść zbyt ciężki i trudniejszy do zbalansowania."
+            return selectedKind == .fish ? "Bazy rybnej jest bardzo dużo jak na ten litraż. Bulion może wyjść ciężki i gorzkawy." : "Mięsa jest bardzo dużo. Wywar może wyjść zbyt ciężki i trudniejszy do zbalansowania."
         case .overfatLight:
             return "Ten zestaw może wyjść tłusty. Do czystszego profilu lepiej sprawdza się więcej korpusu lub szyi i mniej cięższych elementów."
         case .wingsTooHighLight:

@@ -755,6 +755,8 @@ struct CookingModeView: View {
             return .simmerToVegetablesOut
         case "stabilize_base", "tonkotsu_boil_emulsify", "finish_clear", "veg_simmer_limit", "fish_poach_limit":
             return .stabilization
+        case "rest_settle":
+            return .rest
         default:
             assertionFailure("Unhandled ultra timeline stepID: \(stepID)")
             return .stabilization
@@ -1355,6 +1357,12 @@ struct CookingModeView: View {
                     minutesText.map { "Pilnuj limitu: około \($0) min." } ?? "Pilnuj krótkiego limitu czasu.",
                     "Nie dopuszczaj do wrzenia — smak rybny szybko robi się ciężki.",
                     "W razie wątpliwości zakończ etap wcześniej i od razu przecedź."
+                ]
+            case "rest_settle":
+                return [
+                    "Odstaw garnek na 5–10 minut bez mieszania.",
+                    "Nie poruszaj osadu z dna — to poprawi klarowność.",
+                    "Po krótkim odpoczynku przejdź do cedzenia."
                 ]
             case "strain_season":
                 return [
