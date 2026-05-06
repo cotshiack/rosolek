@@ -278,7 +278,7 @@ struct CookingModeView: View {
         result.vegetables.compactMap { item in
             let grams = Int((item.amount.filter { $0.isNumber }))
             if let grams, grams <= 0 { return nil }
-            LiveIngredientReminderRowData(
+            return LiveIngredientReminderRowData(
                 icon: ingredientIconKind(for: item.name),
                 title: item.name,
                 subtitle: vegetableSubtitle(for: item),
