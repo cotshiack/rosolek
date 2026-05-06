@@ -3187,7 +3187,7 @@ private struct PhaseDetailsSheet: View {
                         systemImage: "checklist",
                         text: "Zanim uruchomisz gotowanie, ustaw wszystko tak, żeby w trakcie pracy nie szukać narzędzi ani nie wykonywać nerwowych ruchów.",
                         bullets: [
-                            content.activeUltraVariant == .rybnyDelikatny || content.activeUltraVariant == .rybnyIntensywny ? "Przygotuj ryby/owoce morza i wlej wodę z kalkulatora." : "Mięso włóż do garnka i wlej wodę z kalkulatora.",
+                            content.ultraVariant == .rybnyDelikatny || content.ultraVariant == .rybnyIntensywny ? "Przygotuj ryby/owoce morza i wlej wodę z kalkulatora." : "Mięso włóż do garnka i wlej wodę z kalkulatora.",
                             content.hasThermometer ? "Sondę umieść w wodzie tak, aby nie dotykała dna ani ścian garnka." : "Obserwuj powierzchnię spokojnie i nie mieszaj garnka.",
                             "Przygotuj sitko lub łyżkę do szumowin, szczypce albo łyżkę cedzakową oraz sito lub gazę do cedzenia."
                         ]
@@ -3196,7 +3196,7 @@ private struct PhaseDetailsSheet: View {
                         title: "Dodatkowe uwagi",
                         systemImage: "text.badge.star",
                         text: "Ten etap porządkuje start. Dzięki temu później łatwiej utrzymać klarowność i właściwe tempo pracy.",
-                        bullets: (content.activeUltraVariant == .rybnyDelikatny || content.activeUltraVariant == .rybnyIntensywny) ? ["Ryb nie gotuj gwałtownie: trzymaj spokojną temperaturę i nie mieszaj agresywnie."] : (content.useVinegar ? ["Mięso możesz krótko opłukać tylko z luźnych resztek z pakowania. Nie blanszuj.", "Ocet działa tu funkcjonalnie i w małej ilości nie powinien być wyczuwalny w smaku."] : ["Mięso możesz krótko opłukać tylko z luźnych resztek z pakowania. Nie blanszuj."])
+                        bullets: (content.ultraVariant == .rybnyDelikatny || content.ultraVariant == .rybnyIntensywny) ? ["Ryb nie gotuj gwałtownie: trzymaj spokojną temperaturę i nie mieszaj agresywnie."] : (content.useVinegar ? ["Mięso możesz krótko opłukać tylko z luźnych resztek z pakowania. Nie blanszuj.", "Ocet działa tu funkcjonalnie i w małej ilości nie powinien być wyczuwalny w smaku."] : ["Mięso możesz krótko opłukać tylko z luźnych resztek z pakowania. Nie blanszuj."])
                     )
                 ],
                 footer: "Gdy wszystko będzie gotowe, uruchom Start i dalej prowadź rosół już bez pośpiechu.",
