@@ -2727,67 +2727,67 @@ private struct TemperatureMechanicsPanel: View {
 
     private var lowRange: String {
         if allowsBoiling { return "Poniżej aktywnego wrzenia" }
-        hasThermometer ? "Poniżej 88°C" : "Za słaba praca"
+        return hasThermometer ? "Poniżej 88°C" : "Za słaba praca"
     }
 
     private var goodRange: String {
         if allowsBoiling { return "Mocne, stabilne wrzenie" }
-        hasThermometer ? "88–90°C" : "Spokojna praca"
+        return hasThermometer ? "88–90°C" : "Spokojna praca"
     }
 
     private var highRange: String {
         if allowsBoiling { return "Za gwałtowne / ryzyko wykipienia" }
-        hasThermometer ? "Powyżej 92°C lub wrzenie" : "Za mocno lub wrzenie"
+        return hasThermometer ? "Powyżej 92°C lub wrzenie" : "Za mocno lub wrzenie"
     }
 
     private var introText: String {
         if allowsBoiling {
             return "W tonkotsu celem jest aktywne wrzenie, które buduje emulsję. Kontrolujesz intensywność tak, aby gotowanie było mocne, ale stabilne i bez wykipienia."
         }
-        "Temperatura steruje nie tylko tempem gotowania, ale też klarownością, ciężarem smaku i zachowaniem osadu. Najlepszy efekt daje spokojna, stabilna praca."
+        return "Temperatura steruje nie tylko tempem gotowania, ale też klarownością, ciężarem smaku i zachowaniem osadu. Najlepszy efekt daje spokojna, stabilna praca."
     }
 
     private var lowExplanation: String {
         if allowsBoiling { return "Ekstrakcja i emulgacja są za słabe — bulion będzie mniej kremowy i płytszy w smaku." }
-        hasThermometer
+        return hasThermometer
             ? "Ekstrakcja zwalnia, mięso oddaje smak wolniej, a etap zaczyna się rozmywać."
             : "Powierzchnia jest zbyt spokojna, więc wywar buduje się wolniej i trudniej utrzymać rytm etapu."
     }
 
     private var goodExplanation: String {
         if allowsBoiling { return "Wrzenie jest aktywne i równomierne, kości pozostają przykryte, a emulsja buduje się stabilnie." }
-        hasThermometer
+        return hasThermometer
             ? "To zakres, w którym smak przechodzi do wywaru równomiernie, a osad ma szansę spokojnie opaść."
             : "Powierzchnia delikatnie drży, przy brzegu pojawiają się pojedyncze bąble, ale środek nie bulgocze."
     }
 
     private var highExplanation: String {
         if allowsBoiling { return "Za agresywne bulgotanie zwiększa ryzyko wykipienia i nadmiernej utraty wody." }
-        hasThermometer
+        return hasThermometer
             ? "Białka i tłuszcz są mocniej rozbijane, rośnie ryzyko mętności, a profil robi się cięższy."
             : "Pełne bulgotanie rozbija szumowiny i miesza je w płynie, przez co rosół łatwo traci klarowność."
     }
 
     private var lowAction: String {
         if allowsBoiling { return "Lekko zwiększ moc i obserwuj, czy wrzenie staje się stałe." }
-        "Lekko zwiększ ogień i obserwuj zmiany spokojnie, bez gwałtownego skoku."
+        return "Lekko zwiększ ogień i obserwuj zmiany spokojnie, bez gwałtownego skoku."
     }
 
     private var goodAction: String {
         if allowsBoiling { return "Utrzymuj stabilne wrzenie. Dolewaj gorącą wodę, gdy poziom opada." }
-        "Nie zmieniaj ustawień. Utrzymuj równą pracę i nie mieszaj garnka."
+        return "Nie zmieniaj ustawień. Utrzymuj równą pracę i nie mieszaj garnka."
     }
 
     private var highAction: String {
         if allowsBoiling { return "Zmniejsz moc o jeden krok, żeby utrzymać stabilne wrzenie bez wykipienia." }
-        "Zmniejsz ogień albo zdejmij garnek na 60–120 sekund, aż powierzchnia wróci do spokojnej pracy."
+        return "Zmniejsz ogień albo zdejmij garnek na 60–120 sekund, aż powierzchnia wróci do spokojnej pracy."
     }
 
     private var sensoryNote: String {
         if allowsBoiling {
             return "Dla tonkotsu obserwuj poziom płynu i charakter wrzenia: ma być stałe i mocne, ale kontrolowane."
         }
-        hasThermometer
+        return hasThermometer
             ? "Termometr daje punkt odniesienia, ale nadal obserwuj powierzchnię: stabilna praca jest ważniejsza niż pojedynczy odczyt."
             : "Bez termometru patrz na powierzchnię. Szukasz delikatnego drżenia i pojedynczych bąbli przy brzegu — nie pełnego wrzenia."
     }
