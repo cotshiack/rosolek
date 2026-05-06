@@ -631,7 +631,7 @@ struct CookingModeView: View {
 
         return steps.enumerated().map { index, step in
             let durationSeconds: Int? = {
-                if index == 0 || step.stepID == "strain_season" || step.stepID == "heat_up_clear" || step.stepID == "add_veg_spices" || step.stepID == "tonkotsu_aromatics_end" {
+                if index == 0 || step.isManual {
                     return nil
                 }
                 let previousOffset = steps[index - 1].minuteOffset
@@ -749,7 +749,10 @@ struct CookingModeView: View {
             return .addVegetables
         case "simmer_clear":
             return .simmerToVegetablesOut
+        case "stabilize_base", "tonkotsu_boil_emulsify", "finish_clear", "veg_simmer_limit", "fish_poach_limit":
+            return .stabilization
         default:
+            assertionFailure("Unhandled ultra timeline stepID: \(stepID)")
             return .stabilization
         }
     }
