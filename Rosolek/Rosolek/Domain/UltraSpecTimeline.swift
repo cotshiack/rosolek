@@ -72,7 +72,7 @@ enum UltraSpecTimelineCatalog {
         case .warzywnyUmami:
             return [
                 .init(stepID: "prep", timeLabel: "0 min", title: "Przygotuj stanowisko", subtitle: "Umami bez przesady czasu.", minuteOffset: 0),
-                .init(stepID: "veg_simmer_limit", timeLabel: "75 min", title: "Kontrolowane gotowanie", subtitle: "Pilnuj czasu dodatków umami.", minuteOffset: 75),
+                .init(stepID: "veg_simmer_limit", timeLabel: "75 min", title: "Kontrolowane gotowanie", subtitle: "Pilnuj czasu — zbyt długie gotowanie spłaszcza umami.", minuteOffset: 75),
                 .init(stepID: "strain_season", timeLabel: "120 min", title: "Przecedź i dopraw", subtitle: "Korekta soli po cedzeniu.", minuteOffset: 120)
             ]
         case .rybnyDelikatny:

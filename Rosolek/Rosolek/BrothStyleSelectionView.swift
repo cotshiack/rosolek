@@ -119,13 +119,22 @@ struct BrothStyleSelectionView: View {
                 }
 
                 NavigationLink {
-                IngredientSelectionView(
-                    selectedProfile: selectedStyle?.profile ?? .cleaner,
-                    selectedKind: selectedKind ?? .rosol,
-                    selectedStyleName: selectedStyle?.title ?? "Lekki"
-                )
+                    if selectedKind == .veggie {
+                        BrothResultView(
+                            profile: selectedStyle?.profile ?? .cleaner,
+                            selections: [],
+                            selectedKind: .veggie,
+                            selectedStyleName: selectedStyle?.title ?? "Jasny"
+                        )
+                    } else {
+                        IngredientSelectionView(
+                            selectedProfile: selectedStyle?.profile ?? .cleaner,
+                            selectedKind: selectedKind ?? .rosol,
+                            selectedStyleName: selectedStyle?.title ?? "Lekki"
+                        )
+                    }
                 } label: {
-                    AppPrimaryButtonLabel(title: "Przejdź do składników", disabled: selectedKind == nil || selectedStyle == nil)
+                    AppPrimaryButtonLabel(title: selectedKind == .veggie ? "Przejdź do obliczeń" : "Przejdź do składników", disabled: selectedKind == nil || selectedStyle == nil)
                 }
                 .disabled(selectedKind == nil || selectedStyle == nil)
             }
