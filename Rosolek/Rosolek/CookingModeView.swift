@@ -191,11 +191,21 @@ struct CookingModeView: View {
     }
 
     private var activeUltraVariant: UltraSpecVariantID? {
-        guard let rawKind = currentBatch.brothKindRawValue,
-              let kind = BrothKind(rawValue: rawKind) else { return nil }
-        let styleName = currentBatch.selectedStyleName ?? ""
-        let styleKey = UltraSpecStyleKeyResolver.resolve(kind: kind, styleName: styleName)
-        return UltraSpecVariantResolver.resolve(kind: kind, styleKey: styleKey)
+        if let rawKind = currentBatch.brothKindRawValue,
+           let kind = BrothKind(rawValue: rawKind) {
+            let styleName = currentBatch.selectedStyleName ?? currentBatch.styleRawValue
+            let styleKey = UltraSpecStyleKeyResolver.resolve(kind: kind, styleName: styleName)
+            return UltraSpecVariantResolver.resolve(kind: kind, styleKey: styleKey)
+        }
+
+        let legacyStyle = currentBatch.styleRawValue.lowercased()
+        if legacyStyle.contains("ramen_tonkotsu") || legacyStyle.contains("tonkotsu") {
+            return .ramenTonkotsu
+        }
+        if legacyStyle.contains("ramen") || legacyStyle.contains("shio") {
+            return .ramenShio
+        }
+        return nil
     }
 
     private var isRamenUltraVariant: Bool {

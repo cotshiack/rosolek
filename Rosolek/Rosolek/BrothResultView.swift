@@ -661,7 +661,10 @@ struct BrothResultView: View {
     }
 
     private var screenNavigationTitle: String {
-        selectedKind == .ramen ? "Twój ramen" : "Twój rosół"
+        if selectedKind == .ramen || activeUltraVariant == .ramenShio || activeUltraVariant == .ramenTonkotsu || screenTitle.lowercased().contains("ramen") {
+            return "Twój ramen"
+        }
+        return "Twój rosół"
     }
 
     private var summaryGrid: some View {
