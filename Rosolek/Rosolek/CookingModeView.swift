@@ -631,7 +631,7 @@ struct CookingModeView: View {
 
         return steps.enumerated().map { index, step in
             let durationSeconds: Int? = {
-                if index == 0 || step.stepID == "strain_season" {
+                if index == 0 || step.stepID == "strain_season" || step.stepID == "heat_up_clear" || step.stepID == "add_veg_spices" || step.stepID == "tonkotsu_aromatics_end" {
                     return nil
                 }
                 let previousOffset = steps[index - 1].minuteOffset
@@ -741,6 +741,8 @@ struct CookingModeView: View {
         switch stepID {
         case "prep":
             return .prep
+        case "heat_up_clear":
+            return .heatUp
         case "strain_season":
             return .strainAndSeason
         case "add_veg_spices", "tonkotsu_aromatics_end":
@@ -1291,6 +1293,8 @@ struct CookingModeView: View {
                 title: currentPhase.stepID == "tonkotsu_aromatics_end" ? "Aromaty końcowe — dodaj teraz" : "Lista składników do dodania",
                 subtitle: currentPhase.stepID == "tonkotsu_aromatics_end"
                     ? "Dodaj cebulę, por, imbir i czosnek w ilościach z listy. To krótki etap przed cedzeniem."
+                    : currentPhase.stepID == "add_veg_spices"
+                        ? "Dodaj aromaty z listy dla shio (cebula, imbir, czosnek, opcjonalnie dymka)."
                     : "Sprawdź dokładnie, co i ile powinieneś teraz dodać.",
                 vegetableRows: vegetableReminderRows,
                 spiceRows: spiceReminderRows
@@ -3003,6 +3007,40 @@ private struct PhaseDetailsSheet: View {
                 ],
                 footer: "Po tym kroku kończysz gotowanie.",
                 footerLabel: "Finalizacja"
+            )
+        }
+
+        if !content.isRamenTonkotsu, content.stepID == "heat_up_clear" {
+            return PhaseSheetModel(
+                eyebrow: "Shio — dojście do temperatury",
+                intro: "Podgrzewaj spokojnie do zakresu pracy shio (88–92°C), bez pełnego wrzenia.",
+                sections: [
+                    PhaseSheetSection(
+                        title: "Cel etapu",
+                        systemImage: "thermometer.medium",
+                        text: "Masz wejść w stabilną temperaturę pracy bez gwałtownego bulgotania.",
+                        bullets: ["Nie mieszaj garnka.", "Zbieraj tylko to, co samo wypływa na powierzchnię."]
+                    )
+                ],
+                footer: "Gdy wejdziesz w temperaturę pracy, przechodzisz do głównego gotowania.",
+                footerLabel: "Spokojny start"
+            )
+        }
+
+        if !content.isRamenTonkotsu, content.stepID == "add_veg_spices" {
+            return PhaseSheetModel(
+                eyebrow: "Shio — aromaty",
+                intro: "Dodajesz aromaty ramenowe na finisz: cebula, imbir, czosnek (opcjonalnie dymka).",
+                sections: [
+                    PhaseSheetSection(
+                        title: "Jak dodać",
+                        systemImage: "list.bullet",
+                        text: "Dodaj składniki zgodnie z listą i ilościami z kalkulatora.",
+                        bullets: ["Po dodaniu wróć do stabilnej pracy.", "Nie przeciągaj tego etapu."]
+                    )
+                ],
+                footer: "To etap krótszy niż główne gotowanie — aromaty mają tylko domknąć profil.",
+                footerLabel: "Krótki finisz"
             )
         }
 

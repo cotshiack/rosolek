@@ -28,17 +28,18 @@ enum UltraSpecTimelineCatalog {
         case .ramenShio:
             return [
                 .init(stepID: "prep", timeLabel: "0 min", title: "Przygotuj stanowisko", subtitle: "Utrzymaj klarowną bazę.", minuteOffset: 0),
+                .init(stepID: "heat_up_clear", timeLabel: "do temp.", title: "Podgrzewaj do temperatury pracy", subtitle: "Pracuj poniżej wrzenia.", minuteOffset: 0),
                 .init(stepID: "stabilize_base", timeLabel: "180 min", title: "Główne gotowanie", subtitle: "Pracuj w 88-92°C.", minuteOffset: 180),
                 .init(stepID: "add_veg_spices", timeLabel: "210 min", title: "Dodaj aromaty", subtitle: "Imbir, czosnek i cebula.", minuteOffset: 210),
                 .init(stepID: "simmer_clear", timeLabel: "240 min", title: "Krótki finisz aromatów", subtitle: "Bez wrzenia.", minuteOffset: 240),
-                .init(stepID: "strain_season", timeLabel: "250 min", title: "Przecedź", subtitle: "Sól finalnie ustawiaj tare.", minuteOffset: 250)
+                .init(stepID: "strain_season", timeLabel: "240+ min", title: "Przecedź", subtitle: "Sól finalnie ustawiaj tare.", minuteOffset: 240)
             ]
         case .ramenTonkotsu:
             return [
                 .init(stepID: "prep", timeLabel: "0 min", title: "Przygotuj stanowisko", subtitle: "Kości i narzędzia gotowe.", minuteOffset: 0),
                 .init(stepID: "tonkotsu_boil_emulsify", timeLabel: "360 min", title: "Emulsyfikacja", subtitle: "Wrzenie jest celem.", minuteOffset: 360),
-                .init(stepID: "tonkotsu_aromatics_end", timeLabel: "480 min", title: "Aromaty końcowe", subtitle: "Krótko przed cedzeniem.", minuteOffset: 480),
-                .init(stepID: "strain_season", timeLabel: "490 min", title: "Przecedź i dopraw", subtitle: "Słoność ustawiaj przez tare.", minuteOffset: 490)
+                .init(stepID: "tonkotsu_aromatics_end", timeLabel: "420 min", title: "Aromaty końcowe", subtitle: "Krótko przed cedzeniem.", minuteOffset: 420),
+                .init(stepID: "strain_season", timeLabel: "480+ min", title: "Przecedź i dopraw", subtitle: "Słoność ustawiaj przez tare.", minuteOffset: 480)
             ]
         case .wolowyCzysty:
             return [
