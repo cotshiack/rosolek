@@ -78,6 +78,8 @@ struct IngredientSelectionView: View {
     let selectedStyleName: String
 
     @AppStorage("potSizeLiters") private var potSizeLiters = 7
+    @AppStorage("defaultClarityModeRawValue") private var defaultClarityModeRawValue = BrothClarityMode.normal.rawValue
+    @AppStorage("defaultUseVinegar") private var defaultUseVinegar = false
 
     @State private var amounts: [String: String] = [:]
     @State private var expandedCategory: IngredientCategory? = nil
@@ -353,14 +355,22 @@ struct IngredientSelectionView: View {
         selectedEntries.count
     }
 
+    private var previewClarityMode: BrothClarityMode {
+        BrothClarityMode(rawValue: defaultClarityModeRawValue) ?? .normal
+    }
+
+    private var previewUseVinegar: Bool {
+        defaultUseVinegar
+    }
+
     private var previewResult: BrothCalculationResult {
         guard let variant = activeUltraVariant else {
             return BrothCalculator.calculate(
                 profile: selectedProfile,
                 meatItems: selectedIngredients,
                 potSizeLiters: Double(potSizeLiters),
-                clarityMode: .normal,
-                useVinegar: false
+                clarityMode: previewClarityMode,
+                useVinegar: previewUseVinegar
             )
         }
 
@@ -370,7 +380,7 @@ struct IngredientSelectionView: View {
                 styleName: selectedStyleName,
                 potCapacityL: Double(potSizeLiters),
                 selections: selectedIngredients,
-                clarityMode: .normal
+                clarityMode: previewClarityMode
             )
             return makePreviewResultFromUltraSpec(ultra, variant: variant)
         } catch {
@@ -378,8 +388,8 @@ struct IngredientSelectionView: View {
                 profile: selectedProfile,
                 meatItems: selectedIngredients,
                 potSizeLiters: Double(potSizeLiters),
-                clarityMode: .normal,
-                useVinegar: false
+                clarityMode: previewClarityMode,
+                useVinegar: previewUseVinegar
             )
         }
     }
@@ -391,8 +401,8 @@ struct IngredientSelectionView: View {
                 profile: selectedProfile,
                 meatItems: selectedIngredients,
                 potSizeLiters: Double(potSizeLiters),
-                clarityMode: .normal,
-                useVinegar: false
+                clarityMode: previewClarityMode,
+                useVinegar: previewUseVinegar
             )
         }
 
@@ -404,8 +414,8 @@ struct IngredientSelectionView: View {
             profile: selectedProfile,
             meatItems: selectedIngredients,
             potSizeLiters: Double(potSizeLiters),
-            clarityMode: .normal,
-            useVinegar: false
+            clarityMode: previewClarityMode,
+            useVinegar: previewUseVinegar
         )
 
         return BrothCalculationResult(
@@ -416,7 +426,7 @@ struct IngredientSelectionView: View {
             estimatedYieldLiters: ultra.estimatedYieldL,
             startSaltGrams: ultra.startSaltG,
             finalSaltGrams: ultra.targetSaltG,
-            appleCiderVinegarMl: 0,
+            appleCiderVinegarMl: previewUseVinegar ? max(5, Int((ultra.waterStartL * 2).rounded())) : 0,
             peppercornCount: ultra.spices.peppercornCount,
             allspiceCount: ultra.spices.allspiceCount,
             bayLeafCount: ultra.spices.bayLeafCount,
@@ -428,8 +438,8 @@ struct IngredientSelectionView: View {
             validationFailure: baseline.validationFailure,
             scoring: baseline.scoring,
             recommendedMeatRange: baseline.recommendedMeatRange,
-            clarityMode: .normal,
-            useVinegar: false,
+            clarityMode: previewClarityMode,
+            useVinegar: previewUseVinegar,
             targetYieldLiters: nil,
             vegetableBreakdown: nil,
             spiceBreakdown: nil,
