@@ -354,13 +354,104 @@ struct IngredientSelectionView: View {
     }
 
     private var previewResult: BrothCalculationResult {
-        BrothCalculator.calculate(
-            profile: selectedProfile,
-            meatItems: selectedIngredients,
-            potSizeLiters: Double(potSizeLiters),
+        guard let variant = activeUltraVariant else {
+            return BrothCalculator.calculate(
+                profile: selectedProfile,
+                meatItems: selectedIngredients,
+                potSizeLiters: Double(potSizeLiters),
+                clarityMode: .normal,
+                useVinegar: false
+            )
+        }
+
+        do {
+            let ultra = try UltraSpecBridge.calculateFromCurrentFlow(
+                kind: selectedKind,
+                styleName: selectedStyleName,
+                potCapacityL: Double(potSizeLiters),
+                selections: selectedIngredients,
+                clarityMode: .normal
+            )
+            return makePreviewResultFromUltraSpec(ultra, variant: variant)
+        } catch {
+            return BrothCalculator.calculate(
+                profile: selectedProfile,
+                meatItems: selectedIngredients,
+                potSizeLiters: Double(potSizeLiters),
+                clarityMode: .normal,
+                useVinegar: false
+            )
+        }
+    }
+
+
+    private func makePreviewResultFromUltraSpec(_ ultra: UltraSpecCalculationResult, variant: UltraSpecVariantID) -> BrothCalculationResult {
+        guard let config = UltraSpecCatalog.variants.first(where: { $0.id == variant }) else {
+            return BrothCalculator.calculate(
+                profile: selectedProfile,
+                meatItems: selectedIngredients,
+                potSizeLiters: Double(potSizeLiters),
+                clarityMode: .normal,
+                useVinegar: false
+            )
+        }
+
+        let warnings: [BrothWarning] = ultra.warningMessages.map {
+            BrothWarning(code: mapWarningCodeForPreview($0.code), severity: mapSeverityForPreview($0.severity), params: [])
+        }
+
+        return BrothCalculationResult(
+            waterLiters: ultra.waterStartL,
+            temperatureMin: config.temperature.minC,
+            temperatureMax: config.temperature.maxC,
+            totalMinutes: config.totalMinutes,
+            estimatedYieldLiters: ultra.estimatedYieldL,
+            startSaltGrams: ultra.startSaltG,
+            finalSaltGrams: ultra.targetSaltG,
+            appleCiderVinegarMl: 0,
+            peppercornCount: ultra.spices.peppercornCount,
+            allspiceCount: ultra.spices.allspiceCount,
+            bayLeafCount: ultra.spices.bayLeafCount,
+            vegetables: ultra.vegetables.map { VegetableAmount(name: $0.ingredientID, amount: "\($0.grams) g", note: nil) },
+            meatParts: selectedIngredients.map { MeatAmount(name: $0.name, grams: $0.grams, note: nil) },
+            timeline: UltraSpecTimelineCatalog.steps(for: variant).map { .init(minuteOffset: $0.minuteOffset, timeLabel: $0.timeLabel, title: $0.title, subtitle: $0.subtitle) },
+            warnings: ultra.warningMessages.map { "\($0.title): \($0.message)" },
+            structuredWarnings: warnings,
+            validationFailure: nil,
+            scoring: nil,
+            recommendedMeatRange: nil,
             clarityMode: .normal,
-            useVinegar: false
+            useVinegar: false,
+            targetYieldLiters: nil,
+            vegetableBreakdown: nil,
+            spiceBreakdown: nil,
+            microMode: ultra.waterStartL < 0.7,
+            waterWasReducedToFit: ultra.waterStartL < ultra.waterRecipeL
         )
+    }
+
+    private func mapSeverityForPreview(_ severity: UltraSpecSeverity) -> BrothWarningSeverity {
+        switch severity {
+        case .info: return .info
+        case .warn: return .warn
+        case .error: return .error
+        }
+    }
+
+    private func mapWarningCodeForPreview(_ code: UltraSpecWarningCode) -> BrothWarningCode {
+        switch code {
+        case .underpower: return .undermeatLight
+        case .overpower: return .overmeatIntense
+        case .vegTooMuch: return .singleIngredientRisk
+        case .paperFilterLowerIntensity: return .paperFilterLowerIntensity
+        case .hardPotTooSmall: return .hardPotTooSmall
+        case .hardPotTooBig: return .hardPotTooBig
+        case .hardNotFit: return .hardNotFit
+        case .wingsTooHigh: return .wingsTooHighLight
+        case .beefTooHigh: return .heavyBeefProfile
+        case .offalTooHigh: return .offalDominantRisk
+        case .vegSweetRisk: return .singleIngredientRisk
+        }
     }
 
     private var scoring: BrothScoring? {
