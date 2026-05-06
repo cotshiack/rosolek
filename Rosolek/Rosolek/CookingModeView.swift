@@ -275,7 +275,9 @@ struct CookingModeView: View {
     }
 
     private var vegetableReminderRows: [LiveIngredientReminderRowData] {
-        result.vegetables.map { item in
+        result.vegetables.compactMap { item in
+            let grams = Int((item.amount.filter { $0.isNumber }))
+            if let grams, grams <= 0 { return nil }
             LiveIngredientReminderRowData(
                 icon: ingredientIconKind(for: item.name),
                 title: item.name,
@@ -299,30 +301,36 @@ struct CookingModeView: View {
             )
         }
 
-        rows.append(
-            LiveIngredientReminderRowData(
-                icon: .pepper,
-                title: "Pieprz czarny ziarnisty",
-                subtitle: "Czysty aromat.",
-                value: "\(result.peppercornCount) \(result.peppercornCount == 1 ? "ziarno" : "ziaren")"
+        if result.peppercornCount > 0 {
+            rows.append(
+                LiveIngredientReminderRowData(
+                    icon: .pepper,
+                    title: "Pieprz czarny ziarnisty",
+                    subtitle: "Czysty aromat.",
+                    value: "\(result.peppercornCount) \(result.peppercornCount == 1 ? "ziarno" : "ziaren")"
+                )
             )
-        )
-        rows.append(
-            LiveIngredientReminderRowData(
-                icon: .allspice,
-                title: "Ziele angielskie",
-                subtitle: "Głębia smaku.",
-                value: "\(result.allspiceCount) \(result.allspiceCount == 1 ? "ziarno" : "ziaren")"
+        }
+        if result.allspiceCount > 0 {
+            rows.append(
+                LiveIngredientReminderRowData(
+                    icon: .allspice,
+                    title: "Ziele angielskie",
+                    subtitle: "Głębia smaku.",
+                    value: "\(result.allspiceCount) \(result.allspiceCount == 1 ? "ziarno" : "ziaren")"
+                )
             )
-        )
-        rows.append(
-            LiveIngredientReminderRowData(
-                icon: .bayLeaf,
-                title: "Liść laurowy",
-                subtitle: "Tło aromatu.",
-                value: result.bayLeafCount == 1 ? "1 liść" : "\(result.bayLeafCount) liście"
+        }
+        if result.bayLeafCount > 0 {
+            rows.append(
+                LiveIngredientReminderRowData(
+                    icon: .bayLeaf,
+                    title: "Liść laurowy",
+                    subtitle: "Tło aromatu.",
+                    value: result.bayLeafCount == 1 ? "1 liść" : "\(result.bayLeafCount) liście"
+                )
             )
-        )
+        }
 
         return rows
     }
@@ -631,7 +639,7 @@ struct CookingModeView: View {
             }()
 
             return LivePhase(
-                kind: .stabilization,
+                kind: livePhaseKind(forUltraStepID: step.stepID),
                 title: step.title,
                 shortText: step.subtitle,
                 detailText: UltraSpecStepLibrary.all[step.stepID]?.extendedHint ?? step.subtitle,
@@ -722,8 +730,26 @@ struct CookingModeView: View {
 
     private var nextButtonTitle: String {
         guard sessionStarted else { return "Dalej" }
+        if phaseIndex == phases.count - 1 && !currentPhaseHasTimer {
+            return "Zakończ"
+        }
         if currentPhaseHasTimer { return "Pomiń" }
         return currentPhase.bottomActionTitle ?? "Dalej"
+    }
+
+    private func livePhaseKind(forUltraStepID stepID: String) -> LivePhaseKind {
+        switch stepID {
+        case "prep":
+            return .prep
+        case "strain_season":
+            return .strainAndSeason
+        case "add_veg_spices", "tonkotsu_aromatics_end":
+            return .addVegetables
+        case "simmer_clear":
+            return .simmerToVegetablesOut
+        default:
+            return .stabilization
+        }
     }
 
     private var shouldShowIngredientReminderButton: Bool {
@@ -855,7 +881,7 @@ struct CookingModeView: View {
                 UINotificationFeedbackGenerator().notificationOccurred(.success)
             }
         } message: {
-            Text("Po zakończeniu przejdziesz do oceny swojego rosołu.")
+            Text("Po zakończeniu przejdziesz do oceny swojego \(isRamenUltraVariant ? "ramenu" : "rosołu").")
         }
         .onAppear {
             UIApplication.shared.isIdleTimerDisabled = true
