@@ -5,7 +5,8 @@ enum IngredientCategory: String, CaseIterable, Identifiable, Hashable {
     case pork = "Wieprzowina"
     case beef = "Wołowina"
     case offal = "Podroby"
-    case fish = "Ryby i owoce morza"
+    case fish = "Ryby"
+    case seafood = "Owoce morza"
     case veggies = "Warzywa bazowe"
 
     var id: String { rawValue }
@@ -123,7 +124,8 @@ struct IngredientSelectionView: View {
         .init(id: "kregoslup_rybny", name: "Kręgosłup / ości rybne", subtitle: "Lekka baza rybna.", category: .fish, illustration: .bones, fatScore: 0.5, gelatinScore: 0.7, clarityPenalty: 0.4, isPoultry: false, isBeef: false, isOffal: false, isLiver: false, isBoneHeavy: true),
         .init(id: "glowy_rybne", name: "Głowy rybne", subtitle: "Intensywniejszy smak.", category: .fish, illustration: .bones, fatScore: 0.8, gelatinScore: 1.1, clarityPenalty: 0.7, isPoultry: false, isBeef: false, isOffal: false, isLiver: false, isBoneHeavy: true),
         .init(id: "filet_rybny", name: "Filet rybny", subtitle: "Delikatny aromat i ciało.", category: .fish, illustration: .fish, fatScore: 0.7, gelatinScore: 0.4, clarityPenalty: 0.5, isPoultry: false, isBeef: false, isOffal: false, isLiver: false, isBoneHeavy: false),
-        .init(id: "pancerze_krewetek", name: "Pancerze krewetek", subtitle: "Morski akcent i umami.", category: .fish, illustration: .fish, fatScore: 0.4, gelatinScore: 0.4, clarityPenalty: 0.8, isPoultry: false, isBeef: false, isOffal: false, isLiver: false, isBoneHeavy: false),
+        .init(id: "pancerze_krewetek", name: "Pancerze krewetek", subtitle: "Morski akcent i umami.", category: .seafood, illustration: .fish, fatScore: 0.4, gelatinScore: 0.4, clarityPenalty: 0.8, isPoultry: false, isBeef: false, isOffal: false, isLiver: false, isBoneHeavy: false),
+        .init(id: "skorupiaki_malze", name: "Skorupiaki / małże", subtitle: "Intensywny, morski boost umami.", category: .seafood, illustration: .fish, fatScore: 0.5, gelatinScore: 0.4, clarityPenalty: 0.9, isPoultry: false, isBeef: false, isOffal: false, isLiver: false, isBoneHeavy: false),
 
         .init(id: "cebula_baza", name: "Cebula", subtitle: "Klasyczna baza warzywna.", category: .veggies, illustration: .vegetables, fatScore: 0.1, gelatinScore: 0.1, clarityPenalty: 0.1, isPoultry: false, isBeef: false, isOffal: false, isLiver: false, isBoneHeavy: false),
         .init(id: "seler_baza", name: "Seler korzeniowy", subtitle: "Głębia i słodycz.", category: .veggies, illustration: .vegetables, fatScore: 0.1, gelatinScore: 0.1, clarityPenalty: 0.1, isPoultry: false, isBeef: false, isOffal: false, isLiver: false, isBoneHeavy: false),
@@ -213,7 +215,14 @@ struct IngredientSelectionView: View {
         case .veggie:
             return [.veggies]
         case .fish:
-            return [.fish]
+            switch activeUltraVariant {
+            case .rybnyDelikatny:
+                return [.fish]
+            case .rybnyIntensywny:
+                return [.fish, .seafood]
+            default:
+                return [.fish]
+            }
         }
     }
 
@@ -1024,7 +1033,9 @@ struct CategoryIllustrationBadge: View {
         case .offal:
             OffalCategoryIllustration(selected: selected)
         case .fish:
-            BeefCategoryIllustration(selected: selected)
+            FishIllustration()
+        case .seafood:
+            SeafoodIllustration()
         case .veggies:
             VegetableIllustration()
         }
@@ -1076,6 +1087,14 @@ struct IngredientIllustrationBadge: View {
         case .vegetables:
             VegetableIllustration()
         }
+    }
+}
+
+struct SeafoodIllustration: View {
+    var body: some View {
+        Image(systemName: "shell.fill")
+            .font(.system(size: 18, weight: .semibold))
+            .foregroundStyle(Color(hex: "4E6D85"))
     }
 }
 

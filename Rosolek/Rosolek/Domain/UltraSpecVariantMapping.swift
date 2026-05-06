@@ -75,6 +75,7 @@ struct UltraSpecRequestBuilder {
         case "glowy_rybne": return "FISH_HEADS"
         case "filet_rybny": return "FISH_WHITE_BONES"
         case "pancerze_krewetek": return "SEAFOOD_SHRIMP_SHELLS"
+        case "skorupiaki_malze": return "SEAFOOD_SHELLS"
         case "cebula_baza": return "VEG_ONION"
         case "seler_baza": return "VEG_CELERIAC"
         case "por_baza": return "VEG_LEEK"

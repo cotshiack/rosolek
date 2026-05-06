@@ -1370,6 +1370,8 @@ extension BrothResultView {
             return "Dodatek pogłębiający smak."
         case .fish:
             return "Delikatna baza rybna, gotuj krócej i łagodniej."
+        case .seafood:
+            return "Morski akcent umami — używaj ostrożnie, by nie zdominować profilu."
         case .veggies:
             return "Warzywna baza budująca czysty profil bulionu."
         }
@@ -1475,6 +1477,20 @@ extension BrothResultView {
             return .offal
         }
 
+        if normalizedID.contains("ryb")
+            || normalizedID.contains("kregoslup")
+            || normalizedID.contains("osci")
+            || normalizedID.contains("glow") {
+            return .fish
+        }
+
+        if normalizedID.contains("krewet")
+            || normalizedID.contains("malz")
+            || normalizedID.contains("skorupiak")
+            || normalizedID.contains("shell") {
+            return .seafood
+        }
+
         return .poultry
     }
 
@@ -1491,7 +1507,8 @@ extension BrothResultView {
         case .beef: return 2
         case .offal: return 3
         case .fish: return 4
-        case .veggies: return 5
+        case .seafood: return 5
+        case .veggies: return 6
         }
     }
 
