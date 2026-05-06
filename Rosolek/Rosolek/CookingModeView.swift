@@ -727,7 +727,7 @@ struct CookingModeView: View {
 
     private var shouldShowFoamCard: Bool {
         if isRamenUltraVariant { return false }
-        currentPhase.kind == .heatUp || currentPhase.kind == .stabilization
+        return currentPhase.kind == .heatUp || currentPhase.kind == .stabilization
     }
 
     private var phaseSupportNote: String? {
