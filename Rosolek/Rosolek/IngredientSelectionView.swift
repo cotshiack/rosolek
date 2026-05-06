@@ -358,7 +358,7 @@ struct IngredientSelectionView: View {
 
     private var canProceed: Bool {
         if isVegetableKind { return true }
-        previewResult.validationFailure == nil
+        return previewResult.validationFailure == nil
     }
 
     private var recommendedRangeText: String {
