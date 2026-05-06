@@ -32,6 +32,7 @@ private enum LivePhaseKind {
 
 private struct LivePhase: Identifiable {
     let id = UUID()
+    var stepID: String? = nil
     let kind: LivePhaseKind
     let title: String
     let shortText: String
@@ -39,6 +40,14 @@ private struct LivePhase: Identifiable {
     let durationSeconds: Int?
     let timelineLabel: String
     let bottomActionTitle: String?
+}
+
+private extension LivePhase {
+    func withStepID(_ stepID: String) -> LivePhase {
+        var copy = self
+        copy.stepID = stepID
+        return copy
+    }
 }
 
 private struct InstructionSheetContent: Identifiable {
@@ -624,7 +633,7 @@ struct CookingModeView: View {
                 durationSeconds: durationSeconds,
                 timelineLabel: step.timeLabel,
                 bottomActionTitle: durationSeconds == nil ? "Dalej" : nil
-            )
+            ).withStepID(step.stepID)
         }
     }
 
@@ -700,7 +709,10 @@ struct CookingModeView: View {
     }
 
     private var targetTemperaturePillText: String {
-        hasThermometer ? "\(result.temperatureMin)–\(result.temperatureMax)°C" : "Bez wrzenia"
+        if !hasThermometer, activeUltraVariant == .ramenTonkotsu {
+            return "Wrzenie celowe"
+        }
+        return hasThermometer ? "\(result.temperatureMin)–\(result.temperatureMax)°C" : "Bez wrzenia"
     }
 
     private var nextButtonTitle: String {
@@ -714,6 +726,7 @@ struct CookingModeView: View {
     }
 
     private var shouldShowFoamCard: Bool {
+        if isRamenUltraVariant { return false }
         currentPhase.kind == .heatUp || currentPhase.kind == .stabilization
     }
 
@@ -951,7 +964,7 @@ struct CookingModeView: View {
 
                 CurrentMiniStepsCard(
                     title: "Teraz zrób",
-                    steps: miniSteps(for: currentPhase.kind)
+                    steps: miniSteps(for: currentPhase)
                 )
 
                 if let manualCompletionNote {
@@ -1240,7 +1253,50 @@ struct CookingModeView: View {
         )
     }
 
-    private func miniSteps(for kind: LivePhaseKind) -> [String] {
+    private func miniSteps(for phase: LivePhase) -> [String] {
+        if isRamenUltraVariant, let stepID = phase.stepID {
+            let minutesText: String? = {
+                guard let duration = phase.durationSeconds, duration > 0 else { return nil }
+                return "\(duration / 60)"
+            }()
+
+            switch stepID {
+            case "prep":
+                return [
+                    "Przygotuj garnek, składniki i narzędzia do cedzenia.",
+                    "Ustaw stanowisko tak, żeby po starcie nie przerywać procesu.",
+                    "Uruchom etap dopiero gdy wszystko jest gotowe."
+                ]
+            case "stabilize_base", "tonkotsu_boil_emulsify":
+                return [
+                    minutesText.map { "Utrzymuj ten etap przez około \($0) min." } ?? "Utrzymuj ten etap do kolejnego kroku.",
+                    stepID == "tonkotsu_boil_emulsify" ? "W tonkotsu wrzenie jest celem — pilnuj poziomu wody." : "Pracuj stabilnie w docelowym zakresie temperatury.",
+                    "Kontroluj garnek regularnie i koryguj ogień małymi krokami."
+                ]
+            case "add_veg_spices", "tonkotsu_aromatics_end":
+                return [
+                    "Dodaj składniki z listy dla tego etapu.",
+                    "Po dodaniu wróć do stabilnej pracy wywaru.",
+                    stepID == "tonkotsu_aromatics_end" ? "Nie przeciągaj aromatów — to krótki finisz przed cedzeniem." : "Pilnuj czasu, żeby nie przeciągnąć aromatów."
+                ]
+            case "simmer_clear":
+                return [
+                    minutesText.map { "Prowadź finisz przez około \($0) min." } ?? "Prowadź finisz do kolejnego kroku.",
+                    "Utrzymuj stabilną pracę i nie przeciągaj etapu.",
+                    "Przygotuj się do cedzenia."
+                ]
+            case "strain_season":
+                return [
+                    "Przecedź bulion bez wyciskania składników.",
+                    "Doprawiaj dopiero po cedzeniu, stopniowo.",
+                    "Przy ramenie końcową słoność ustawiaj przez tare."
+                ]
+            default:
+                break
+            }
+        }
+
+        let kind = phase.kind
         switch kind {
         case .prep:
             if isGrandmaPreset {

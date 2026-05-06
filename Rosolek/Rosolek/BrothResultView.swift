@@ -302,9 +302,10 @@ struct BrothResultView: View {
     }
 
     private var vegetableRows: [ResultListRowData] {
-        result.vegetables.map { item in
+        result.vegetables.compactMap { item in
             let baseValue = parseGrams(from: item.amount)
             let grams = vegetableOverrides[item.name] ?? baseValue
+            guard grams > 0 else { return nil }
             return ResultListRowData(
                 icon: iconKind(for: item.name),
                 title: item.name,
@@ -323,24 +324,33 @@ struct BrothResultView: View {
         let vinegarMl = spiceOverrides["vinegar"] ?? result.appleCiderVinegarMl
 
         var rows: [ResultListRowData] = [
-            ResultListRowData(
-                icon: .salt,
-                title: "Sól",
-                subtitle: "Start i korekta końcowa",
-                value: "\(startSaltG) g / \(finalSaltG) g"
-            ),
-            ResultListRowData(
-                icon: .pepper,
-                title: "Pieprz czarny ziarnisty",
-                subtitle: "Czysty aromat",
-                value: "\(pepperCount) \(pepperCount == 1 ? "ziarno" : "ziaren")"
+            ]
+
+        if startSaltG > 0 || finalSaltG > 0 {
+            rows.append(
+                ResultListRowData(
+                    icon: .salt,
+                    title: "Sól",
+                    subtitle: "Start i korekta końcowa",
+                    value: "\(startSaltG) g / \(finalSaltG) g"
+                )
             )
-        ]
+        }
+        if pepperCount > 0 {
+            rows.append(
+                ResultListRowData(
+                    icon: .pepper,
+                    title: "Pieprz czarny ziarnisty",
+                    subtitle: "Czysty aromat",
+                    value: "\(pepperCount) \(pepperCount == 1 ? "ziarno" : "ziaren")"
+                )
+            )
+        }
 
         if allspiceCount > 0 { rows.append(ResultListRowData(icon: .allspice, title: "Ziele angielskie", subtitle: "Głębia smaku", value: "\(allspiceCount) \(allspiceCount == 1 ? "ziarno" : "ziaren")")) }
         if bayLeafCount > 0 { rows.append(ResultListRowData(icon: .bayLeaf, title: "Liść laurowy", subtitle: "Tło aromatu", value: bayLeafCount == 1 ? "1 liść" : "\(bayLeafCount) liście")) }
 
-        if supportsVinegar {
+        if supportsVinegar && vinegarMl > 0 {
             rows.append(ResultListRowData(icon: .vinegar, title: "Ocet jabłkowy", subtitle: useVinegar ? "dodatek startowy" : "wyłączony", value: "\(vinegarMl) ml"))
         }
 
@@ -522,9 +532,13 @@ struct BrothResultView: View {
                 VStack(alignment: .leading, spacing: 22) {
                     header
                     summaryGrid
-                    refinementSection
+                    if hasRefinementOptions {
+                        refinementSection
+                    }
                     ingredientsSection
-                    spicesSection
+                    if !spiceRows.isEmpty {
+                        spicesSection
+                    }
                     timelineSection
 
                     if !warningCards.isEmpty {
@@ -792,6 +806,10 @@ struct BrothResultView: View {
             }
             .appSoftShadow()
         }
+    }
+
+    private var hasRefinementOptions: Bool {
+        supportsFiltering || supportsVinegar
     }
 
     private var ingredientsSection: some View {
