@@ -136,6 +136,10 @@ struct BrothResultView: View {
 
 
     private func makeBrothResultFromUltraSpec(_ ultra: UltraSpecCalculationResult, variant: UltraSpecVariantID, profile: BrothProfile) -> BrothCalculationResult {
+        guard let config = variantConfig(for: variant) else {
+            return makeUltraSpecFailureResult(error: .variantNotConfigured)
+        }
+
         let vegRows = ultra.vegetables.map {
             VegetableAmount(name: prettyIngredientName($0.ingredientID), amount: "\($0.grams) g", note: nil)
         }
@@ -175,9 +179,9 @@ struct BrothResultView: View {
 
         return BrothCalculationResult(
             waterLiters: ultra.waterStartL,
-            temperatureMin: variantConfig(for: variant)?.temperature.minC ?? 88,
-            temperatureMax: variantConfig(for: variant)?.temperature.maxC ?? 92,
-            totalMinutes: variantConfig(for: variant)?.totalMinutes ?? 240,
+            temperatureMin: config.temperature.minC,
+            temperatureMax: config.temperature.maxC,
+            totalMinutes: config.totalMinutes,
             estimatedYieldLiters: ultra.estimatedYieldL,
             startSaltGrams: ultra.startSaltG,
             finalSaltGrams: ultra.targetSaltG,
