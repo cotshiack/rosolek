@@ -134,8 +134,12 @@ struct IngredientSelectionView: View {
         ScrollView(showsIndicators: false) {
             VStack(alignment: .leading, spacing: 22) {
                 header
-                categorySections
-                diagnosticsSection
+                if isVegetableKind {
+                    autoBasketInfoSection
+                } else {
+                    categorySections
+                    diagnosticsSection
+                }
             }
             .padding(AppSpacing.screen)
             .padding(.bottom, 8)
@@ -173,11 +177,25 @@ struct IngredientSelectionView: View {
                 .font(.system(size: 34, weight: .bold))
                 .foregroundStyle(AppTheme.textPrimary)
 
-            Text("Bulion: \(selectedKind.rawValue) • Styl: \(selectedStyleName). Na tym etapie wybierasz tylko bazę bulionu.")
+            Text(headerSubtitle)
                 .font(.system(size: 15, weight: .medium))
                 .foregroundStyle(AppTheme.textSecondary)
                 .fixedSize(horizontal: false, vertical: true)
         }
+    }
+
+    private var autoBasketInfoSection: some View {
+        AppCard {
+            VStack(alignment: .leading, spacing: 10) {
+                Text("W bulionie warzywnym koszyk liczymy automatycznie.")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundStyle(AppTheme.textPrimary)
+                Text("Przejdziesz od razu do wyliczeń na podstawie wielkości garnka i wybranego profilu smakowego. Na kolejnym ekranie możesz dalej edytować gramatury warzyw.")
+                    .font(.system(size: 14, weight: .regular))
+                    .foregroundStyle(AppTheme.textSecondary)
+            }
+        }
+        .appSoftShadow()
     }
 
     private var visibleCategories: [IngredientCategory] {
@@ -339,6 +357,7 @@ struct IngredientSelectionView: View {
     }
 
     private var canProceed: Bool {
+        if isVegetableKind { return true }
         previewResult.validationFailure == nil
     }
 
@@ -403,7 +422,18 @@ struct IngredientSelectionView: View {
     }
 
     private var headerTitle: String {
-        selectedKind == .veggie ? "Dodaj bazę\ndo własnego bulionu" : "Dodaj bazę\ndo własnego bulionu"
+        isVegetableKind ? "Przejdź do\nwyliczonego koszyka" : "Dodaj bazę\ndo własnego bulionu"
+    }
+
+    private var headerSubtitle: String {
+        if isVegetableKind {
+            return "Bulion: \(selectedKind.rawValue) • Styl: \(selectedStyleName). W tym wariancie pomijamy wybór bazy i od razu liczymy koszyk warzyw."
+        }
+        return "Bulion: \(selectedKind.rawValue) • Styl: \(selectedStyleName). Na tym etapie wybierasz tylko bazę bulionu."
+    }
+
+    private var isVegetableKind: Bool {
+        selectedKind == .veggie
     }
 
     private var quickInsight: QuickInsight {

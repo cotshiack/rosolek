@@ -361,8 +361,8 @@ struct CookingModeView: View {
     }
 
     private var phases: [LivePhase] {
-        if isRamenUltraVariant {
-            return ramenUltraPhases
+        if activeUltraVariant != nil {
+            return ultraSpecPhases
         }
 
         if isGrandmaPreset {
@@ -625,7 +625,7 @@ struct CookingModeView: View {
         return items
     }
 
-    private var ramenUltraPhases: [LivePhase] {
+    private var ultraSpecPhases: [LivePhase] {
         guard let variant = activeUltraVariant else { return [] }
         let steps = UltraSpecTimelineCatalog.steps(for: variant)
         guard !steps.isEmpty else { return [] }
@@ -759,7 +759,7 @@ struct CookingModeView: View {
     }
 
     private var shouldShowIngredientReminderButton: Bool {
-        if isRamenUltraVariant {
+        if activeUltraVariant != nil {
             let id = currentPhase.stepID
             return (id == "add_veg_spices" || id == "tonkotsu_aromatics_end")
                 && (!vegetableReminderRows.isEmpty || !spiceReminderRows.isEmpty)
@@ -1308,7 +1308,7 @@ struct CookingModeView: View {
     }
 
     private func miniSteps(for phase: LivePhase) -> [String] {
-        if isRamenUltraVariant, let stepID = phase.stepID {
+        if activeUltraVariant != nil, let stepID = phase.stepID {
             let minutesText: String? = {
                 guard let duration = phase.durationSeconds, duration > 0 else { return nil }
                 return "\(duration / 60)"
@@ -3001,6 +3001,29 @@ private struct PhaseDetailsSheet: View {
                 ],
                 footer: "Po starcie przechodzisz do długiego etapu emulsyfikacji.",
                 footerLabel: "Gotowość"
+            )
+        }
+
+        if (content.ultraVariant == .warzywnyJasny || content.ultraVariant == .warzywnyUmami), content.stepID == "prep" {
+            return PhaseSheetModel(
+                eyebrow: "Start bulionu warzywnego",
+                intro: "Przygotuj stanowisko pod krótki, kontrolowany proces. W warzywnym kluczowe są czas i temperatura.",
+                sections: [
+                    PhaseSheetSection(
+                        title: "Przed startem",
+                        systemImage: "checklist",
+                        text: "Przygotuj warzywa i narzędzia tak, aby gotować bez pośpiechu.",
+                        bullets: ["Warzywa umyj i przygotuj zgodnie z koszykiem.", "Przygotuj sito/gazę do cedzenia.", "Ustaw timer — ten wariant nie lubi przeciągania."]
+                    ),
+                    PhaseSheetSection(
+                        title: "Temperatura pracy",
+                        systemImage: "thermometer.medium",
+                        text: "Pracuj stabilnie poniżej intensywnego wrzenia.",
+                        bullets: ["Utrzymuj zakres z karty temperatury.", "Unikaj mocnego bulgotania."]
+                    )
+                ],
+                footer: "Po starcie przechodzisz do kontrolowanego etapu ekstrakcji warzyw.",
+                footerLabel: "Kontrola procesu"
             )
         }
 
