@@ -336,7 +336,7 @@ struct BrothResultView: View {
                 )
             )
         }
-        if pepperCount > 0 {
+        if supportsPepper, pepperCount > 0 {
             rows.append(
                 ResultListRowData(
                     icon: .pepper,
@@ -347,8 +347,8 @@ struct BrothResultView: View {
             )
         }
 
-        if allspiceCount > 0 { rows.append(ResultListRowData(icon: .allspice, title: "Ziele angielskie", subtitle: "Głębia smaku", value: "\(allspiceCount) \(allspiceCount == 1 ? "ziarno" : "ziaren")")) }
-        if bayLeafCount > 0 { rows.append(ResultListRowData(icon: .bayLeaf, title: "Liść laurowy", subtitle: "Tło aromatu", value: bayLeafCount == 1 ? "1 liść" : "\(bayLeafCount) liście")) }
+        if supportsAllspice, allspiceCount > 0 { rows.append(ResultListRowData(icon: .allspice, title: "Ziele angielskie", subtitle: "Głębia smaku", value: "\(allspiceCount) \(allspiceCount == 1 ? "ziarno" : "ziaren")")) }
+        if supportsBayLeaf, bayLeafCount > 0 { rows.append(ResultListRowData(icon: .bayLeaf, title: "Liść laurowy", subtitle: "Tło aromatu", value: bayLeafCount == 1 ? "1 liść" : "\(bayLeafCount) liście")) }
 
         if supportsVinegar && vinegarMl > 0 {
             rows.append(ResultListRowData(icon: .vinegar, title: "Ocet jabłkowy", subtitle: useVinegar ? "dodatek startowy" : "wyłączony", value: "\(vinegarMl) ml"))
@@ -940,9 +940,15 @@ struct BrothResultView: View {
             ) {
                 spiceStepperRow(title: "Sól start", key: "salt_start", defaultValue: Int(result.startSaltGrams.rounded()), suffix: "g", range: 0...200, step: 1)
                 spiceStepperRow(title: "Sól końcowa", key: "salt_final", defaultValue: Int(result.finalSaltGrams.rounded()), suffix: "g", range: 0...250, step: 1)
-                spiceStepperRow(title: "Pieprz", key: "pepper", defaultValue: result.peppercornCount, suffix: "ziaren", range: 0...200, step: 1)
-                spiceStepperRow(title: "Ziele angielskie", key: "allspice", defaultValue: result.allspiceCount, suffix: "ziaren", range: 0...100, step: 1)
-                spiceStepperRow(title: "Liść laurowy", key: "bay", defaultValue: result.bayLeafCount, suffix: "liści", range: 0...50, step: 1)
+                if supportsPepper {
+                    spiceStepperRow(title: "Pieprz", key: "pepper", defaultValue: result.peppercornCount, suffix: "ziaren", range: 0...200, step: 1)
+                }
+                if supportsAllspice {
+                    spiceStepperRow(title: "Ziele angielskie", key: "allspice", defaultValue: result.allspiceCount, suffix: "ziaren", range: 0...100, step: 1)
+                }
+                if supportsBayLeaf {
+                    spiceStepperRow(title: "Liść laurowy", key: "bay", defaultValue: result.bayLeafCount, suffix: "liści", range: 0...50, step: 1)
+                }
                 if supportsVinegar {
                     spiceStepperRow(title: "Ocet jabłkowy", key: "vinegar", defaultValue: result.appleCiderVinegarMl, suffix: "ml", range: 0...200, step: 5)
                 }
@@ -961,6 +967,23 @@ struct BrothResultView: View {
 
     private var supportsFiltering: Bool {
         activeUltraVariant != .ramenTonkotsu
+    }
+
+    private var supportsPepper: Bool {
+        activeUltraVariant != .ramenTonkotsu
+    }
+
+    private var supportsAllspice: Bool {
+        switch activeUltraVariant {
+        case .some(.ramenShio), .some(.ramenTonkotsu), .some(.warzywnyJasny), .some(.warzywnyUmami), .some(.rybnyDelikatny), .some(.rybnyIntensywny):
+            return false
+        default:
+            return true
+        }
+    }
+
+    private var supportsBayLeaf: Bool {
+        supportsAllspice
     }
 
     private func editHeaderButton(action: @escaping () -> Void) -> some View {

@@ -619,10 +619,12 @@ struct CookingModeView: View {
         guard !steps.isEmpty else { return [] }
 
         return steps.enumerated().map { index, step in
-            let nextOffset = index < steps.count - 1 ? steps[index + 1].minuteOffset : nil
             let durationSeconds: Int? = {
-                guard let nextOffset else { return nil }
-                return max(0, (nextOffset - step.minuteOffset) * 60)
+                if index == 0 || step.stepID == "strain_season" {
+                    return nil
+                }
+                let previousOffset = steps[index - 1].minuteOffset
+                return max(0, (step.minuteOffset - previousOffset) * 60)
             }()
 
             return LivePhase(
@@ -1534,6 +1536,11 @@ struct CookingModeView: View {
 
     private func handleNextAction() {
         guard canUseNextButton else { return }
+
+        if phaseIndex == phases.count - 1 {
+            showFinishAlert = true
+            return
+        }
 
         if currentPhase.kind == .optionalClarityTip
             || (currentPhase.kind == .strainAndSeason && !isGrandmaPreset) {
