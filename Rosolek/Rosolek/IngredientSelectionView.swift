@@ -1104,17 +1104,42 @@ struct SeafoodIllustration: View {
 
 struct ShrimpIllustration: View {
     var body: some View {
-        Image(systemName: "fossil.shell.fill")
-            .font(.system(size: 18, weight: .semibold))
-            .foregroundStyle(Color(hex: "4E6D85"))
+        ZStack {
+            Circle()
+                .stroke(Color(hex: "4E6D85"), lineWidth: 2)
+                .frame(width: 16, height: 16)
+                .offset(x: -2)
+
+            Circle()
+                .stroke(Color(hex: "4E6D85"), lineWidth: 2)
+                .frame(width: 10, height: 10)
+                .offset(x: 4, y: 2)
+
+            Circle()
+                .fill(Color(hex: "4E6D85"))
+                .frame(width: 2.5, height: 2.5)
+                .offset(x: -6, y: -3)
+        }
+        .frame(width: 24, height: 20)
     }
 }
 
 struct ShellfishIllustration: View {
     var body: some View {
-        Image(systemName: "fossil.shell")
-            .font(.system(size: 18, weight: .semibold))
-            .foregroundStyle(Color(hex: "4E6D85"))
+        ZStack {
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .fill(Color(hex: "9EB5C7"))
+                .frame(width: 20, height: 14)
+
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .stroke(Color(hex: "4E6D85"), lineWidth: 1.6)
+                .frame(width: 20, height: 14)
+
+            Rectangle()
+                .fill(Color(hex: "4E6D85").opacity(0.35))
+                .frame(width: 1.2, height: 10)
+        }
+        .frame(width: 24, height: 20)
     }
 }
 

@@ -98,7 +98,7 @@ enum UltraSpecStepLibrary {
     static let fishPoachLimit = UltraSpecStepDetail(
         stepID: "fish_poach_limit",
         title: "Rybny: gotuj krótko",
-        subtitle: "Nie przekraczaj limitu czasu.",
+        subtitle: "Nie przekraczaj 30–40 min (zależnie od wariantu).",
         extendedHint: "Rybny jest wrażliwy na czas i temperaturę. Lepiej skończyć wcześniej niż przeciągnąć.",
         commonMistakes: "Zbyt długie gotowanie, wrzenie, za dużo warzyw.",
         recoveryAction: "Po przekroczeniu limitu: zakończ natychmiast i przecedź, nie redukuj."
