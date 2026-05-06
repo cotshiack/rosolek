@@ -62,6 +62,7 @@ private struct InstructionSheetContent: Identifiable {
     let isGrandmaStyle: Bool
     let stepID: String?
     let isRamenTonkotsu: Bool
+    let ultraVariant: UltraSpecVariantID?
 }
 
 private struct TemperatureSheetContent: Identifiable {
@@ -1275,7 +1276,8 @@ struct CookingModeView: View {
                 hasLiver: hasLiver,
                 isGrandmaStyle: isGrandmaPreset,
                 stepID: phases[index].stepID,
-                isRamenTonkotsu: activeUltraVariant == .ramenTonkotsu
+                isRamenTonkotsu: activeUltraVariant == .ramenTonkotsu,
+                ultraVariant: activeUltraVariant
             )
         )
     }
@@ -1337,11 +1339,23 @@ struct CookingModeView: View {
                     "Utrzymuj stabilną pracę i nie przeciągaj etapu.",
                     "Przygotuj się do cedzenia."
                 ]
+            case "veg_simmer_limit":
+                return [
+                    minutesText.map { "Prowadź etap maksymalnie około \($0) min." } ?? "Pilnuj limitu czasu tego etapu.",
+                    "Trzymaj temperaturę stabilnie i poniżej wrzenia.",
+                    "Jeśli profil robi się zbyt słodki lub płaski, zakończ etap wcześniej i cedź."
+                ]
+            case "fish_poach_limit":
+                return [
+                    minutesText.map { "Pilnuj limitu: około \($0) min." } ?? "Pilnuj krótkiego limitu czasu.",
+                    "Nie dopuszczaj do wrzenia — rybny łatwo łapie ciężki aromat i gorycz.",
+                    "W razie wątpliwości zakończ etap wcześniej i od razu przecedź."
+                ]
             case "strain_season":
                 return [
                     "Przecedź bulion bez wyciskania składników.",
                     "Doprawiaj dopiero po cedzeniu, stopniowo.",
-                    "Przy ramenie końcową słoność ustawiaj przez tare."
+                    isRamenUltraVariant ? "Przy ramenie końcową słoność ustawiaj przez tare." : "Jeśli przesolisz, rozcieńczaj porcję zamiast korygować cały garnek."
                 ]
             default:
                 break
@@ -2991,6 +3005,12 @@ private struct PhaseDetailsSheet: View {
         }
 
         if content.stepID == "strain_season" {
+            let seasoningBullets: [String] = {
+                if content.ultraVariant == .ramenShio || content.ultraVariant == .ramenTonkotsu {
+                    return ["W ramenie końcową słoność ustawiaj przez tare.", "Jeśli przesolisz, rozcieńcz porcję."]
+                }
+                return ["Doprawiaj małymi krokami i próbuj po każdej korekcie.", "Jeśli przesolisz, rozcieńcz część porcji niesolonym bulionem."]
+            }()
             return PhaseSheetModel(
                 eyebrow: "Końcowy etap",
                 intro: "Najpierw dokładnie przecedź, dopiero potem ustaw końcowy smak.",
@@ -3005,11 +3025,57 @@ private struct PhaseDetailsSheet: View {
                         title: "Doprawianie",
                         systemImage: "fork.knife",
                         text: "Doprawiaj po cedzeniu, stopniowo.",
-                        bullets: ["W ramenie końcową słoność ustawiaj przez tare.", "Jeśli przesolisz, rozcieńcz porcję."]
+                        bullets: seasoningBullets
                     )
                 ],
                 footer: "Po tym kroku kończysz gotowanie.",
                 footerLabel: "Finalizacja"
+            )
+        }
+
+        if content.stepID == "veg_simmer_limit" {
+            return PhaseSheetModel(
+                eyebrow: "Warzywny — etap krytyczny",
+                intro: "Ten krok wymaga kontroli czasu i temperatury. Przeciąganie daje nadmierną słodycz i spłaszcza profil.",
+                sections: [
+                    PhaseSheetSection(
+                        title: "Jak prowadzić etap",
+                        systemImage: "clock",
+                        text: "Prowadź spokojnie, bez intensywnego wrzenia i bez niepotrzebnego przeciągania.",
+                        bullets: ["Trzymaj się limitu z timera.", "Kontroluj smak pod koniec etapu.", "Gdy profil jest gotowy, zakończ i przejdź do cedzenia."]
+                    ),
+                    PhaseSheetSection(
+                        title: "Typowe błędy",
+                        systemImage: "exclamationmark.triangle",
+                        text: "Najczęstszy problem to zbyt długi czas gotowania.",
+                        bullets: ["Za długo = słodszy i płytszy smak.", "Nie próbuj nadrabiać przez mocniejsze gotowanie."]
+                    )
+                ],
+                footer: "Lepiej skończyć ten etap odrobinę wcześniej niż przeciągnąć.",
+                footerLabel: "Kontrola czasu"
+            )
+        }
+
+        if content.stepID == "fish_poach_limit" {
+            return PhaseSheetModel(
+                eyebrow: "Rybny — krótki limit",
+                intro: "Bulion rybny jest bardzo wrażliwy na czas i temperaturę. Tu precyzja jest ważniejsza niż długie gotowanie.",
+                sections: [
+                    PhaseSheetSection(
+                        title: "Prowadzenie etapu",
+                        systemImage: "thermometer.medium",
+                        text: "Utrzymuj temperaturę stabilnie i nie dopuszczaj do pełnego wrzenia.",
+                        bullets: ["Pilnuj krótkiego czasu etapu.", "Lepiej skończyć wcześniej niż przeciągnąć."]
+                    ),
+                    PhaseSheetSection(
+                        title: "Gdy przekroczysz limit",
+                        systemImage: "drop.triangle",
+                        text: "Przy przekroczeniu czasu ryzyko ciężkiego aromatu i goryczy szybko rośnie.",
+                        bullets: ["Zakończ etap natychmiast.", "Od razu przecedź.", "Nie redukuj dalej."]
+                    )
+                ],
+                footer: "W rybnym liczy się delikatność i krótka ekstrakcja.",
+                footerLabel: "Krótko i precyzyjnie"
             )
         }
 
