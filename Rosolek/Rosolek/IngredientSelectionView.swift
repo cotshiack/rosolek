@@ -448,8 +448,8 @@ struct IngredientSelectionView: View {
 
     private func mapWarningCodeForPreview(_ code: UltraSpecWarningCode) -> BrothWarningCode {
         switch code {
-        case .underpower: return .undermeatLight
-        case .overpower: return .overmeatIntense
+        case .underpower: return .baseTooLowForWater
+        case .overpower: return .baseTooHighForWater
         case .vegTooMuch: return .singleIngredientRisk
         case .paperFilterLowerIntensity: return .paperFilterLowerIntensity
         case .hardPotTooSmall: return .hardPotTooSmall
@@ -584,24 +584,24 @@ struct IngredientSelectionView: View {
             )
         }
 
-        if hasWarning(.undermeatLight) || hasWarning(.undermeatIntense) {
+        if hasWarning(.undermeatLight) || hasWarning(.undermeatIntense) || hasWarning(.baseTooLowForWater) {
             return QuickInsight(
                 systemImage: "plus.circle",
                 shortText: "Możesz dodać więcej",
                 detailText: hasWarning(.undermeatLight)
                     ? messageForWarningCode(.undermeatLight)
-                    : messageForWarningCode(.undermeatIntense),
+                    : (hasWarning(.undermeatIntense) ? messageForWarningCode(.undermeatIntense) : messageForWarningCode(.baseTooLowForWater)),
                 tone: .neutral
             )
         }
 
-        if hasWarning(.overmeatLight) || hasWarning(.overmeatIntense) {
+        if hasWarning(.overmeatLight) || hasWarning(.overmeatIntense) || hasWarning(.baseTooHighForWater) {
             return QuickInsight(
                 systemImage: "arrow.up.circle",
                 shortText: "Cięższy wsad",
                 detailText: hasWarning(.overmeatLight)
                     ? messageForWarningCode(.overmeatLight)
-                    : messageForWarningCode(.overmeatIntense),
+                    : (hasWarning(.overmeatIntense) ? messageForWarningCode(.overmeatIntense) : messageForWarningCode(.baseTooHighForWater)),
                 tone: .warning
             )
         }
@@ -682,6 +682,8 @@ struct IngredientSelectionView: View {
             return "Ten składnik jest dostępny dopiero w rozszerzonej wersji kalkulatora."
         case .undermeatLight:
             return "Wybrałeś mniej mięsa niż zwykle mieści ten garnek. Aplikacja przeliczy bulion do tej ilości, ale jeśli chcesz ugotować większą porcję, możesz dodać jeszcze trochę mięsa."
+        case .baseTooLowForWater:
+            return selectedKind == .fish ? "Baza rybna jest lekka względem ilości wody. Dla pełniejszego bulionu zwiększ ryby/owoce morza albo zmniejsz wodę." : (selectedKind == .veggie ? "Koszyk warzyw jest lekki względem ilości wody. Dla pełniejszego smaku zwiększ warzywa albo zmniejsz wodę." : "Baza jest lekka względem ilości wody. Dla pełniejszego smaku dodaj więcej bazy albo zmniejsz wodę.")
         case .overmeatLight:
             return "Jak na czystszy profil mięsa jest już sporo. Bulion może wyjść cięższy niż zwykle."
         case .undermeatIntense:

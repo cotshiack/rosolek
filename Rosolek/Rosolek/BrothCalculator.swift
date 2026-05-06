@@ -78,6 +78,8 @@ enum BrothWarningCode: String, Hashable {
     case paperFilterLowerIntensity
     case paperFilterHighLoss
     case waterReducedToFit
+    case baseTooLowForWater
+    case baseTooHighForWater
 }
 
 struct BrothWarningParameter: Hashable {

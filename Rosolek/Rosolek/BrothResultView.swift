@@ -273,8 +273,8 @@ struct BrothResultView: View {
 
     private func mapWarningCode(_ code: UltraSpecWarningCode) -> BrothWarningCode {
         switch code {
-        case .underpower: return .undermeatLight
-        case .overpower: return .overmeatIntense
+        case .underpower: return .baseTooLowForWater
+        case .overpower: return .baseTooHighForWater
         case .vegTooMuch: return .singleIngredientRisk
         case .paperFilterLowerIntensity: return .paperFilterLowerIntensity
         case .hardPotTooSmall: return .hardPotTooSmall
@@ -1578,12 +1578,16 @@ extension BrothResultView {
             return selectedKind == .veggie
                 ? "Ten garnek pozwala na większy wsad warzywny. Aplikacja dopasowała wodę i dodatki do aktualnej ilości, ale jeśli chcesz mocniejszy profil, możesz zwiększyć gramaturę warzyw."
                 : (selectedKind == .fish ? "Wybrałeś mało bazy rybnej jak na ten garnek. Aplikacja dopasuje wodę i dodatki, ale dla mocniejszego profilu możesz dodać trochę ryb lub owoców morza." : "Wybrałeś mniej mięsa, niż spokojnie pomieści ten garnek. Aplikacja dopasuje wodę i dodatki do tej ilości, ale jeśli chcesz mocniejszy rosół, możesz dodać jeszcze trochę mięsa.")
+        case .baseTooLowForWater:
+            return selectedKind == .veggie ? "Baza jest dość lekka względem ilości wody. Jeśli chcesz pełniejszy efekt, zwiększ koszyk warzyw lub zmniejsz wodę." : (selectedKind == .fish ? "Baza rybna jest lekka względem ilości wody. Dla pełniejszego bulionu zwiększ ryby/owoce morza albo zmniejsz wodę." : "Baza jest lekka względem ilości wody. Dla pełniejszego efektu dodaj więcej bazy lub zmniejsz wodę.")
         case .overmeatLight:
             return "Jak na czystszy profil mięsa jest bardzo dużo. Wywar może wyjść zbyt ciężki."
         case .undermeatIntense:
             return selectedKind == .fish ? "Jak na intensywniejszy bulion rybny baza jest raczej mała. Aplikacja dopasuje proporcje, ale pełniejszy efekt da większa ilość ryb/owoców morza." : "Jak na głębszy profil mięsa jest tu raczej mało. Aplikacja dopasuje proporcje do tej ilości, ale jeśli chcesz pełniejszy efekt, możesz dodać jeszcze trochę mięsa."
         case .overmeatIntense:
             return selectedKind == .fish ? "Bazy rybnej jest bardzo dużo jak na ten litraż. Bulion może wyjść ciężki i gorzkawy." : "Mięsa jest bardzo dużo. Wywar może wyjść zbyt ciężki i trudniejszy do zbalansowania."
+        case .baseTooHighForWater:
+            return selectedKind == .veggie ? "Koszyk warzyw jest bardzo gęsty względem ilości wody. Bulion może wyjść zbyt ciężki." : (selectedKind == .fish ? "Baza rybna jest bardzo gęsta względem ilości wody. Bulion może wyjść ciężki lub gorzkawy." : "Baza jest bardzo gęsta względem ilości wody. Bulion może wyjść zbyt ciężki.")
         case .overfatLight:
             return "Ten zestaw może wyjść tłusty. Do czystszego profilu lepiej sprawdza się więcej korpusu lub szyi i mniej cięższych elementów."
         case .wingsTooHighLight:
