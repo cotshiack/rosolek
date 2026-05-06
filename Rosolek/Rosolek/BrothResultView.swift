@@ -678,6 +678,9 @@ struct BrothResultView: View {
         if selectedKind == .ramen || activeUltraVariant == .ramenShio || activeUltraVariant == .ramenTonkotsu || screenTitle.lowercased().contains("ramen") {
             return "Twój ramen"
         }
+        if selectedKind == .veggie || activeUltraVariant == .warzywnyJasny || activeUltraVariant == .warzywnyUmami {
+            return "Twój bulion warzywny"
+        }
         return "Twój rosół"
     }
 
@@ -1227,6 +1230,9 @@ extension BrothResultView {
             return "To podsumowanie kalkulatora dla wybranego przepisu i składników."
         case .custom:
             if let selectedStyleName {
+                if selectedKind == .veggie {
+                    return "Podsumowanie dla stylu \(selectedStyleName.lowercased()) i wyliczonego koszyka warzyw."
+                }
                 return "Podsumowanie dla stylu \(selectedStyleName.lowercased()) i wybranej bazy."
             }
             return "Podsumowanie kalkulatora na bazie wybranych składników."
@@ -1238,7 +1244,7 @@ extension BrothResultView {
         case .preset:
             return "Mięso, warzywa i przyprawy policzyła aplikacja."
         case .custom:
-            return selectedKind == .veggie ? "Bazę warzywną dodałeś Ty, resztę policzyła aplikacja." : "Bazę dodałeś Ty, resztę policzyła aplikacja."
+            return selectedKind == .veggie ? "Koszyk warzyw policzyła aplikacja na podstawie garnka i wybranego stylu." : "Bazę dodałeś Ty, resztę policzyła aplikacja."
         }
     }
 

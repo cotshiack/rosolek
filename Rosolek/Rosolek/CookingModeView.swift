@@ -685,6 +685,9 @@ struct CookingModeView: View {
     }
 
     private var canStartCooking: Bool {
+        if activeUltraVariant == .warzywnyJasny || activeUltraVariant == .warzywnyUmami {
+            return prepMeatReady && prepWaterReady && prepPotReady && prepThermometerReady
+        }
         if batchUsesVinegar {
             return prepMeatReady && prepWaterReady && prepPotReady && prepThermometerReady && prepVinegarReady
         }
@@ -768,7 +771,7 @@ struct CookingModeView: View {
     }
 
     private var shouldShowFoamCard: Bool {
-        if isRamenUltraVariant { return false }
+        if isRamenUltraVariant || activeUltraVariant == .warzywnyJasny || activeUltraVariant == .warzywnyUmami { return false }
         return currentPhase.kind == .heatUp || currentPhase.kind == .stabilization
     }
 
@@ -832,7 +835,7 @@ struct CookingModeView: View {
                 NavigationLink {
                     BatchFeedbackView(batch: currentBatch)
                 } label: {
-                    AppPrimaryButtonLabel(title: isRamenUltraVariant ? "Oceń ramen" : "Oceń rosół")
+                    AppPrimaryButtonLabel(title: isRamenUltraVariant ? "Oceń ramen" : (activeUltraVariant == .warzywnyJasny || activeUltraVariant == .warzywnyUmami ? "Oceń bulion warzywny" : "Oceń rosół"))
                 }
                 .padding(.horizontal, AppSpacing.screen)
                 .padding(.bottom, 8)
@@ -891,7 +894,7 @@ struct CookingModeView: View {
                 UINotificationFeedbackGenerator().notificationOccurred(.success)
             }
         } message: {
-            Text("Po zakończeniu przejdziesz do oceny swojego \(isRamenUltraVariant ? "ramenu" : "rosołu").")
+            Text("Po zakończeniu przejdziesz do oceny swojego \(isRamenUltraVariant ? "ramenu" : (activeUltraVariant == .warzywnyJasny || activeUltraVariant == .warzywnyUmami ? "bulionu warzywnego" : "rosołu")).")
         }
         .onAppear {
             UIApplication.shared.isIdleTimerDisabled = true
@@ -958,6 +961,7 @@ struct CookingModeView: View {
                         waterLiters: result.waterLiters,
                         useVinegar: batchUsesVinegar,
                         vinegarMl: result.appleCiderVinegarMl,
+                        isVegetableVariant: activeUltraVariant == .warzywnyJasny || activeUltraVariant == .warzywnyUmami,
                         prepMeatReady: $prepMeatReady,
                         prepWaterReady: $prepWaterReady,
                         prepPotReady: $prepPotReady,
@@ -2090,6 +2094,7 @@ private struct StartChecklistCard: View {
     let waterLiters: Double
     let useVinegar: Bool
     let vinegarMl: Int
+    let isVegetableVariant: Bool
 
     @Binding var prepMeatReady: Bool
     @Binding var prepWaterReady: Bool
@@ -2104,7 +2109,7 @@ private struct StartChecklistCard: View {
         ) {
             VStack(spacing: 0) {
                 ChecklistRow(
-                    title: "Mięso włóż do garnka",
+                    title: isVegetableVariant ? "Warzywa z koszyka przygotuj do gotowania" : "Mięso włóż do garnka",
                     isOn: $prepMeatReady
                 )
 

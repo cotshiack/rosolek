@@ -442,8 +442,8 @@ struct IngredientSelectionView: View {
             case .hardNoMeat:
                 return QuickInsight(
                     systemImage: "tray",
-                    shortText: selectedKind == .veggie ? "Dodaj bazę" : "Dodaj bazę",
-                    detailText: "Wybierz przynajmniej jeden składnik, żeby aplikacja mogła policzyć bulion.",
+                    shortText: selectedKind == .veggie ? "Gotowe do wyliczeń" : "Dodaj bazę",
+                    detailText: selectedKind == .veggie ? "W warzywnym koszyk liczymy automatycznie na kolejnym ekranie." : "Wybierz przynajmniej jeden składnik, żeby aplikacja mogła policzyć bulion.",
                     tone: .danger
                 )
             default:
@@ -459,8 +459,8 @@ struct IngredientSelectionView: View {
         guard totalWeight > 0 else {
             return QuickInsight(
                 systemImage: "questionmark.circle",
-                shortText: "Wybierz mięso",
-                detailText: "Dodaj bazę, żeby zobaczyć proporcje i przewidywany uzysk.",
+                shortText: isVegetableKind ? "Przejdź dalej" : "Wybierz mięso",
+                detailText: isVegetableKind ? "Koszyk warzyw policzymy automatycznie po przejściu do obliczeń." : "Dodaj bazę, żeby zobaczyć proporcje i przewidywany uzysk.",
                 tone: .neutral
             )
         }
@@ -565,7 +565,7 @@ struct IngredientSelectionView: View {
         case .hardItemTooBig:
             return "Jedna z wag wygląda podejrzanie wysoko. Sprawdź, czy na pewno wpisujesz gramy."
         case .hardNoMeat:
-            return selectedKind == .veggie ? "Dodaj warzywa bazowe, żeby policzyć bulion." : "Dodaj bazę. Bez niej nie ugotujesz bulionu."
+            return selectedKind == .veggie ? "W warzywnym nie wybierasz bazy na tym ekranie — przejdź dalej do wyliczenia koszyka." : "Dodaj bazę. Bez niej nie ugotujesz bulionu."
         case .hardNotFit:
             return "Ten zestaw fizycznie nie mieści się w tym garnku. Zmniejsz ilość mięsa albo użyj większego naczynia."
         case .premiumBlocked:
