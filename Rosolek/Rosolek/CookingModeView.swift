@@ -190,6 +190,18 @@ struct CookingModeView: View {
         currentBatch.brothProfile
     }
 
+    private var activeUltraVariant: UltraSpecVariantID? {
+        guard let rawKind = currentBatch.brothKindRawValue,
+              let kind = BrothKind(rawValue: rawKind) else { return nil }
+        let styleName = currentBatch.selectedStyleName ?? ""
+        let styleKey = UltraSpecStyleKeyResolver.resolve(kind: kind, styleName: styleName)
+        return UltraSpecVariantResolver.resolve(kind: kind, styleKey: styleKey)
+    }
+
+    private var isRamenUltraVariant: Bool {
+        activeUltraVariant == .ramenShio || activeUltraVariant == .ramenTonkotsu
+    }
+
     private var activePreset: BrothPreset? {
         guard currentBatch.modeRawValue == "preset",
               let raw = currentBatch.presetRawValue else { return nil }
@@ -318,6 +330,10 @@ struct CookingModeView: View {
     }
 
     private var phases: [LivePhase] {
+        if isRamenUltraVariant {
+            return ramenUltraPhases
+        }
+
         if isGrandmaPreset {
             return [
                 LivePhase(
@@ -578,6 +594,30 @@ struct CookingModeView: View {
         return items
     }
 
+    private var ramenUltraPhases: [LivePhase] {
+        guard let variant = activeUltraVariant else { return [] }
+        let steps = UltraSpecTimelineCatalog.steps(for: variant)
+        guard !steps.isEmpty else { return [] }
+
+        return steps.enumerated().map { index, step in
+            let nextOffset = index < steps.count - 1 ? steps[index + 1].minuteOffset : nil
+            let durationSeconds: Int? = {
+                guard let nextOffset else { return nil }
+                return max(0, (nextOffset - step.minuteOffset) * 60)
+            }()
+
+            return LivePhase(
+                kind: .stabilization,
+                title: step.title,
+                shortText: step.subtitle,
+                detailText: UltraSpecStepLibrary.all[step.stepID]?.extendedHint ?? step.subtitle,
+                durationSeconds: durationSeconds,
+                timelineLabel: step.timeLabel,
+                bottomActionTitle: durationSeconds == nil ? "Dalej" : nil
+            )
+        }
+    }
+
     private var currentPhase: LivePhase {
         phases[min(phaseIndex, phases.count - 1)]
     }
@@ -723,7 +763,7 @@ struct CookingModeView: View {
                 NavigationLink {
                     BatchFeedbackView(batch: currentBatch)
                 } label: {
-                    AppPrimaryButtonLabel(title: "Oceń rosół")
+                    AppPrimaryButtonLabel(title: isRamenUltraVariant ? "Oceń ramen" : "Oceń rosół")
                 }
                 .padding(.horizontal, AppSpacing.screen)
                 .padding(.bottom, 8)

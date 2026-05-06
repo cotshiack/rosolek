@@ -605,7 +605,7 @@ struct BrothResultView: View {
             }
         }
         .background(AppTheme.background)
-        .navigationTitle("Twój rosół")
+        .navigationTitle(screenNavigationTitle)
         .navigationBarTitleDisplayMode(.inline)
         .safeAreaInset(edge: .bottom) {
             Button {
@@ -658,6 +658,10 @@ struct BrothResultView: View {
                 .foregroundStyle(AppTheme.textSecondary)
                 .fixedSize(horizontal: false, vertical: true)
         }
+    }
+
+    private var screenNavigationTitle: String {
+        selectedKind == .ramen ? "Twój ramen" : "Twój rosół"
     }
 
     private var summaryGrid: some View {
