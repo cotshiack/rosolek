@@ -400,6 +400,14 @@ struct IngredientSelectionView: View {
             BrothWarning(code: mapWarningCodeForPreview($0.code), severity: mapSeverityForPreview($0.severity), params: [])
         }
 
+        let baseline = BrothCalculator.calculate(
+            profile: selectedProfile,
+            meatItems: selectedIngredients,
+            potSizeLiters: Double(potSizeLiters),
+            clarityMode: .normal,
+            useVinegar: false
+        )
+
         return BrothCalculationResult(
             waterLiters: ultra.waterStartL,
             temperatureMin: config.temperature.minC,
@@ -417,9 +425,9 @@ struct IngredientSelectionView: View {
             timeline: UltraSpecTimelineCatalog.steps(for: variant).map { .init(minuteOffset: $0.minuteOffset, timeLabel: $0.timeLabel, title: $0.title, subtitle: $0.subtitle) },
             warnings: ultra.warningMessages.map { "\($0.title): \($0.message)" },
             structuredWarnings: warnings,
-            validationFailure: nil,
-            scoring: nil,
-            recommendedMeatRange: nil,
+            validationFailure: baseline.validationFailure,
+            scoring: baseline.scoring,
+            recommendedMeatRange: baseline.recommendedMeatRange,
             clarityMode: .normal,
             useVinegar: false,
             targetYieldLiters: nil,
