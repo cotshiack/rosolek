@@ -21,6 +21,8 @@ struct BrothResultView: View {
     @State private var activeCookingTitleForConflict = ""
     @State private var clarityMode: BrothClarityMode = .normal
     @State private var useVinegar = false
+    @AppStorage("defaultClarityModeRawValue") private var defaultClarityModeRawValue = BrothClarityMode.normal.rawValue
+    @AppStorage("defaultUseVinegar") private var defaultUseVinegar = false
     @State private var activeMetricTooltip: ResultMetricTooltipKey?
     @State private var isSummaryGridInteracting = false
     @State private var showVegetableEditor = false
@@ -673,6 +675,17 @@ struct BrothResultView: View {
         } message: {
             Text("Aktywne gotowanie „\(activeCookingTitleForConflict)” zostanie przerwane i zapisane w historii jako przerwane.")
         }
+        .onAppear {
+            defaultClarityModeRawValue = clarityMode.rawValue
+            defaultUseVinegar = useVinegar
+        }
+        .onChange(of: clarityMode) { _, newValue in
+            defaultClarityModeRawValue = newValue.rawValue
+        }
+        .onChange(of: useVinegar) { _, newValue in
+            defaultUseVinegar = newValue
+        }
+
     }
 
     private var header: some View {
