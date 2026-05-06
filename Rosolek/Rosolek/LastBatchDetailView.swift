@@ -454,17 +454,35 @@ struct LastBatchDetailView: View {
 
     @ViewBuilder
     private func spiceGroupView(_ batch: BatchRecord) -> some View {
-        let spices = sortedSpiceOverrides(batch)
+        let spices = fullSpiceEntries(batch)
         if !spices.isEmpty {
             VStack(alignment: .leading, spacing: 6) {
                 AppInfoRow(title: "Przyprawy i dodatki", value: "\(spices.count)")
-                ForEach(spices, id: \.key) { entry in
-                    AppInfoRow(
-                        title: spiceLabel(for: entry.key),
-                        value: spiceValueLabel(for: entry.key, value: entry.value)
-                    )
+                ForEach(spices) { entry in
+                    VStack(alignment: .leading, spacing: 2) {
+                        AppInfoRow(
+                            title: spiceLabel(for: entry.key),
+                            value: spiceValueLabel(for: entry.key, value: entry.value)
+                        )
+                        if !entry.isRecorded {
+                            Text("Wartość domyślna nie była zapisana dla tego batcha.")
+                                .font(.system(size: 12, weight: .medium))
+                                .foregroundStyle(AppTheme.textSecondary)
+                        }
+                    }
                 }
             }
+        }
+    }
+
+    private func fullSpiceEntries(_ batch: BatchRecord) -> [SpiceEntry] {
+        let order: [String] = ["salt_start", "salt_final", "pepper", "allspice", "bay", "vinegar"]
+        let overrides = batch.spiceOverrides ?? [:]
+        return order.map { key in
+            if let value = overrides[key] {
+                return SpiceEntry(key: key, value: value, isRecorded: true)
+            }
+            return SpiceEntry(key: key, value: 0, isRecorded: false)
         }
     }
 
@@ -492,6 +510,14 @@ private struct IngredientEntry: Identifiable {
     let finalValue: Int
 
     var isChanged: Bool { initialValue != finalValue }
+}
+
+private struct SpiceEntry: Identifiable {
+    let key: String
+    let value: Int
+    let isRecorded: Bool
+
+    var id: String { key }
 }
 
 private struct DetailRatingBadge: View {
