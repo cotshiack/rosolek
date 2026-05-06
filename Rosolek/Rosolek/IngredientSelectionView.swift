@@ -584,24 +584,24 @@ struct IngredientSelectionView: View {
             )
         }
 
-        if hasWarning(.undermeatLight) || hasWarning(.undermeatIntense) || hasWarning(.baseTooLowForWater) {
+        if (activeUltraVariant != nil && hasWarning(.baseTooLowForWater)) || (activeUltraVariant == nil && (hasWarning(.undermeatLight) || hasWarning(.undermeatIntense))) {
             return QuickInsight(
                 systemImage: "plus.circle",
                 shortText: "Możesz dodać więcej",
                 detailText: hasWarning(.undermeatLight)
                     ? messageForWarningCode(.undermeatLight)
-                    : (hasWarning(.undermeatIntense) ? messageForWarningCode(.undermeatIntense) : messageForWarningCode(.baseTooLowForWater)),
+                    : (activeUltraVariant != nil ? messageForWarningCode(.baseTooLowForWater) : messageForWarningCode(.undermeatIntense)),
                 tone: .neutral
             )
         }
 
-        if hasWarning(.overmeatLight) || hasWarning(.overmeatIntense) || hasWarning(.baseTooHighForWater) {
+        if (activeUltraVariant != nil && hasWarning(.baseTooHighForWater)) || (activeUltraVariant == nil && (hasWarning(.overmeatLight) || hasWarning(.overmeatIntense))) {
             return QuickInsight(
                 systemImage: "arrow.up.circle",
                 shortText: "Cięższy wsad",
                 detailText: hasWarning(.overmeatLight)
                     ? messageForWarningCode(.overmeatLight)
-                    : (hasWarning(.overmeatIntense) ? messageForWarningCode(.overmeatIntense) : messageForWarningCode(.baseTooHighForWater)),
+                    : (activeUltraVariant != nil ? messageForWarningCode(.baseTooHighForWater) : messageForWarningCode(.overmeatIntense)),
                 tone: .warning
             )
         }

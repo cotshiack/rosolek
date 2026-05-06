@@ -150,12 +150,7 @@ struct BrothResultView: View {
             bayLeafCount: ultra.spices.bayLeafCount
         )
 
-        let filteredWarnings = ultra.warningMessages.filter { warning in
-            if variant == .warzywnyJasny || variant == .warzywnyUmami {
-                return warning.code != .underpower && warning.code != .overpower
-            }
-            return true
-        }
+        let filteredWarnings = ultra.warningMessages
 
         var warningTexts = filteredWarnings.map {
             if let suggestion = $0.suggestion?.text, !suggestion.isEmpty {
