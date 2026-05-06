@@ -771,7 +771,7 @@ struct CookingModeView: View {
     }
 
     private var shouldShowFoamCard: Bool {
-        if isRamenUltraVariant || activeUltraVariant == .warzywnyJasny || activeUltraVariant == .warzywnyUmami { return false }
+        if isRamenUltraVariant || activeUltraVariant == .warzywnyJasny || activeUltraVariant == .warzywnyUmami || activeUltraVariant == .rybnyDelikatny || activeUltraVariant == .rybnyIntensywny { return false }
         return currentPhase.kind == .heatUp || currentPhase.kind == .stabilization
     }
 
@@ -962,6 +962,7 @@ struct CookingModeView: View {
                         useVinegar: batchUsesVinegar,
                         vinegarMl: result.appleCiderVinegarMl,
                         isVegetableVariant: activeUltraVariant == .warzywnyJasny || activeUltraVariant == .warzywnyUmami,
+                        isFishVariant: activeUltraVariant == .rybnyDelikatny || activeUltraVariant == .rybnyIntensywny,
                         prepMeatReady: $prepMeatReady,
                         prepWaterReady: $prepWaterReady,
                         prepPotReady: $prepPotReady,
@@ -2095,6 +2096,7 @@ private struct StartChecklistCard: View {
     let useVinegar: Bool
     let vinegarMl: Int
     let isVegetableVariant: Bool
+    let isFishVariant: Bool
 
     @Binding var prepMeatReady: Bool
     @Binding var prepWaterReady: Bool
@@ -2109,7 +2111,7 @@ private struct StartChecklistCard: View {
         ) {
             VStack(spacing: 0) {
                 ChecklistRow(
-                    title: isVegetableVariant ? "Przygotuj warzywa z koszyka (umyj, obierz i pokrój)" : "Mięso włóż do garnka",
+                    title: isVegetableVariant ? "Przygotuj warzywa z koszyka (umyj, obierz i pokrój)" : (isFishVariant ? "Przygotuj ryby i/lub owoce morza do gotowania" : "Mięso włóż do garnka"),
                     isOn: $prepMeatReady
                 )
 
@@ -2117,7 +2119,7 @@ private struct StartChecklistCard: View {
                     .overlay(AppTheme.border)
 
                 ChecklistRow(
-                    title: isVegetableVariant ? "Wlej \(waterLabel) wody do garnka" : "Dolej \(waterLabel) wody",
+                    title: isVegetableVariant || isFishVariant ? "Wlej \(waterLabel) wody do garnka" : "Dolej \(waterLabel) wody",
                     isOn: $prepWaterReady
                 )
 
@@ -2135,7 +2137,7 @@ private struct StartChecklistCard: View {
                     .overlay(AppTheme.border)
 
                 ChecklistRow(
-                    title: isVegetableVariant ? "Postaw garnek na kuchence i przygotuj grzanie" : "Garnek ustaw na kuchence",
+                    title: isVegetableVariant || isFishVariant ? "Postaw garnek na kuchence" : "Garnek ustaw na kuchence",
                     isOn: $prepPotReady
                 )
 
@@ -2144,7 +2146,7 @@ private struct StartChecklistCard: View {
                         .overlay(AppTheme.border)
 
                     ChecklistRow(
-                        title: isVegetableVariant ? "Włóż termometr do wody (nie dotykaj dna garnka)" : "Termometr włóż do wody",
+                        title: isVegetableVariant || isFishVariant ? "Włóż termometr do wody (nie dotykaj dna garnka)" : "Termometr włóż do wody",
                         isOn: $prepThermometerReady
                     )
                 }

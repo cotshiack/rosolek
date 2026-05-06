@@ -78,14 +78,14 @@ enum UltraSpecTimelineCatalog {
         case .rybnyDelikatny:
             return [
                 .init(stepID: "prep", timeLabel: "0 min", title: "Przygotuj stanowisko", subtitle: "Niska temperatura, krótki czas.", minuteOffset: 0),
-                .init(stepID: "fish_poach_limit", timeLabel: "25 min", title: "Poach limit", subtitle: "Nie przekraczaj 30 minut.", minuteOffset: 25),
-                .init(stepID: "strain_season", timeLabel: "45 min", title: "Przecedź", subtitle: "Nie redukuj rybnego.", minuteOffset: 45)
+                .init(stepID: "fish_poach_limit", timeLabel: "25 min", title: "Gotuj krótko (limit czasu)", subtitle: "Nie przekraczaj 30 min.", minuteOffset: 25),
+                .init(stepID: "strain_season", timeLabel: "45+ min", title: "Przecedź", subtitle: "Nie redukuj rybnego.", minuteOffset: 45, isManual: true)
             ]
         case .rybnyIntensywny:
             return [
                 .init(stepID: "prep", timeLabel: "0 min", title: "Przygotuj stanowisko", subtitle: "Kontrola temperatury i czasu.", minuteOffset: 0),
-                .init(stepID: "fish_poach_limit", timeLabel: "35 min", title: "Poach limit", subtitle: "Nie przekraczaj 40 minut.", minuteOffset: 35),
-                .init(stepID: "strain_season", timeLabel: "60 min", title: "Przecedź", subtitle: "Bez redukcji po gotowaniu.", minuteOffset: 60)
+                .init(stepID: "fish_poach_limit", timeLabel: "35 min", title: "Gotuj krótko (limit czasu)", subtitle: "Nie przekraczaj 40 min.", minuteOffset: 35),
+                .init(stepID: "strain_season", timeLabel: "60+ min", title: "Przecedź", subtitle: "Bez redukcji po gotowaniu.", minuteOffset: 60, isManual: true)
             ]
         }
     }

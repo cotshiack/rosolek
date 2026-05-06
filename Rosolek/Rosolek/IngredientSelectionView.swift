@@ -24,6 +24,8 @@ enum IngredientIllustrationKind: Hashable {
     case gizzards
     case liver
     case fish
+    case shrimpShells
+    case shellfish
     case vegetables
 }
 
@@ -124,8 +126,8 @@ struct IngredientSelectionView: View {
         .init(id: "kregoslup_rybny", name: "Kręgosłup / ości rybne", subtitle: "Lekka baza rybna.", category: .fish, illustration: .bones, fatScore: 0.5, gelatinScore: 0.7, clarityPenalty: 0.4, isPoultry: false, isBeef: false, isOffal: false, isLiver: false, isBoneHeavy: true),
         .init(id: "glowy_rybne", name: "Głowy rybne", subtitle: "Intensywniejszy smak.", category: .fish, illustration: .bones, fatScore: 0.8, gelatinScore: 1.1, clarityPenalty: 0.7, isPoultry: false, isBeef: false, isOffal: false, isLiver: false, isBoneHeavy: true),
         .init(id: "filet_rybny", name: "Filet rybny", subtitle: "Delikatny aromat i ciało.", category: .fish, illustration: .fish, fatScore: 0.7, gelatinScore: 0.4, clarityPenalty: 0.5, isPoultry: false, isBeef: false, isOffal: false, isLiver: false, isBoneHeavy: false),
-        .init(id: "pancerze_krewetek", name: "Pancerze krewetek", subtitle: "Morski akcent i umami.", category: .seafood, illustration: .fish, fatScore: 0.4, gelatinScore: 0.4, clarityPenalty: 0.8, isPoultry: false, isBeef: false, isOffal: false, isLiver: false, isBoneHeavy: false),
-        .init(id: "skorupiaki_malze", name: "Skorupiaki / małże", subtitle: "Intensywny, morski boost umami.", category: .seafood, illustration: .fish, fatScore: 0.5, gelatinScore: 0.4, clarityPenalty: 0.9, isPoultry: false, isBeef: false, isOffal: false, isLiver: false, isBoneHeavy: false),
+        .init(id: "pancerze_krewetek", name: "Pancerze krewetek", subtitle: "Morski akcent i umami.", category: .seafood, illustration: .shrimpShells, fatScore: 0.4, gelatinScore: 0.4, clarityPenalty: 0.8, isPoultry: false, isBeef: false, isOffal: false, isLiver: false, isBoneHeavy: false),
+        .init(id: "skorupiaki_malze", name: "Skorupiaki / małże", subtitle: "Intensywny, morski boost umami.", category: .seafood, illustration: .shellfish, fatScore: 0.5, gelatinScore: 0.4, clarityPenalty: 0.9, isPoultry: false, isBeef: false, isOffal: false, isLiver: false, isBoneHeavy: false),
 
         .init(id: "cebula_baza", name: "Cebula", subtitle: "Klasyczna baza warzywna.", category: .veggies, illustration: .vegetables, fatScore: 0.1, gelatinScore: 0.1, clarityPenalty: 0.1, isPoultry: false, isBeef: false, isOffal: false, isLiver: false, isBoneHeavy: false),
         .init(id: "seler_baza", name: "Seler korzeniowy", subtitle: "Głębia i słodycz.", category: .veggies, illustration: .vegetables, fatScore: 0.1, gelatinScore: 0.1, clarityPenalty: 0.1, isPoultry: false, isBeef: false, isOffal: false, isLiver: false, isBoneHeavy: false),
@@ -1084,6 +1086,10 @@ struct IngredientIllustrationBadge: View {
             LiverIllustration()
         case .fish:
             FishIllustration()
+        case .shrimpShells:
+            ShrimpIllustration()
+        case .shellfish:
+            ShellfishIllustration()
         case .vegetables:
             VegetableIllustration()
         }
@@ -1092,7 +1098,21 @@ struct IngredientIllustrationBadge: View {
 
 struct SeafoodIllustration: View {
     var body: some View {
-        Image(systemName: "shell.fill")
+        ShellfishIllustration()
+    }
+}
+
+struct ShrimpIllustration: View {
+    var body: some View {
+        Image(systemName: "fossil.shell.fill")
+            .font(.system(size: 18, weight: .semibold))
+            .foregroundStyle(Color(hex: "4E6D85"))
+    }
+}
+
+struct ShellfishIllustration: View {
+    var body: some View {
+        Image(systemName: "fossil.shell")
             .font(.system(size: 18, weight: .semibold))
             .foregroundStyle(Color(hex: "4E6D85"))
     }
