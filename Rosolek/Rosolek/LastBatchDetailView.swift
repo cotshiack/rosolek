@@ -392,6 +392,21 @@ struct LastBatchDetailView: View {
         if normalized.contains("filet_rybny") || normalized.contains("filet") {
             return "Filet rybny"
         }
+        if normalized.contains("udka_kurczaka") || normalized.contains("udka") {
+            return "Udka kurczaka"
+        }
+        if normalized.contains("skrzydla_kurczaka") {
+            return "Skrzydła z kurczaka"
+        }
+        if normalized.contains("szyje_kurczaka") {
+            return "Szyje z kurczaka"
+        }
+        if normalized.contains("korpus_kurczaka") {
+            return "Korpus z kurczaka"
+        }
+        if normalized.contains("lapki") {
+            return "Łapki z kurczaka"
+        }
         if name.contains("_") {
             return name.replacingOccurrences(of: "_", with: " ")
         }
