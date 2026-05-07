@@ -369,7 +369,7 @@ struct BrothResultView: View {
     }
 
     private var effectiveResult: BrothCalculationResult {
-        let baseResult = recalculatedResultFromEditedBase ?? result
+        let baseResult = result
 
         let updatedVegetables = baseResult.vegetables.map { veg in
             let baseValue = parseGrams(from: veg.amount)
@@ -953,6 +953,10 @@ struct BrothResultView: View {
                 onReset: { meatOverrides.removeAll() },
                 onDone: { showMeatEditor = false }
             ) {
+                Text("Edytujesz tylko składniki wybrane wcześniej. Aby dodać inne, wróć do wyboru składników.")
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundStyle(AppTheme.textSecondary)
+                    .padding(.bottom, 4)
                 ForEach(editableBaseItems) { item in
                     let isCollagenPreset = {
                         if case .preset(.collagenPoultryReady) = mode { return true }
