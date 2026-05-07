@@ -66,6 +66,7 @@ struct BatchRecord: Identifiable, Codable, Hashable {
     let selectedIngredientCount: Int
     let waterLiters: Double
     let estimatedYieldLiters: Double
+    var actualYieldLiters: Double?
 
     // Legacy field kept for compatibility/history UI
     let totalMinutes: Int
@@ -106,6 +107,7 @@ struct BatchRecord: Identifiable, Codable, Hashable {
         selectedIngredientCount: Int,
         waterLiters: Double,
         estimatedYieldLiters: Double,
+        actualYieldLiters: Double? = nil,
         totalMinutes: Int,
         activeCookingMinutes: Int? = nil,
         warningCount: Int,
@@ -138,6 +140,7 @@ struct BatchRecord: Identifiable, Codable, Hashable {
         self.selectedIngredientCount = selectedIngredientCount
         self.waterLiters = waterLiters
         self.estimatedYieldLiters = estimatedYieldLiters
+        self.actualYieldLiters = actualYieldLiters
         self.totalMinutes = totalMinutes
         self.activeCookingMinutes = activeCookingMinutes ?? totalMinutes
         self.warningCount = warningCount
@@ -172,6 +175,7 @@ struct BatchRecord: Identifiable, Codable, Hashable {
         case selectedIngredientCount
         case waterLiters
         case estimatedYieldLiters
+        case actualYieldLiters
         case totalMinutes
         case activeCookingMinutes
         case warningCount
@@ -224,6 +228,7 @@ struct BatchRecord: Identifiable, Codable, Hashable {
         self.selectedIngredientCount = decodedSelectedIngredientCount
         self.waterLiters = try container.decodeIfPresent(Double.self, forKey: .waterLiters) ?? 0
         self.estimatedYieldLiters = try container.decodeIfPresent(Double.self, forKey: .estimatedYieldLiters) ?? 0
+        self.actualYieldLiters = try container.decodeIfPresent(Double.self, forKey: .actualYieldLiters)
         self.totalMinutes = decodedTotalMinutes
         self.activeCookingMinutes = try container.decodeIfPresent(Int.self, forKey: .activeCookingMinutes) ?? decodedTotalMinutes
         self.warningCount = try container.decodeIfPresent(Int.self, forKey: .warningCount) ?? 0
@@ -260,6 +265,7 @@ struct BatchRecord: Identifiable, Codable, Hashable {
         try container.encode(selectedIngredientCount, forKey: .selectedIngredientCount)
         try container.encode(waterLiters, forKey: .waterLiters)
         try container.encode(estimatedYieldLiters, forKey: .estimatedYieldLiters)
+        try container.encodeIfPresent(actualYieldLiters, forKey: .actualYieldLiters)
         try container.encode(totalMinutes, forKey: .totalMinutes)
         try container.encode(activeCookingMinutes, forKey: .activeCookingMinutes)
         try container.encode(warningCount, forKey: .warningCount)

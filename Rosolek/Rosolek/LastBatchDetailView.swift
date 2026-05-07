@@ -145,8 +145,10 @@ struct LastBatchDetailView: View {
                     AppInfoRow(title: "Woda start", value: batch.waterDisplayText)
                     AppInfoRow(title: "Szacowany uzysk", value: batch.yieldDisplayText)
                     AppInfoRow(title: "Czas gotowania", value: batch.timeDisplayText)
-                    AppInfoRow(title: "Liczba składników", value: batch.ingredientCountDisplayText)
                     AppInfoRow(title: "Termometr", value: batch.thermometerDisplayText)
+                    if let actualYield = batch.actualYieldLiters {
+                        AppInfoRow(title: "Realny uzysk", value: litersLabel(actualYield))
+                    }
 
                     if let interruption = batch.interruptionDisplayText {
                         AppInfoRow(title: "Status", value: interruption)
@@ -220,8 +222,8 @@ struct LastBatchDetailView: View {
                                     .foregroundStyle(AppTheme.textSecondary)
                             }
 
-                            ingredientGroupView(title: "Baza", entries: entries.base)
-                            ingredientGroupView(title: "Warzywa", entries: entries.vegetables)
+                            ingredientGroupView(title: "Baza", entries: entries.base, totalSuffix: "g")
+                            ingredientGroupView(title: "Warzywa", entries: entries.vegetables, totalSuffix: "g")
                             spiceGroupView(batch)
                         }
                     }
@@ -442,10 +444,11 @@ struct LastBatchDetailView: View {
     }
 
     @ViewBuilder
-    private func ingredientGroupView(title: String, entries: [IngredientEntry]) -> some View {
+    private func ingredientGroupView(title: String, entries: [IngredientEntry], totalSuffix: String) -> some View {
         if !entries.isEmpty {
+            let total = entries.reduce(0) { $0 + $1.finalValue }
             VStack(alignment: .leading, spacing: 6) {
-                AppInfoRow(title: title, value: "\(entries.count)")
+                AppInfoRow(title: title, value: "\(total) \(totalSuffix)")
                 ForEach(entries) { entry in
                     VStack(alignment: .leading, spacing: 2) {
                         AppInfoRow(title: entry.name, value: "\(entry.finalValue) g")
@@ -487,6 +490,10 @@ struct LastBatchDetailView: View {
             guard let value = overrides[key] else { return nil }
             return SpiceEntry(key: key, value: value)
         }
+    }
+
+    private func litersLabel(_ liters: Double) -> String {
+        String(format: "%.2f l", liters).replacingOccurrences(of: ".", with: ",")
     }
 
     private func replaySelections(from batch: BatchRecord) -> [BrothIngredientSelection] {

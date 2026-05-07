@@ -87,6 +87,7 @@ struct BatchFeedbackView: View {
     @State private var fatFeedback: BatchFatFeedback?
     @State private var clarityFeedback: BatchClarityFeedback?
     @State private var notes: String
+    @State private var actualYieldLiters: Double
 
     private enum FeedbackInputField {
         case batchName
@@ -101,6 +102,7 @@ struct BatchFeedbackView: View {
         _fatFeedback = State(initialValue: batch.fatFeedbackRawValue.flatMap { BatchFatFeedback(rawValue: $0) })
         _clarityFeedback = State(initialValue: batch.clarityFeedbackRawValue.flatMap { BatchClarityFeedback(rawValue: $0) })
         _notes = State(initialValue: batch.notes)
+        _actualYieldLiters = State(initialValue: batch.actualYieldLiters ?? batch.estimatedYieldLiters)
     }
 
     var body: some View {
@@ -110,6 +112,7 @@ struct BatchFeedbackView: View {
                 nameSection
                 overallRatingSection
                 criteriaSection
+                actualYieldSection
                 notesSection
             }
             .padding(AppSpacing.screen)
@@ -236,6 +239,24 @@ struct BatchFeedbackView: View {
                 options: BatchClarityFeedback.allCases
             )
         }
+    }
+
+    private var actualYieldSection: some View {
+        AppCard {
+            VStack(alignment: .leading, spacing: 12) {
+                Text("Realny uzysk")
+                    .font(.system(size: 18, weight: .bold))
+                    .foregroundStyle(AppTheme.textPrimary)
+                HStack {
+                    Stepper(value: $actualYieldLiters, in: 0.5...15.0, step: 0.05) {
+                        Text(String(format: "%.2f l", actualYieldLiters).replacingOccurrences(of: ".", with: ","))
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundStyle(AppTheme.textPrimary)
+                    }
+                }
+            }
+        }
+        .appSoftShadow()
     }
 
     private var notesSection: some View {
@@ -395,6 +416,7 @@ struct BatchFeedbackView: View {
             strengthFeedbackRawValue: strengthFeedback?.rawValue,
             fatFeedbackRawValue: fatFeedback?.rawValue,
             clarityFeedbackRawValue: clarityFeedback?.rawValue,
+            actualYieldLiters: actualYieldLiters,
             notes: notes.trimmingCharacters(in: .whitespacesAndNewlines)
         )
 

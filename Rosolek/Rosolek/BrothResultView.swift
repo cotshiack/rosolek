@@ -1665,7 +1665,7 @@ extension BrothResultView {
             CookingSessionCoordinator.interruptActiveCookingAndCleanup(in: batchStore)
         }
 
-        let ingredientSnapshots = effectiveSelections.map { selection in
+        let baseSnapshots = effectiveSelections.map { selection in
             BatchIngredientSnapshot(
                 ingredientID: selection.ingredientID,
                 ingredientName: selection.ingredientName,
@@ -1673,6 +1673,17 @@ extension BrothResultView {
                 grams: selection.grams
             )
         }
+
+        let vegetableSnapshots = effectiveResult.vegetables.map { vegetable in
+            let grams = parseGrams(from: vegetable.amount)
+            return BatchIngredientSnapshot(
+                ingredientID: "veg_\(vegetable.name.lowercased())",
+                ingredientName: vegetable.name,
+                categoryRawValue: IngredientCategory.veggies.rawValue,
+                grams: grams
+            )
+        }
+        let ingredientSnapshots = baseSnapshots + vegetableSnapshots
 
         let ingredientIDs = ingredientSnapshots.map(\.ingredientID)
 
@@ -1691,6 +1702,15 @@ extension BrothResultView {
             presetRawValue = nil
             profileRawValue = profile.rawValue
         }
+
+        let completeSpiceSnapshot: [String: Int] = [
+            "salt_start": Int(effectiveResult.startSaltGrams.rounded()),
+            "salt_final": Int(effectiveResult.finalSaltGrams.rounded()),
+            "pepper": effectiveResult.peppercornCount,
+            "allspice": effectiveResult.allspiceCount,
+            "bay": effectiveResult.bayLeafCount,
+            "vinegar": effectiveResult.appleCiderVinegarMl
+        ]
 
         let batch = batchStore.createBatch(
             styleRawValue: compatibilityStyle.rawValue,
@@ -1713,7 +1733,7 @@ extension BrothResultView {
             selectedIngredientsSnapshot: ingredientSnapshots,
             meatOverrides: meatOverrides.isEmpty ? nil : meatOverrides,
             vegetableOverrides: vegetableOverrides.isEmpty ? nil : vegetableOverrides,
-            spiceOverrides: spiceOverrides.isEmpty ? nil : spiceOverrides,
+            spiceOverrides: completeSpiceSnapshot,
             customTitle: nil
         )
 

@@ -124,6 +124,7 @@ final class BatchStore: ObservableObject {
         strengthFeedbackRawValue: String?,
         fatFeedbackRawValue: String?,
         clarityFeedbackRawValue: String?,
+        actualYieldLiters: Double?,
         notes: String
     ) {
         guard let index = batches.firstIndex(where: { $0.id == batchID }) else { return }
@@ -132,6 +133,7 @@ final class BatchStore: ObservableObject {
         batches[index].strengthFeedbackRawValue = strengthFeedbackRawValue
         batches[index].fatFeedbackRawValue = fatFeedbackRawValue
         batches[index].clarityFeedbackRawValue = clarityFeedbackRawValue
+        batches[index].actualYieldLiters = actualYieldLiters
         batches[index].notes = notes
 
         save()
