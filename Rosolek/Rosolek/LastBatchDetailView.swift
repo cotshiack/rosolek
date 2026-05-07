@@ -226,9 +226,7 @@ struct LastBatchDetailView: View {
                             }
 
                             ingredientGroupCard(title: "Baza", entries: entries.base, totalSuffix: "g")
-                            Divider().overlay(AppTheme.border.opacity(0.6))
                             ingredientGroupCard(title: "Warzywa", entries: entries.vegetables, totalSuffix: "g")
-                            Divider().overlay(AppTheme.border.opacity(0.6))
                             spiceGroupCard(batch)
                         }
                     }
@@ -458,7 +456,7 @@ struct LastBatchDetailView: View {
                 VStack(alignment: .leading, spacing: 6) {
                     ForEach(entries) { entry in
                         VStack(alignment: .leading, spacing: 2) {
-                            AppInfoRow(title: entry.name, value: "\(entry.finalValue) g")
+                            ingredientValueRow(title: entry.name, value: "\(entry.finalValue) g")
                             if entry.isChanged {
                                 Text("z \(entry.initialValue) g na \(entry.finalValue) g")
                                     .font(.system(size: 12, weight: .medium))
@@ -481,7 +479,7 @@ struct LastBatchDetailView: View {
                 Divider().overlay(AppTheme.border)
                 VStack(alignment: .leading, spacing: 6) {
                     ForEach(spices) { entry in
-                        AppInfoRow(
+                        ingredientValueRow(
                             title: spiceLabel(for: entry.key),
                             value: spiceValueLabel(for: entry.key, value: entry.value)
                         )
@@ -512,11 +510,23 @@ struct LastBatchDetailView: View {
     private func categoryHeader(title: String, value: String) -> some View {
         HStack(spacing: 8) {
             Text(title)
-                .font(.system(size: 18, weight: .bold))
+                .font(.system(size: 15, weight: .bold))
                 .foregroundStyle(AppTheme.textPrimary)
             Spacer()
             Text(value)
-                .font(.system(size: 18, weight: .bold))
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundStyle(AppTheme.textPrimary)
+        }
+    }
+
+    private func ingredientValueRow(title: String, value: String) -> some View {
+        HStack(alignment: .firstTextBaseline) {
+            Text(title)
+                .font(.system(size: 15, weight: .medium))
+                .foregroundStyle(AppTheme.textPrimary)
+            Spacer()
+            Text(value)
+                .font(.system(size: 15, weight: .medium))
                 .foregroundStyle(AppTheme.textPrimary)
         }
     }
