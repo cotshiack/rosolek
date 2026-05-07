@@ -379,9 +379,26 @@ struct LastBatchDetailView: View {
 
     private func meatLabel(for key: String, batch: BatchRecord) -> String {
         if let match = batch.selectedIngredientsSnapshot?.first(where: { $0.ingredientID == key }) {
-            return match.ingredientName
+            return prettyBaseName(match.ingredientName, id: match.ingredientID)
         }
-        return key
+        return prettyBaseName(key, id: key)
+    }
+
+    private func prettyBaseName(_ name: String, id: String) -> String {
+        let normalized = id.lowercased()
+        if normalized.contains("glowy_rybne") || normalized.contains("glowy") {
+            return "Głowy rybne"
+        }
+        if normalized.contains("kregoslup_rybny") || normalized.contains("kregoslup") {
+            return "Kręgosłup / ości rybne"
+        }
+        if normalized.contains("filet_rybny") || normalized.contains("filet") {
+            return "Filet rybny"
+        }
+        if name.contains("_") {
+            return name.replacingOccurrences(of: "_", with: " ")
+        }
+        return name
     }
 
     private func spiceValueLabel(for key: String, value: Int) -> String {
@@ -406,7 +423,7 @@ struct LastBatchDetailView: View {
             .map {
                 IngredientEntry(
                     id: $0.ingredientID,
-                    name: $0.ingredientName,
+                    name: prettyBaseName($0.ingredientName, id: $0.ingredientID),
                     initialValue: $0.grams,
                     finalValue: batch.meatOverrides?[$0.ingredientID] ?? $0.grams
                 )
@@ -499,6 +516,7 @@ struct LastBatchDetailView: View {
         let overrides = batch.spiceOverrides ?? [:]
         return order.compactMap { key in
             guard let value = overrides[key] else { return nil }
+            guard value > 0 else { return nil }
             return SpiceEntry(key: key, value: value)
         }
     }

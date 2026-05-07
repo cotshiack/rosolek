@@ -334,6 +334,8 @@ extension BatchRecord {
                 return "Rosół drobiowo-wołowy"
             case .grandmaReady:
                 return "Szybki domowy rosół"
+            case .fishReady:
+                return "Bulion rybny"
             }
         }
 

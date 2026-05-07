@@ -93,6 +93,13 @@ struct BatchFeedbackView: View {
         case batchName
     }
 
+    private var isFishBatch: Bool {
+        if batch.modeRawValue == "preset", batch.presetRawValue == BrothPreset.fishReady.rawValue {
+            return true
+        }
+        return batch.brothKindRawValue == BrothKind.fish.rawValue
+    }
+
     init(batch: BatchRecord, standaloneMode: Bool = false) {
         self.batch = batch
         self.standaloneMode = standaloneMode
@@ -121,7 +128,7 @@ struct BatchFeedbackView: View {
         .scrollIndicators(.hidden)
         .scrollDismissesKeyboard(.interactively)
         .background(AppTheme.background.ignoresSafeArea())
-        .navigationTitle("Ocena rosołu")
+        .navigationTitle(isFishBatch ? "Ocena bulionu" : "Ocena rosołu")
         .navigationBarTitleDisplayMode(.inline)
         .safeAreaInset(edge: .bottom, spacing: 0) {
             bottomActionBar
@@ -141,7 +148,7 @@ struct BatchFeedbackView: View {
 
     private var headerSection: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("Jak wyszedł ten rosół?")
+            Text(isFishBatch ? "Jak wyszedł ten bulion?" : "Jak wyszedł ten rosół?")
                 .font(.system(size: 34, weight: .bold))
                 .foregroundStyle(AppTheme.textPrimary)
 

@@ -204,6 +204,9 @@ struct CookingModeView: View {
     }
 
     private var activeUltraVariant: UltraSpecVariantID? {
+        if activePreset == .fishReady {
+            return .rybnyDelikatny
+        }
         if let rawKind = currentBatch.brothKindRawValue,
            let kind = BrothKind(rawValue: rawKind) {
             let styleName = currentBatch.selectedStyleName ?? currentBatch.styleRawValue
@@ -223,6 +226,10 @@ struct CookingModeView: View {
 
     private var isRamenUltraVariant: Bool {
         activeUltraVariant == .ramenShio || activeUltraVariant == .ramenTonkotsu
+    }
+
+    private var isFishUltraVariant: Bool {
+        activeUltraVariant == .rybnyDelikatny || activeUltraVariant == .rybnyIntensywny
     }
 
     private var activePreset: BrothPreset? {
@@ -837,7 +844,7 @@ struct CookingModeView: View {
                 NavigationLink {
                     BatchFeedbackView(batch: currentBatch)
                 } label: {
-                    AppPrimaryButtonLabel(title: isRamenUltraVariant ? "Oceń ramen" : (activeUltraVariant == .warzywnyJasny || activeUltraVariant == .warzywnyUmami ? "Oceń bulion warzywny" : "Oceń rosół"))
+                    AppPrimaryButtonLabel(title: isRamenUltraVariant ? "Oceń ramen" : (activeUltraVariant == .warzywnyJasny || activeUltraVariant == .warzywnyUmami ? "Oceń bulion warzywny" : (isFishUltraVariant ? "Oceń bulion rybny" : "Oceń rosół")))
                 }
                 .padding(.horizontal, AppSpacing.screen)
                 .padding(.bottom, 8)
@@ -896,7 +903,7 @@ struct CookingModeView: View {
                 UINotificationFeedbackGenerator().notificationOccurred(.success)
             }
         } message: {
-            Text("Po zakończeniu przejdziesz do oceny swojego \(isRamenUltraVariant ? "ramenu" : (activeUltraVariant == .warzywnyJasny || activeUltraVariant == .warzywnyUmami ? "bulionu warzywnego" : "rosołu")).")
+            Text("Po zakończeniu przejdziesz do oceny swojego \(isRamenUltraVariant ? "ramenu" : (activeUltraVariant == .warzywnyJasny || activeUltraVariant == .warzywnyUmami ? "bulionu warzywnego" : (isFishUltraVariant ? "bulionu rybnego" : "rosołu"))).")
         }
         .onAppear {
             UIApplication.shared.isIdleTimerDisabled = true
@@ -1386,7 +1393,7 @@ struct CookingModeView: View {
                 ]
             }
             var steps = [
-                "Włóż mięso do garnka.",
+                isFishUltraVariant ? "Włóż ryby do garnka." : "Włóż mięso do garnka.",
                 "Dolej wodę do poziomu z wyliczeń.",
                 "Przygotuj garnek i termometr."
             ]
@@ -1409,7 +1416,7 @@ struct CookingModeView: View {
                 "Grzej powoli i zbieraj szumowiny.",
                 "Nie mieszaj wywaru i nie dopuszczaj do wrzenia.",
                 hasThermometer
-                    ? "Przejdź dalej dopiero po stabilnym wejściu w zakres 88–90°C."
+                    ? "Przejdź dalej dopiero po stabilnym wejściu w zakres \(isFishUltraVariant ? "80–85°C" : "88–90°C")."
                     : "Przejdź dalej dopiero wtedy, gdy wywar pracuje spokojnie, bez wrzenia."
             ]
 
@@ -2119,7 +2126,7 @@ private struct StartChecklistCard: View {
         ) {
             VStack(spacing: 0) {
                 ChecklistRow(
-                    title: isVegetableVariant ? "Przygotuj warzywa z koszyka (umyj, obierz i pokrój)" : (isFishVariant ? "Przygotuj ryby i/lub owoce morza do gotowania" : "Mięso włóż do garnka"),
+                    title: isVegetableVariant ? "Przygotuj warzywa z koszyka (umyj, obierz i pokrój)" : (isFishVariant ? "Przygotuj ryby do gotowania" : "Mięso włóż do garnka"),
                     isOn: $prepMeatReady
                 )
 
@@ -2735,9 +2742,16 @@ private struct LiveIngredientIllustrationBadge: View {
 private struct TemperatureDetailsSheet: View {
     let content: TemperatureSheetContent
 
+    private var isFishRange: Bool {
+        content.targetLabel.contains("80–85") || content.targetLabel.contains("85–90")
+    }
+
     private var heroText: String {
         if content.allowsBoiling {
             return "W tonkotsu aktywne wrzenie jest celem — budujesz emulsję i mleczność. Pilnuj, by kości były stale przykryte wodą."
+        }
+        if isFishRange, content.hasThermometer {
+            return "W bulionie rybnym trzymaj zakres \(content.targetLabel). Tu najważniejsze są delikatność i krótki czas — unikaj wrzenia."
         }
         return content.hasThermometer
             ? "Zakres 88–90°C pomaga budować smak równomiernie, utrzymać klarowność i nie rozbijać osadu."
@@ -2747,6 +2761,9 @@ private struct TemperatureDetailsSheet: View {
     private var foamSupportText: String {
         if content.allowsBoiling {
             return "W tonkotsu wrzenie jest celowe. Najważniejsze: kontroluj poziom płynu i dolewaj gorącą wodę małymi porcjami, gdy kości zaczynają się odsłaniać."
+        }
+        if isFishRange {
+            return "W bulionie rybnym szumowiny pojawiają się szybko. Zbieraj je delikatnie i trzymaj spokojną pracę bez gwałtownego bulgotania."
         }
         return "Najwięcej szumowin pojawia się zwykle podczas dochodzenia wywaru od zimnej wody do około 75–90°C. Zbieraj je delikatnie tylko wtedy, gdy same wypływają na powierzchnię."
     }
@@ -2767,7 +2784,8 @@ private struct TemperatureDetailsSheet: View {
 
                     TemperatureMechanicsPanel(
                         hasThermometer: content.hasThermometer,
-                        allowsBoiling: content.allowsBoiling
+                        allowsBoiling: content.allowsBoiling,
+                        targetLabel: content.targetLabel
                     )
 
                     SheetSupportStrip(
@@ -2790,19 +2808,27 @@ private struct TemperatureDetailsSheet: View {
 private struct TemperatureMechanicsPanel: View {
     let hasThermometer: Bool
     let allowsBoiling: Bool
+    let targetLabel: String
+
+    private var isFishRange: Bool {
+        targetLabel.contains("80–85") || targetLabel.contains("85–90")
+    }
 
     private var lowRange: String {
         if allowsBoiling { return "Poniżej aktywnego wrzenia" }
+        if isFishRange, hasThermometer { return "Poniżej 80°C" }
         return hasThermometer ? "Poniżej 88°C" : "Za słaba praca"
     }
 
     private var goodRange: String {
         if allowsBoiling { return "Mocne, stabilne wrzenie" }
+        if isFishRange, hasThermometer { return targetLabel }
         return hasThermometer ? "88–90°C" : "Spokojna praca"
     }
 
     private var highRange: String {
         if allowsBoiling { return "Za gwałtowne / ryzyko wykipienia" }
+        if isFishRange, hasThermometer { return "Powyżej 85°C lub wrzenie" }
         return hasThermometer ? "Powyżej 92°C lub wrzenie" : "Za mocno lub wrzenie"
     }
 
@@ -2810,11 +2836,15 @@ private struct TemperatureMechanicsPanel: View {
         if allowsBoiling {
             return "W tonkotsu celem jest aktywne wrzenie, które buduje emulsję. Kontrolujesz intensywność tak, aby gotowanie było mocne, ale stabilne i bez wykipienia."
         }
+        if isFishRange {
+            return "W bulionie rybnym temperatura musi być niższa niż w rosole. Krótka, spokojna ekstrakcja chroni przed ciężkim i gorzkim profilem."
+        }
         return "Temperatura steruje nie tylko tempem gotowania, ale też klarownością, ciężarem smaku i zachowaniem osadu. Najlepszy efekt daje spokojna, stabilna praca."
     }
 
     private var lowExplanation: String {
         if allowsBoiling { return "Ekstrakcja i emulgacja są za słabe — bulion będzie mniej kremowy i płytszy w smaku." }
+        if isFishRange, hasThermometer { return "Ryby oddają smak za wolno i etap traci rytm. Delikatnie podnieś grzanie." }
         return hasThermometer
             ? "Ekstrakcja zwalnia, mięso oddaje smak wolniej, a etap zaczyna się rozmywać."
             : "Powierzchnia jest zbyt spokojna, więc wywar buduje się wolniej i trudniej utrzymać rytm etapu."
@@ -3195,7 +3225,7 @@ private struct PhaseDetailsSheet: View {
                         systemImage: "checklist",
                         text: "Zanim uruchomisz gotowanie, ustaw wszystko tak, żeby w trakcie pracy nie szukać narzędzi ani nie wykonywać nerwowych ruchów.",
                         bullets: [
-                            content.ultraVariant == .rybnyDelikatny || content.ultraVariant == .rybnyIntensywny ? "Przygotuj ryby/owoce morza i wlej wodę z kalkulatora." : "Mięso włóż do garnka i wlej wodę z kalkulatora.",
+                            content.ultraVariant == .rybnyDelikatny || content.ultraVariant == .rybnyIntensywny ? "Przygotuj bazę rybną i wlej wodę z kalkulatora." : "Mięso włóż do garnka i wlej wodę z kalkulatora.",
                             content.hasThermometer ? "Sondę umieść w wodzie tak, aby nie dotykała dna ani ścian garnka." : "Obserwuj powierzchnię spokojnie i nie mieszaj garnka.",
                             "Przygotuj sitko lub łyżkę do szumowin, szczypce albo łyżkę cedzakową oraz sito lub gazę do cedzenia."
                         ]
@@ -3228,6 +3258,16 @@ private struct PhaseDetailsSheet: View {
                     footerLabel: "Spokojnie"
                 )
             }
+            let fishRangeText: String = {
+                switch content.ultraVariant {
+                case .rybnyDelikatny:
+                    return "80–85°C"
+                case .rybnyIntensywny:
+                    return "85–90°C"
+                default:
+                    return "88–90°C"
+                }
+            }()
             return PhaseSheetModel(
                 eyebrow: "Kluczowy moment",
                 intro: "Celem jest osiągnięcie temperatury pracy bez wrzenia. Najwięcej problemów z klarownością powstaje właśnie w tej fazie.",
@@ -3240,7 +3280,7 @@ private struct PhaseDetailsSheet: View {
                     PhaseSheetSection(
                         title: "Jak ma wyglądać dobra praca",
                         systemImage: "thermometer.medium",
-                        text: content.hasThermometer ? "Dąż do zakresu 88–90°C i utrzymaj go stabilnie." : "Szukaj spokojnej powierzchni, pojedynczych bąbli przy brzegu i braku intensywnego bulgotania na środku.",
+                        text: content.hasThermometer ? "Dąż do zakresu \(fishRangeText) i utrzymaj go stabilnie." : "Szukaj spokojnej powierzchni, pojedynczych bąbli przy brzegu i braku intensywnego bulgotania na środku.",
                         bullets: ["Szumowiny zbieraj tylko wtedy, gdy same wypływają.", "Nie mieszaj wywaru.", "Jeśli doszło do wrzenia, zmniejsz ogień albo zdejmij garnek na 60–120 s."]
                     )
                 ],

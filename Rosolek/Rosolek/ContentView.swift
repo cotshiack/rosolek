@@ -79,6 +79,13 @@ private struct HomeView: View {
         )
     }
 
+    private var fishPresetRecipe: HomePresetRecipe {
+        HomePresetRecipe(
+            preset: .fishReady,
+            potSizeLiters: Double(potSizeLiters)
+        )
+    }
+
     private var presetItems: [HomePresetItem] {
         [
             HomePresetItem(
@@ -98,6 +105,12 @@ private struct HomeView: View {
                 artwork: .asset("HomeRecipeGrandma"),
                 fallbackStyle: .light,
                 filter: .poultry
+            ),
+            HomePresetItem(
+                recipe: fishPresetRecipe,
+                artwork: .asset("BulionRybny"),
+                fallbackStyle: .light,
+                filter: .fish
             )
         ]
     }
@@ -852,6 +865,7 @@ enum HomeRecipeFilter: String, CaseIterable, Identifiable {
     case all
     case poultry
     case poultryBeef
+    case fish
 
     var id: String { rawValue }
 
@@ -863,6 +877,8 @@ enum HomeRecipeFilter: String, CaseIterable, Identifiable {
             return "Drobiowy"
         case .poultryBeef:
             return "Drobiowo-wołowy"
+        case .fish:
+            return "Rybny"
         }
     }
 
@@ -1454,6 +1470,8 @@ private struct HomePresetRecipe {
             return "Rosół drobiowo-wołowy"
         case .grandmaReady:
             return "Szybki domowy rosół"
+        case .fishReady:
+            return "Bulion rybny"
         }
     }
 
@@ -1465,6 +1483,8 @@ private struct HomePresetRecipe {
             return "Gotowa receptura z drobiem i wołowiną — pełniejszy smak i mocniejszy wywar."
         case .grandmaReady:
             return "Szybki przepis domowy w stylu babcinym — prosty i wyraźny."
+        case .fishReady:
+            return "Delikatny bulion rybny bez owoców morza — lekki i czysty."
         }
     }
 

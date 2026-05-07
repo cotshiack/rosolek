@@ -297,6 +297,9 @@ struct BrothResultView: View {
     }
 
     private var activeUltraVariant: UltraSpecVariantID? {
+        if case .preset(let preset) = mode, preset == .fishReady {
+            return .rybnyDelikatny
+        }
         guard case .custom = mode, let kind = selectedKind else { return nil }
         let styleKey = UltraSpecStyleKeyResolver.resolve(kind: kind, styleName: selectedStyleName)
         return UltraSpecVariantResolver.resolve(kind: kind, styleKey: styleKey)
@@ -1484,6 +1487,12 @@ extension BrothResultView {
             return "Kości szpikowe"
         case normalizedID.contains("kosci_rosolowe"), normalizedID.contains("kosci_stawowe"):
             return "Kości rosołowe / stawowe"
+        case normalizedID.contains("kregoslup_rybny"), normalizedID.contains("kregoslup"):
+            return "Kręgosłup / ości rybne"
+        case normalizedID.contains("glowy_rybne"), normalizedID.contains("glowy"):
+            return "Głowy rybne"
+        case normalizedID.contains("filet_rybny"), normalizedID.contains("filet"):
+            return "Filet rybny"
         case normalizedID.contains("serca"):
             return "Serca drobiowe"
         case normalizedID.contains("zoladki"):
@@ -1707,14 +1716,14 @@ extension BrothResultView {
             profileRawValue = profile.rawValue
         }
 
-        let completeSpiceSnapshot: [String: Int] = [
+        let completeSpiceSnapshot = [
             "salt_start": Int(effectiveResult.startSaltGrams.rounded()),
             "salt_final": Int(effectiveResult.finalSaltGrams.rounded()),
             "pepper": effectiveResult.peppercornCount,
             "allspice": effectiveResult.allspiceCount,
             "bay": effectiveResult.bayLeafCount,
             "vinegar": effectiveResult.appleCiderVinegarMl
-        ]
+        ].filter { $0.value > 0 }
 
         let batch = batchStore.createBatch(
             styleRawValue: compatibilityStyle.rawValue,

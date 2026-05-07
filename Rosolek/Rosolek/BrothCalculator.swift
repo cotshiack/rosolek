@@ -164,6 +164,7 @@ enum BrothPreset: String, CaseIterable, Identifiable, Hashable {
     case poultryReady
     case poultryBeefReady
     case grandmaReady
+    case fishReady
 
     var id: String { rawValue }
 
@@ -175,6 +176,8 @@ enum BrothPreset: String, CaseIterable, Identifiable, Hashable {
             return "Gotowy drobiowo-wołowy"
         case .grandmaReady:
             return "Szybki domowy rosół"
+        case .fishReady:
+            return "Bulion rybny"
         }
     }
 
@@ -186,6 +189,8 @@ enum BrothPreset: String, CaseIterable, Identifiable, Hashable {
             return "Gotowa receptura z drobiem i wołowiną dla pełniejszego smaku."
         case .grandmaReady:
             return "Szybki „babciny” rosół domowy z drobiu."
+        case .fishReady:
+            return "Lekki bulion rybny bez owoców morza."
         }
     }
 
@@ -196,6 +201,8 @@ enum BrothPreset: String, CaseIterable, Identifiable, Hashable {
         case .poultryBeefReady:
             return .richer
         case .grandmaReady:
+            return .cleaner
+        case .fishReady:
             return .cleaner
         }
     }
@@ -208,6 +215,8 @@ enum BrothPreset: String, CaseIterable, Identifiable, Hashable {
             return ["kura", "szponder"]
         case .grandmaReady:
             return ["kura", "skrzydla_kurczaka"]
+        case .fishReady:
+            return ["kregoslup_rybny", "glowy_rybne"]
         }
     }
 
@@ -400,7 +409,134 @@ enum BrothCalculator {
                 pot: pot,
                 request: request
             )
+        case .fishReady:
+            return fishPresetCalculation(
+                pot: pot,
+                request: request
+            )
         }
+    }
+
+    private static func fishPresetCalculation(
+        pot: Double,
+        request: BrothCalculationRequest
+    ) -> BrothCalculationResult {
+        let waterLiters = interpolate(pot, table: [
+            (5, 3.4), (7, 4.8), (10, 6.8), (12, 8.2)
+        ])
+
+        let fishBones = roundedToTen(interpolate(pot, table: [
+            (5, 950), (7, 1330), (10, 1900), (12, 2280)
+        ]))
+
+        let fishHeads = roundedToTen(interpolate(pot, table: [
+            (5, 330), (7, 470), (10, 660), (12, 800)
+        ]))
+
+        let totalVegetableGrams = roundedToFive(interpolate(pot, table: [
+            (5, 350), (7, 490), (10, 680), (12, 820)
+        ]))
+        let onionGrams = roundedToFive(Double(totalVegetableGrams) * 0.40)
+        let celeryStalkGrams = roundedToFive(Double(totalVegetableGrams) * 0.25)
+        let leekGrams = roundedToFive(Double(totalVegetableGrams) * 0.20)
+        let carrotGrams = max(0, totalVegetableGrams - onionGrams - celeryStalkGrams - leekGrams)
+
+        let vegetableBreakdown = BrothVegetableBreakdown(
+            totalGrams: totalVegetableGrams,
+            carrotGrams: carrotGrams,
+            celeriacGrams: 0,
+            parsleyRootGrams: 0,
+            leekGrams: leekGrams,
+            onionCount: max(1, roundedToInt(Double(onionGrams) / 130.0))
+        )
+
+        let vegetables = [
+            VegetableAmount(name: "Cebula", amount: "\(onionGrams) g", note: "Koszyk rybny: 40% warzyw."),
+            VegetableAmount(name: "Seler naciowy", amount: "\(celeryStalkGrams) g", note: "Koszyk rybny: 25% warzyw."),
+            VegetableAmount(name: "Por", amount: "\(leekGrams) g", note: "Koszyk rybny: 20% warzyw."),
+            VegetableAmount(name: "Marchew", amount: "\(carrotGrams) g", note: "Koszyk rybny: 15% warzyw.")
+        ]
+
+        let baseEstimatedYieldLiters = roundedToOneDecimal(interpolate(pot, table: [
+            (5, 2.9), (7, 4.1), (10, 5.8), (12, 7.0)
+        ]))
+        let clarityAdjustedYield = adjustedYield(
+            baseYieldLiters: baseEstimatedYieldLiters,
+            waterStartLiters: waterLiters,
+            fatIndex: 0.7,
+            clarityMode: request.clarityMode
+        )
+
+        let startSaltGrams = roundedToOneDecimal(interpolate(pot, table: [
+            (5, 2.1), (7, 2.9), (10, 4.1), (12, 4.9)
+        ]))
+        let finalSaltBase = request.targetYieldLiters ?? clarityAdjustedYield.yieldLiters
+        let finalSaltGrams = roundedToOneDecimal(
+            request.targetYieldLiters == nil
+                ? interpolate(pot, table: [
+                    (5, 16), (7, 23), (10, 32), (12, 39)
+                ])
+                : (finalSaltBase * 5.6)
+        )
+
+        let peppercornCount = max(4, roundedToInt(interpolate(pot, table: [
+            (5, 5), (7, 7), (10, 10), (12, 12)
+        ])))
+        let spiceBreakdown = BrothSpiceBreakdown(
+            peppercornCount: peppercornCount,
+            allspiceCount: 0,
+            bayLeafCount: 0
+        )
+
+        let structuredWarnings = deduplicatedStructuredWarnings(
+            presetStructuredWarnings(
+                waterLiters: waterLiters,
+                potSizeLiters: request.potSizeLiters,
+                clarityMode: request.clarityMode,
+                yieldLossLiters: clarityAdjustedYield.lossLiters
+            )
+        )
+
+        let fishTimeline = UltraSpecTimelineCatalog.steps(for: .rybnyDelikatny).map {
+            CookingTimelineItem(
+                minuteOffset: $0.minuteOffset,
+                timeLabel: $0.timeLabel,
+                title: $0.title,
+                subtitle: $0.subtitle
+            )
+        }
+
+        return BrothCalculationResult(
+            waterLiters: roundedToOneDecimal(waterLiters),
+            temperatureMin: 80,
+            temperatureMax: 85,
+            totalMinutes: 45,
+            estimatedYieldLiters: clarityAdjustedYield.yieldLiters,
+            startSaltGrams: startSaltGrams,
+            finalSaltGrams: roundedToOneDecimal(finalSaltGrams),
+            appleCiderVinegarMl: 0,
+            peppercornCount: peppercornCount,
+            allspiceCount: 0,
+            bayLeafCount: 0,
+            vegetables: vegetables,
+            meatParts: [
+                MeatAmount(name: "Ości białych ryb", grams: fishBones, note: "Główna baza lekkiego bulionu rybnego."),
+                MeatAmount(name: "Głowy białych ryb", grams: fishHeads, note: "Dla delikatnego podbicia umami.")
+            ],
+            timeline: fishTimeline,
+            warnings: structuredWarnings.map(warningText(for:)),
+            structuredWarnings: structuredWarnings,
+            validationFailure: nil,
+            scoring: nil,
+            recommendedMeatRange: nil,
+            clarityMode: request.clarityMode,
+            useVinegar: request.useVinegar,
+            targetYieldLiters: request.targetYieldLiters,
+            vegetableBreakdown: vegetableBreakdown,
+            spiceBreakdown: spiceBreakdown,
+            microMode: false,
+            waterWasReducedToFit: false
+        )
     }
 
     private static func poultryPresetCalculation(

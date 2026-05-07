@@ -67,6 +67,19 @@ struct RecipesHubView: View {
                     .buttonStyle(.plain)
                 }
 
+                if selectedPresetFilter.matches(.fish) {
+                    NavigationLink {
+                        BrothResultView(preset: .fishReady, potSizeLiters: potSizeLiters)
+                    } label: {
+                        RecipeListCard(
+                            title: "Bulion rybny",
+                            subtitle: "Delikatny i lekki profil bez owoców morza.",
+                            assetName: "BulionRybny"
+                        )
+                    }
+                    .buttonStyle(.plain)
+                }
+
                 RecipeListCard(
                     title: "Klasyczny ramen shoyu",
                     subtitle: "Autorski przepis premium z prowadzeniem krok po kroku.",
