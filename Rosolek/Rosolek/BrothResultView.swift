@@ -1008,6 +1008,9 @@ struct BrothResultView: View {
     }
 
     private var supportsVinegar: Bool {
+        if case .preset(let preset) = mode, preset == .collagenPoultryReady {
+            return false
+        }
         switch activeUltraVariant {
         case .some(.ramenTonkotsu), .some(.warzywnyJasny), .some(.warzywnyUmami), .some(.rybnyDelikatny), .some(.rybnyIntensywny):
             return false
