@@ -336,6 +336,8 @@ extension BatchRecord {
                 return "Szybki domowy rosół"
             case .fishReady:
                 return "Bulion rybny"
+            case .collagenPoultryReady:
+                return "Bulion kolagenowy drobiowy"
             }
         }
 

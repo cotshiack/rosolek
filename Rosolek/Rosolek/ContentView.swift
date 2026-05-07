@@ -86,6 +86,13 @@ private struct HomeView: View {
         )
     }
 
+    private var collagenPoultryPresetRecipe: HomePresetRecipe {
+        HomePresetRecipe(
+            preset: .collagenPoultryReady,
+            potSizeLiters: Double(potSizeLiters)
+        )
+    }
+
     private var presetItems: [HomePresetItem] {
         [
             HomePresetItem(
@@ -111,6 +118,12 @@ private struct HomeView: View {
                 artwork: .asset("BulionRybny"),
                 fallbackStyle: .light,
                 filter: .fish
+            ),
+            HomePresetItem(
+                recipe: collagenPoultryPresetRecipe,
+                artwork: .asset("HomeRecipeCollagenPoultry"),
+                fallbackStyle: .intense,
+                filter: .poultry
             )
         ]
     }
@@ -1472,6 +1485,8 @@ private struct HomePresetRecipe {
             return "Szybki domowy rosół"
         case .fishReady:
             return "Bulion rybny"
+        case .collagenPoultryReady:
+            return "Bulion kolagenowy drobiowy"
         }
     }
 
@@ -1485,6 +1500,8 @@ private struct HomePresetRecipe {
             return "Szybki przepis domowy w stylu babcinym — prosty i wyraźny."
         case .fishReady:
             return "Delikatny bulion rybny bez owoców morza — lekki i czysty."
+        case .collagenPoultryReady:
+            return "Drobiowy bulion kolagenowy — wysoka żelatynowość i głębsze body."
         }
     }
 

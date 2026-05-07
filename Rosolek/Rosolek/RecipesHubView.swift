@@ -67,6 +67,21 @@ struct RecipesHubView: View {
                     .buttonStyle(.plain)
                 }
 
+
+
+                if selectedPresetFilter.matches(.poultry) {
+                    NavigationLink {
+                        BrothResultView(preset: .collagenPoultryReady, potSizeLiters: potSizeLiters)
+                    } label: {
+                        RecipeListCard(
+                            title: "Bulion kolagenowy drobiowy",
+                            subtitle: "Wysoka żelatynowość, prowadzenie 88–90°C i długi finisz bazy.",
+                            assetName: "HomeRecipeCollagenPoultry"
+                        )
+                    }
+                    .buttonStyle(.plain)
+                }
+
                 if selectedPresetFilter.matches(.fish) {
                     NavigationLink {
                         BrothResultView(preset: .fishReady, potSizeLiters: potSizeLiters)
