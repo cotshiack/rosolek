@@ -205,9 +205,8 @@ struct CookingModeView: View {
     }
 
     private var activeUltraVariant: UltraSpecVariantID? {
-        if activePreset == .fishReady {
-            return .rybnyDelikatny
-        }
+        guard currentBatch.modeRawValue == "custom" else { return nil }
+
         if let rawKind = currentBatch.brothKindRawValue,
            let kind = BrothKind(rawValue: rawKind) {
             let styleName = currentBatch.selectedStyleName ?? currentBatch.styleRawValue

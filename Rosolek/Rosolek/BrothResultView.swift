@@ -297,9 +297,6 @@ struct BrothResultView: View {
     }
 
     private var activeUltraVariant: UltraSpecVariantID? {
-        if case .preset(let preset) = mode, preset == .fishReady {
-            return .rybnyDelikatny
-        }
         guard case .custom = mode, let kind = selectedKind else { return nil }
         let styleKey = UltraSpecStyleKeyResolver.resolve(kind: kind, styleName: selectedStyleName)
         return UltraSpecVariantResolver.resolve(kind: kind, styleKey: styleKey)
