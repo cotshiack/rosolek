@@ -1501,7 +1501,7 @@ private struct HomePresetRecipe {
         case .fishReady:
             return "Delikatny bulion rybny bez owoców morza — lekki i czysty."
         case .collagenPoultryReady:
-            return "Drobiowy bulion kolagenowy — wysoka żelatynowość i głębsze body."
+            return "Bulion kolagenowy drobiowy — wysoka żelatynowość i głębsze body."
         }
     }
 

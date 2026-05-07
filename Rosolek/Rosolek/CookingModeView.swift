@@ -242,6 +242,10 @@ struct CookingModeView: View {
         activePreset == .grandmaReady
     }
 
+    private var isCollagenPoultryPreset: Bool {
+        activePreset == .collagenPoultryReady
+    }
+
     private var clarityMode: BrothClarityMode {
         currentBatch.clarityMode
     }
@@ -344,15 +348,18 @@ struct CookingModeView: View {
     }
 
     private var poultrySimmerSeconds: Int {
-        hasPoultry ? 105 * 60 : 0
+        if isCollagenPoultryPreset { return hasPoultry ? 120 * 60 : 0 }
+        return hasPoultry ? 105 * 60 : 0
     }
 
     private var vegetablesTotalSeconds: Int {
-        brothProfile == .cleaner ? 135 * 60 : 165 * 60
+        if isCollagenPoultryPreset { return 120 * 60 }
+        return brothProfile == .cleaner ? 135 * 60 : 165 * 60
     }
 
     private var finishTotalSeconds: Int {
-        brothProfile == .cleaner ? 35 * 60 : 75 * 60
+        if isCollagenPoultryPreset { return 90 * 60 }
+        return brothProfile == .cleaner ? 35 * 60 : 75 * 60
     }
 
     private var simmerAfterPoultrySeconds: Int {
@@ -488,10 +495,12 @@ struct CookingModeView: View {
             LivePhase(
                 kind: .stabilization,
                 title: "Stabilizuj samo mięso",
-                shortText: "Przez pełne 60 minut utrzymuj spokojną temperaturę. Warzywa dodasz dopiero po tym etapie.",
+                shortText: isCollagenPoultryPreset
+                    ? "Przez pełne 75 minut utrzymuj spokojną temperaturę. Warzywa dodasz dopiero po tym etapie."
+                    : "Przez pełne 60 minut utrzymuj spokojną temperaturę. Warzywa dodasz dopiero po tym etapie.",
                 detailText: "To najważniejszy etap budowania czystej bazy mięsnej. Nie mieszaj wywaru. Zbieraj tylko to, co samo wypływa na powierzchnię.",
-                durationSeconds: 60 * 60,
-                timelineLabel: "1 h",
+                durationSeconds: (isCollagenPoultryPreset ? 75 : 60) * 60,
+                timelineLabel: isCollagenPoultryPreset ? "75 min" : "1 h",
                 bottomActionTitle: nil
             ),
             LivePhase(
@@ -1429,7 +1438,9 @@ struct CookingModeView: View {
                 ]
             }
             return [
-                "Przez pełne 60 minut utrzymuj spokojną temperaturę.",
+                isCollagenPoultryPreset
+                    ? "Przez pełne 75 minut utrzymuj spokojną temperaturę."
+                    : "Przez pełne 60 minut utrzymuj spokojną temperaturę.",
                 "Nie dodawaj jeszcze warzyw.",
                 "Zbieraj tylko to, co samo wypływa na powierzchnię."
             ]
@@ -3328,8 +3339,8 @@ private struct PhaseDetailsSheet: View {
                 )
             }
             return PhaseSheetModel(
-                eyebrow: "60 minut bez warzyw",
-                intro: "Przez 60 minut gotujesz wyłącznie mięso. To etap budowania czystej bazy.",
+                eyebrow: isCollagenPoultryPreset ? "75 minut bez warzyw" : "60 minut bez warzyw",
+                intro: isCollagenPoultryPreset ? "Przez 75 minut gotujesz wyłącznie mięso. To etap budowania kolagenowej bazy." : "Przez 60 minut gotujesz wyłącznie mięso. To etap budowania czystej bazy.",
                 sections: [
                     PhaseSheetSection(
                         title: "Co dzieje się w garnku",
