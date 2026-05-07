@@ -436,12 +436,25 @@ enum BrothCalculator {
         pot: Double,
         request: BrothCalculationRequest
     ) -> BrothCalculationResult {
+        func kitchenPortionGrams(_ raw: Int, pieceWeight: Int, allowHalf: Bool) -> Int {
+            guard raw > 0 else { return 0 }
+            let step = allowHalf ? Double(pieceWeight) * 0.5 : Double(pieceWeight)
+            let snapped = Int((Double(raw) / step).rounded() * step)
+            return max(0, snapped)
+        }
+
         let waterLiters = interpolate(pot, table: [(5, 3.2), (7, 4.6), (10, 6.6), (12, 7.8)])
         let necks = roundedToTen(interpolate(pot, table: [(5, 500), (7, 720), (10, 1030), (12, 1240)]))
         let carcass = roundedToTen(interpolate(pot, table: [(5, 500), (7, 720), (10, 1030), (12, 1240)]))
         let feet = roundedToTen(interpolate(pot, table: [(5, 150), (7, 220), (10, 310), (12, 380)]))
-        let wings = roundedToTen(interpolate(pot, table: [(5, 90), (7, 130), (10, 190), (12, 230)]))
-        let thighs = roundedToTen(interpolate(pot, table: [(5, 40), (7, 60), (10, 80), (12, 100)]))
+        let wingsRaw = roundedToTen(interpolate(pot, table: [(5, 90), (7, 130), (10, 190), (12, 230)]))
+        let thighsRaw = roundedToTen(interpolate(pot, table: [(5, 40), (7, 60), (10, 80), (12, 100)]))
+        let wingPieceWeight = 100
+        let thighPieceWeight = 160
+        let wings = kitchenPortionGrams(wingsRaw, pieceWeight: wingPieceWeight, allowHalf: false)
+        let thighs = kitchenPortionGrams(thighsRaw, pieceWeight: thighPieceWeight, allowHalf: true)
+        let wingPieces = Double(wings) / Double(wingPieceWeight)
+        let thighPieces = Double(thighs) / Double(thighPieceWeight)
         let totalVegetableGrams = roundedToFive(waterLiters * 1000 * 0.12)
         let carrot = roundedToFive(Double(totalVegetableGrams) * 0.30)
         let celeriac = roundedToFive(Double(totalVegetableGrams) * 0.30)
@@ -466,7 +479,11 @@ enum BrothCalculator {
         let pepper = max(1, roundedToInt(3.2 * waterLiters))
         let allspice = max(1, roundedToInt(1.0 * waterLiters))
         let bay = waterLiters < 2.0 ? 1 : max(1, roundedToInt(0.5 * waterLiters))
-        return BrothCalculationResult(waterLiters: roundedToOneDecimal(waterLiters), temperatureMin: 88, temperatureMax: 90, totalMinutes: 308, estimatedYieldLiters: clarityAdjustedYield.yieldLiters, startSaltGrams: roundedToOneDecimal(1.5 * waterLiters), finalSaltGrams: roundedToOneDecimal(7.4 * clarityAdjustedYield.yieldLiters), appleCiderVinegarMl: 0, peppercornCount: pepper, allspiceCount: allspice, bayLeafCount: bay, vegetables: vegetables, meatParts: [MeatAmount(name: "Szyje z kurczaka", grams: necks, note: "Kolagenowa baza."), MeatAmount(name: "Korpus z kurczaka", grams: carcass, note: "Kolagen i smak."), MeatAmount(name: "Łapki kurczaka", grams: feet, note: "Wysoka żelatynowość."), MeatAmount(name: "Skrzydła z kurczaka (opcjonalnie)", grams: wings, note: "Limitowane — podnoszą tłustość."), MeatAmount(name: "Udka kurczaka (opcjonalnie)", grams: thighs, note: "Limitowane — tłustszy profil.")], timeline: [CookingTimelineItem(minuteOffset: 0, timeLabel: "START", title: "Przygotuj stanowisko", subtitle: "Baza drobiowa kolagenowa, garnek i narzędzia."), CookingTimelineItem(minuteOffset: 0, timeLabel: "do temp.", title: "Podgrzewaj do temperatury pracy", subtitle: "Dąż do 88–90°C. Bez wrzenia."), CookingTimelineItem(minuteOffset: 75, timeLabel: "75 min", title: "Stabilizuj bazę", subtitle: "Bez warzyw i bez mieszania."), CookingTimelineItem(minuteOffset: 78, timeLabel: "2–3 min", title: "Dodaj warzywa i przyprawy", subtitle: "Spadek temperatury 1–3°C jest normalny."), CookingTimelineItem(minuteOffset: 198, timeLabel: "120 min", title: "Gotuj spokojnie", subtitle: "Pilnuj czasu warzyw."), CookingTimelineItem(minuteOffset: 198, timeLabel: "—", title: "Wyjmij warzywa", subtitle: "Bez wyciskania."), CookingTimelineItem(minuteOffset: 288, timeLabel: "90 min", title: "Dokończ bazę kolagenową", subtitle: "Bez wrzenia i bez mieszania."), CookingTimelineItem(minuteOffset: 308, timeLabel: "20 min", title: "Odstaw", subtitle: "Osad ma opaść na dno."), CookingTimelineItem(minuteOffset: 318, timeLabel: "10–20 min", title: "Przecedź i dopraw", subtitle: "Najpierw cedzenie, potem sól.")], warnings: [], structuredWarnings: [], validationFailure: nil, scoring: nil, recommendedMeatRange: nil, clarityMode: request.clarityMode, useVinegar: request.useVinegar, targetYieldLiters: request.targetYieldLiters, vegetableBreakdown: vegetableBreakdown, spiceBreakdown: BrothSpiceBreakdown(peppercornCount: pepper, allspiceCount: allspice, bayLeafCount: bay), microMode: false, waterWasReducedToFit: false)
+        var warnings: [String] = []
+        if wingPieces > 2.0 || thighPieces > 1.0 {
+            warnings.append("Opcjonalne skrzydła/udka zostały zaokrąglone do porcji kuchennych (sztuki). Sprawdź tłustość i w razie potrzeby zmniejsz dodatki.")
+        }
+        return BrothCalculationResult(waterLiters: roundedToOneDecimal(waterLiters), temperatureMin: 88, temperatureMax: 90, totalMinutes: 308, estimatedYieldLiters: clarityAdjustedYield.yieldLiters, startSaltGrams: roundedToOneDecimal(1.5 * waterLiters), finalSaltGrams: roundedToOneDecimal(7.4 * clarityAdjustedYield.yieldLiters), appleCiderVinegarMl: 0, peppercornCount: pepper, allspiceCount: allspice, bayLeafCount: bay, vegetables: vegetables, meatParts: [MeatAmount(name: "Szyje z kurczaka", grams: necks, note: "Kolagenowa baza."), MeatAmount(name: "Korpus z kurczaka", grams: carcass, note: "Kolagen i smak."), MeatAmount(name: "Łapki kurczaka", grams: feet, note: "Wysoka żelatynowość."), MeatAmount(name: "Skrzydła z kurczaka (opcjonalnie)", grams: wings, note: "Limitowane — \(Int(wingPieces)) szt. (~\(wings) g), podnoszą tłustość."), MeatAmount(name: "Udka kurczaka (opcjonalnie)", grams: thighs, note: "Limitowane — \(thighPieces == floor(thighPieces) ? \"\\(Int(thighPieces))\" : \"\\(thighPieces.formatted(.number.precision(.fractionLength(1))))\") szt. (~\(thighs) g), tłustszy profil.")], timeline: [CookingTimelineItem(minuteOffset: 0, timeLabel: "START", title: "Przygotuj stanowisko", subtitle: "Baza drobiowa kolagenowa, garnek i narzędzia."), CookingTimelineItem(minuteOffset: 0, timeLabel: "do temp.", title: "Podgrzewaj do temperatury pracy", subtitle: "Dąż do 88–90°C. Bez wrzenia."), CookingTimelineItem(minuteOffset: 75, timeLabel: "75 min", title: "Stabilizuj bazę", subtitle: "Bez warzyw i bez mieszania."), CookingTimelineItem(minuteOffset: 78, timeLabel: "2–3 min", title: "Dodaj warzywa i przyprawy", subtitle: "Spadek temperatury 1–3°C jest normalny."), CookingTimelineItem(minuteOffset: 198, timeLabel: "120 min", title: "Gotuj spokojnie", subtitle: "Pilnuj czasu warzyw."), CookingTimelineItem(minuteOffset: 198, timeLabel: "—", title: "Wyjmij warzywa", subtitle: "Bez wyciskania."), CookingTimelineItem(minuteOffset: 288, timeLabel: "90 min", title: "Dokończ bazę kolagenową", subtitle: "Bez wrzenia i bez mieszania."), CookingTimelineItem(minuteOffset: 308, timeLabel: "20 min", title: "Odstaw", subtitle: "Osad ma opaść na dno."), CookingTimelineItem(minuteOffset: 318, timeLabel: "10–20 min", title: "Przecedź i dopraw", subtitle: "Najpierw cedzenie, potem sól.")], warnings: warnings, structuredWarnings: [], validationFailure: nil, scoring: nil, recommendedMeatRange: nil, clarityMode: request.clarityMode, useVinegar: request.useVinegar, targetYieldLiters: request.targetYieldLiters, vegetableBreakdown: vegetableBreakdown, spiceBreakdown: BrothSpiceBreakdown(peppercornCount: pepper, allspiceCount: allspice, bayLeafCount: bay), microMode: false, waterWasReducedToFit: false)
     }
     private static func fishPresetCalculation(
         pot: Double,

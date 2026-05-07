@@ -438,11 +438,25 @@ struct BrothResultView: View {
 
     private var meatRows: [MeatShoppingRowData] {
         editableBaseItems.map { item in
+            let grams = item.currentGrams(overrides: meatOverrides)
+            let valueText: String
+            if case .preset(.collagenPoultryReady) = mode,
+               item.name.contains("Skrzydła z kurczaka") {
+                let pieces = Int((Double(grams) / 100.0).rounded())
+                valueText = "\(pieces) szt. (~\(gramsString(grams)))"
+            } else if case .preset(.collagenPoultryReady) = mode,
+                      item.name.contains("Udka kurczaka") {
+                let pieces = (Double(grams) / 160.0)
+                let pieceLabel = pieces == floor(pieces) ? "\(Int(pieces))" : pieces.formatted(.number.precision(.fractionLength(1)))
+                valueText = "\(pieceLabel) szt. (~\(gramsString(grams)))"
+            } else {
+                valueText = gramsString(grams)
+            }
             MeatShoppingRowData(
                 icon: iconKind(for: item.name),
                 title: item.name,
                 subtitle: item.subtitle,
-                value: gramsString(item.currentGrams(overrides: meatOverrides))
+                value: valueText
             )
         }
     }
