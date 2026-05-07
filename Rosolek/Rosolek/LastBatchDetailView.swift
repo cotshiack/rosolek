@@ -430,7 +430,7 @@ struct LastBatchDetailView: View {
 
     private func ingredientEntries(for batch: BatchRecord) -> (base: [IngredientEntry], vegetables: [IngredientEntry]) {
         let snapshot = batch.selectedIngredientsSnapshot ?? []
-        let base = snapshot
+        var base = snapshot
             .filter { isBaseCategory(rawValue: $0.categoryRawValue) }
             .map {
                 IngredientEntry(
@@ -441,6 +441,10 @@ struct LastBatchDetailView: View {
                 )
             }
             .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+
+        if batch.presetRawValue == BrothPreset.collagenPoultryReady.rawValue {
+            base = correctedCollagenBaseEntries(base, totalWeightGrams: batch.totalWeightGrams)
+        }
 
         let vegetables = snapshot
             .filter { $0.categoryRawValue == IngredientCategory.veggies.rawValue }
@@ -463,6 +467,40 @@ struct LastBatchDetailView: View {
             .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
 
         return (base, fallbackVegetables)
+    }
+
+    private func correctedCollagenBaseEntries(_ entries: [IngredientEntry], totalWeightGrams: Int) -> [IngredientEntry] {
+        guard entries.count >= 5 else { return entries }
+        let allEqual = Set(entries.map(\.finalValue)).count == 1
+        guard allEqual else { return entries }
+
+        let total = max(0, totalWeightGrams)
+        guard total > 0 else { return entries }
+
+        let target: [(String, Double)] = [
+            ("Szyje z kurczaka", 0.39),
+            ("Korpus z kurczaka", 0.39),
+            ("Łapki z kurczaka", 0.12),
+            ("Skrzydła z kurczaka", 0.07),
+            ("Udka kurczaka", 0.03)
+        ]
+
+        var corrected = target.map { name, share in
+            IngredientEntry(
+                id: "fix_\(name)",
+                name: name,
+                initialValue: Int((Double(total) * share).rounded()),
+                finalValue: Int((Double(total) * share).rounded())
+            )
+        }
+
+        let diff = total - corrected.reduce(0) { $0 + $1.finalValue }
+        if diff != 0, var first = corrected.first {
+            first = IngredientEntry(id: first.id, name: first.name, initialValue: first.initialValue + diff, finalValue: first.finalValue + diff)
+            corrected[0] = first
+        }
+
+        return corrected
     }
 
     private func isBaseCategory(rawValue: String) -> Bool {
