@@ -60,6 +60,7 @@ private struct InstructionSheetContent: Identifiable {
     let hasPoultry: Bool
     let hasLiver: Bool
     let isGrandmaStyle: Bool
+    let isCollagenPoultryPreset: Bool
     let stepID: String?
     let isRamenTonkotsu: Bool
     let ultraVariant: UltraSpecVariantID?
@@ -1298,6 +1299,7 @@ struct CookingModeView: View {
                 hasPoultry: hasPoultry,
                 hasLiver: hasLiver,
                 isGrandmaStyle: isGrandmaPreset,
+                isCollagenPoultryPreset: isCollagenPoultryPreset,
                 stepID: phases[index].stepID,
                 isRamenTonkotsu: activeUltraVariant == .ramenTonkotsu,
                 ultraVariant: activeUltraVariant
@@ -3339,8 +3341,8 @@ private struct PhaseDetailsSheet: View {
                 )
             }
             return PhaseSheetModel(
-                eyebrow: isCollagenPoultryPreset ? "75 minut bez warzyw" : "60 minut bez warzyw",
-                intro: isCollagenPoultryPreset ? "Przez 75 minut gotujesz wyłącznie mięso. To etap budowania kolagenowej bazy." : "Przez 60 minut gotujesz wyłącznie mięso. To etap budowania czystej bazy.",
+                eyebrow: content.isCollagenPoultryPreset ? "75 minut bez warzyw" : "60 minut bez warzyw",
+                intro: content.isCollagenPoultryPreset ? "Przez 75 minut gotujesz wyłącznie mięso. To etap budowania kolagenowej bazy." : "Przez 60 minut gotujesz wyłącznie mięso. To etap budowania czystej bazy.",
                 sections: [
                     PhaseSheetSection(
                         title: "Co dzieje się w garnku",
