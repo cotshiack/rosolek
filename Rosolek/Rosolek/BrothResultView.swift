@@ -434,23 +434,34 @@ struct BrothResultView: View {
     }
 
     private var meatRows: [MeatShoppingRowData] {
+        editableBaseItems.map { item in
+            MeatShoppingRowData(
+                icon: iconKind(for: item.name),
+                title: item.name,
+                subtitle: item.subtitle,
+                value: gramsString(item.currentGrams(overrides: meatOverrides))
+            )
+        }
+    }
+
+    private var editableBaseItems: [EditableBaseItem] {
         if usesUserSelections {
-            return effectiveSelections.map { selection in
-                MeatShoppingRowData(
-                    icon: iconKind(for: selection.name),
-                    title: selection.name,
+            return resolvedSelections.map { selection in
+                EditableBaseItem(
+                    id: selection.ingredientID,
+                    name: selection.ingredientName,
                     subtitle: subtitleForSelection(selection),
-                    value: gramsString(selection.grams)
+                    defaultGrams: selection.grams
                 )
             }
         }
 
         return result.meatParts.map { part in
-            MeatShoppingRowData(
-                icon: iconKind(for: part.name),
-                title: part.name,
+            EditableBaseItem(
+                id: part.name,
+                name: part.name,
                 subtitle: part.note ?? "Część przepisu.",
-                value: gramsString(part.grams)
+                defaultGrams: part.grams
             )
         }
     }
@@ -921,15 +932,15 @@ struct BrothResultView: View {
                 onReset: { meatOverrides.removeAll() },
                 onDone: { showMeatEditor = false }
             ) {
-                ForEach(resolvedSelections, id: \.ingredientID) { selection in
+                ForEach(editableBaseItems) { item in
                     editorRow(
-                        title: selection.ingredientName,
-                        subtitle: subtitleForSelection(selection),
-                        value: meatOverrides[selection.ingredientID] ?? selection.grams,
+                        title: item.name,
+                        subtitle: item.subtitle,
+                        value: item.currentGrams(overrides: meatOverrides),
                         suffix: "g",
                         step: 50,
                         range: 0...6000
-                    ) { meatOverrides[selection.ingredientID] = $0 }
+                    ) { meatOverrides[item.id] = $0 }
                 }
             }
         }
@@ -1961,6 +1972,17 @@ private struct MeatShoppingRowData {
     let title: String
     let subtitle: String
     let value: String
+}
+
+private struct EditableBaseItem: Identifiable {
+    let id: String
+    let name: String
+    let subtitle: String
+    let defaultGrams: Int
+
+    func currentGrams(overrides: [String: Int]) -> Int {
+        overrides[id] ?? defaultGrams
+    }
 }
 
 private struct MeatShoppingCard: View {
