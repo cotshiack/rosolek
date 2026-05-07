@@ -510,11 +510,11 @@ struct LastBatchDetailView: View {
     private func categoryHeader(title: String, value: String) -> some View {
         HStack(spacing: 8) {
             Text(title)
-                .font(.system(size: 15, weight: .bold))
-                .foregroundStyle(AppTheme.textPrimary)
+                .font(.system(size: 17, weight: .bold))
+                .foregroundStyle(AppTheme.textPrimary.opacity(0.92))
             Spacer()
             Text(value)
-                .font(.system(size: 15, weight: .semibold))
+                .font(.system(size: 17, weight: .bold))
                 .foregroundStyle(AppTheme.textPrimary)
         }
     }
@@ -522,11 +522,11 @@ struct LastBatchDetailView: View {
     private func ingredientValueRow(title: String, value: String) -> some View {
         HStack(alignment: .firstTextBaseline) {
             Text(title)
-                .font(.system(size: 15, weight: .medium))
-                .foregroundStyle(AppTheme.textPrimary)
+                .font(.system(size: 14, weight: .medium))
+                .foregroundStyle(AppTheme.textSecondary)
             Spacer()
             Text(value)
-                .font(.system(size: 15, weight: .medium))
+                .font(.system(size: 14, weight: .semibold))
                 .foregroundStyle(AppTheme.textPrimary)
         }
     }
