@@ -954,12 +954,19 @@ struct BrothResultView: View {
                 onDone: { showMeatEditor = false }
             ) {
                 ForEach(editableBaseItems) { item in
+                    let isCollagenPreset = {
+                        if case .preset(.collagenPoultryReady) = mode { return true }
+                        return false
+                    }()
+                    let isWings = item.name.contains("Skrzydła z kurczaka")
+                    let isThighs = item.name.contains("Udka kurczaka")
+                    let rowStep = (isCollagenPreset && isWings) ? 100 : ((isCollagenPreset && isThighs) ? 80 : 50)
                     editorRow(
                         title: item.name,
                         subtitle: item.subtitle,
                         value: item.currentGrams(overrides: meatOverrides),
                         suffix: "g",
-                        step: 50,
+                        step: rowStep,
                         range: 0...6000
                     ) { meatOverrides[item.id] = $0 }
                 }
