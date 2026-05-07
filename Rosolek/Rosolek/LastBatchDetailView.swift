@@ -143,15 +143,12 @@ struct LastBatchDetailView: View {
                     }
                     AppInfoRow(title: "Masa mięsa", value: batch.weightDisplayText)
                     AppInfoRow(title: "Woda start", value: batch.waterDisplayText)
-                    AppInfoRow(title: "Uzysk", value: batch.yieldDisplayText)
-                    if batch.actualYieldLiters != nil {
-                        AppInfoRow(title: "Szacowany uzysk", value: batch.estimatedYieldDisplayText)
-                    }
-                    AppInfoRow(title: "Czas gotowania", value: batch.timeDisplayText)
-                    AppInfoRow(title: "Termometr", value: batch.thermometerDisplayText)
+                    AppInfoRow(title: batch.actualYieldLiters == nil ? "Uzysk" : "Szacowany uzysk", value: batch.estimatedYieldDisplayText)
                     if let actualYield = batch.actualYieldLiters {
                         AppInfoRow(title: "Realny uzysk", value: litersLabel(actualYield))
                     }
+                    AppInfoRow(title: "Czas gotowania", value: batch.timeDisplayText)
+                    AppInfoRow(title: "Termometr", value: batch.thermometerDisplayText)
 
                     if let interruption = batch.interruptionDisplayText {
                         AppInfoRow(title: "Status", value: interruption)

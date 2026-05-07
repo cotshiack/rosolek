@@ -1678,14 +1678,37 @@ extension BrothResultView {
             CookingSessionCoordinator.interruptActiveCookingAndCleanup(in: batchStore)
         }
 
-        let baseSnapshots = effectiveSelections.map { selection in
-            BatchIngredientSnapshot(
-                ingredientID: selection.ingredientID,
-                ingredientName: selection.ingredientName,
-                categoryRawValue: selection.category.rawValue,
-                grams: selection.grams
-            )
-        }
+        let baseSnapshots: [BatchIngredientSnapshot] = {
+            if usesUserSelections {
+                return effectiveSelections.map { selection in
+                    BatchIngredientSnapshot(
+                        ingredientID: selection.ingredientID,
+                        ingredientName: selection.ingredientName,
+                        categoryRawValue: selection.category.rawValue,
+                        grams: selection.grams
+                    )
+                }
+            }
+
+            let fallbackCategory: IngredientCategory = {
+                switch selectedKind {
+                case .fish: return .fish
+                case .veggie: return .veggies
+                case .beef: return .beef
+                case .ramen: return .pork
+                default: return .poultry
+                }
+            }()
+
+            return effectiveResult.meatParts.enumerated().map { index, part in
+                BatchIngredientSnapshot(
+                    ingredientID: "preset_base_\(index)",
+                    ingredientName: part.name,
+                    categoryRawValue: fallbackCategory.rawValue,
+                    grams: part.grams
+                )
+            }
+        }()
 
         let vegetableSnapshots = effectiveResult.vegetables.map { vegetable in
             let grams = parseGrams(from: vegetable.amount)
