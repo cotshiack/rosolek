@@ -436,6 +436,10 @@ extension BatchRecord {
     }
 
     var yieldDisplayText: String {
+        Self.litersString(actualYieldLiters ?? estimatedYieldLiters)
+    }
+
+    var estimatedYieldDisplayText: String {
         Self.litersString(estimatedYieldLiters)
     }
 

@@ -143,7 +143,10 @@ struct LastBatchDetailView: View {
                     }
                     AppInfoRow(title: "Masa mięsa", value: batch.weightDisplayText)
                     AppInfoRow(title: "Woda start", value: batch.waterDisplayText)
-                    AppInfoRow(title: "Szacowany uzysk", value: batch.yieldDisplayText)
+                    AppInfoRow(title: "Uzysk", value: batch.yieldDisplayText)
+                    if batch.actualYieldLiters != nil {
+                        AppInfoRow(title: "Szacowany uzysk", value: batch.estimatedYieldDisplayText)
+                    }
                     AppInfoRow(title: "Czas gotowania", value: batch.timeDisplayText)
                     AppInfoRow(title: "Termometr", value: batch.thermometerDisplayText)
                     if let actualYield = batch.actualYieldLiters {
@@ -222,9 +225,9 @@ struct LastBatchDetailView: View {
                                     .foregroundStyle(AppTheme.textSecondary)
                             }
 
-                            ingredientGroupView(title: "Baza", entries: entries.base, totalSuffix: "g")
-                            ingredientGroupView(title: "Warzywa", entries: entries.vegetables, totalSuffix: "g")
-                            spiceGroupView(batch)
+                            ingredientGroupCard(title: "Baza", entries: entries.base, totalSuffix: "g")
+                            ingredientGroupCard(title: "Warzywa", entries: entries.vegetables, totalSuffix: "g")
+                            spiceGroupCard(batch)
                         }
                     }
                     .appSoftShadow()
@@ -444,38 +447,50 @@ struct LastBatchDetailView: View {
     }
 
     @ViewBuilder
-    private func ingredientGroupView(title: String, entries: [IngredientEntry], totalSuffix: String) -> some View {
+    private func ingredientGroupCard(title: String, entries: [IngredientEntry], totalSuffix: String) -> some View {
         if !entries.isEmpty {
             let total = entries.reduce(0) { $0 + $1.finalValue }
-            VStack(alignment: .leading, spacing: 6) {
+            VStack(alignment: .leading, spacing: 8) {
                 AppInfoRow(title: title, value: "\(total) \(totalSuffix)")
-                ForEach(entries) { entry in
-                    VStack(alignment: .leading, spacing: 2) {
-                        AppInfoRow(title: entry.name, value: "\(entry.finalValue) g")
-                        if entry.isChanged {
-                            Text("z \(entry.initialValue) g na \(entry.finalValue) g")
-                                .font(.system(size: 12, weight: .medium))
-                                .foregroundStyle(AppTheme.textSecondary)
+                Divider().overlay(AppTheme.border)
+                VStack(alignment: .leading, spacing: 6) {
+                    ForEach(entries) { entry in
+                        VStack(alignment: .leading, spacing: 2) {
+                            AppInfoRow(title: entry.name, value: "\(entry.finalValue) g")
+                            if entry.isChanged {
+                                Text("z \(entry.initialValue) g na \(entry.finalValue) g")
+                                    .font(.system(size: 12, weight: .medium))
+                                    .foregroundStyle(AppTheme.textSecondary)
+                            }
                         }
                     }
                 }
             }
+            .padding(12)
+            .background(AppTheme.surfaceMuted)
+            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
         }
     }
 
     @ViewBuilder
-    private func spiceGroupView(_ batch: BatchRecord) -> some View {
+    private func spiceGroupCard(_ batch: BatchRecord) -> some View {
         let spices = fullSpiceEntries(batch)
         if !spices.isEmpty {
-            VStack(alignment: .leading, spacing: 6) {
+            VStack(alignment: .leading, spacing: 8) {
                 AppInfoRow(title: "Przyprawy i dodatki", value: "\(spices.count)")
-                ForEach(spices) { entry in
-                    AppInfoRow(
-                        title: spiceLabel(for: entry.key),
-                        value: spiceValueLabel(for: entry.key, value: entry.value)
-                    )
+                Divider().overlay(AppTheme.border)
+                VStack(alignment: .leading, spacing: 6) {
+                    ForEach(spices) { entry in
+                        AppInfoRow(
+                            title: spiceLabel(for: entry.key),
+                            value: spiceValueLabel(for: entry.key, value: entry.value)
+                        )
+                    }
                 }
             }
+            .padding(12)
+            .background(AppTheme.surfaceMuted)
+            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
         } else {
             Text("Brak zapisu przypraw dla tego batcha.")
                 .font(.system(size: 13, weight: .medium))
