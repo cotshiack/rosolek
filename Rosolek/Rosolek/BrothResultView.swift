@@ -452,7 +452,7 @@ struct BrothResultView: View {
             } else {
                 valueText = gramsString(grams)
             }
-            MeatShoppingRowData(
+            return MeatShoppingRowData(
                 icon: iconKind(for: item.name),
                 title: item.name,
                 subtitle: item.subtitle,
