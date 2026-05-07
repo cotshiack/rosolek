@@ -6,6 +6,8 @@ struct BrothResultView: View {
     let selectedIngredientCount: Int
     let selectedIDs: [String]
     let initialSelections: [BrothIngredientSelection]
+    let selectedKind: BrothKind?
+    let selectedStyleName: String?
 
     @EnvironmentObject private var batchStore: BatchStore
 
@@ -19,21 +21,39 @@ struct BrothResultView: View {
     @State private var activeCookingTitleForConflict = ""
     @State private var clarityMode: BrothClarityMode = .normal
     @State private var useVinegar = false
+    @AppStorage("defaultClarityModeRawValue") private var defaultClarityModeRawValue = BrothClarityMode.normal.rawValue
+    @AppStorage("defaultUseVinegar") private var defaultUseVinegar = false
     @State private var activeMetricTooltip: ResultMetricTooltipKey?
     @State private var isSummaryGridInteracting = false
+    @State private var showVegetableEditor = false
+    @State private var vegetableOverrides: [String: Int] = [:]
+    @State private var showSpiceEditor = false
+    @State private var spiceOverrides: [String: Int] = [:]
+    @State private var showMeatEditor = false
+    @State private var meatOverrides: [String: Int] = [:]
 
     init(
         mode: BrothMode,
         totalWeight: Int,
         selectedIngredientCount: Int,
         selectedIDs: [String],
-        initialSelections: [BrothIngredientSelection] = []
+        initialSelections: [BrothIngredientSelection] = [],
+        meatOverrides: [String: Int]? = nil,
+        vegetableOverrides: [String: Int]? = nil,
+        spiceOverrides: [String: Int]? = nil,
+        selectedKind: BrothKind? = nil,
+        selectedStyleName: String? = nil
     ) {
         self.mode = mode
         self.totalWeight = totalWeight
         self.selectedIngredientCount = selectedIngredientCount
         self.selectedIDs = selectedIDs
         self.initialSelections = initialSelections
+        self.selectedKind = selectedKind
+        self.selectedStyleName = selectedStyleName
+        _meatOverrides = State(initialValue: meatOverrides ?? [:])
+        _vegetableOverrides = State(initialValue: vegetableOverrides ?? [:])
+        _spiceOverrides = State(initialValue: spiceOverrides ?? [:])
     }
 
     init(
@@ -50,20 +70,29 @@ struct BrothResultView: View {
             totalWeight: result.meatParts.reduce(0) { $0 + $1.grams },
             selectedIngredientCount: preset.defaultSelectedIDs.count,
             selectedIDs: preset.defaultSelectedIDs,
-            initialSelections: []
+            initialSelections: [],
+            selectedKind: nil,
+            selectedStyleName: nil
         )
     }
 
     init(
         profile: BrothProfile,
-        selections: [BrothIngredientSelection]
+        selections: [BrothIngredientSelection],
+        selectedKind: BrothKind? = nil,
+        selectedStyleName: String? = nil
     ) {
         self.init(
             mode: .custom(profile),
             totalWeight: selections.reduce(0) { $0 + $1.grams },
             selectedIngredientCount: selections.count,
             selectedIDs: selections.map(\.ingredientID),
-            initialSelections: selections
+            initialSelections: selections,
+            meatOverrides: nil,
+            vegetableOverrides: nil,
+            spiceOverrides: nil,
+            selectedKind: selectedKind,
+            selectedStyleName: selectedStyleName
         )
     }
 
@@ -78,6 +107,25 @@ struct BrothResultView: View {
             )
 
         case .custom(let profile):
+            if let kind = selectedKind {
+                do {
+                    let styleKey = UltraSpecStyleKeyResolver.resolve(kind: kind, styleName: selectedStyleName)
+                    let variant = UltraSpecVariantResolver.resolve(kind: kind, styleKey: styleKey)
+                    let ultra = try UltraSpecBridge.calculateFromCurrentFlow(
+                        kind: kind,
+                        styleName: selectedStyleName,
+                        potCapacityL: Double(potSizeLiters),
+                        selections: resolvedSelections,
+                        clarityMode: clarityMode
+                    )
+                    return makeBrothResultFromUltraSpec(ultra, variant: variant, profile: profile)
+                } catch let error as UltraSpecEngineError {
+                    return makeUltraSpecFailureResult(error: error)
+                } catch {
+                    return makeUltraSpecFailureResult(error: .variantNotConfigured)
+                }
+            }
+
             return BrothCalculator.calculate(
                 profile: profile,
                 meatItems: resolvedSelections,
@@ -88,12 +136,170 @@ struct BrothResultView: View {
         }
     }
 
+
+    private func makeBrothResultFromUltraSpec(_ ultra: UltraSpecCalculationResult, variant: UltraSpecVariantID, profile: BrothProfile) -> BrothCalculationResult {
+        guard let config = variantConfig(for: variant) else {
+            return makeUltraSpecFailureResult(error: .variantNotConfigured)
+        }
+
+        let vegRows = ultra.vegetables.map {
+            VegetableAmount(name: prettyIngredientName($0.ingredientID), amount: "\($0.grams) g", note: nil)
+        }
+
+        let spice = BrothSpiceBreakdown(
+            peppercornCount: ultra.spices.peppercornCount,
+            allspiceCount: ultra.spices.allspiceCount,
+            bayLeafCount: ultra.spices.bayLeafCount
+        )
+
+        let filteredWarnings = ultra.warningMessages
+
+        var warningTexts = filteredWarnings.map {
+            if let suggestion = $0.suggestion?.text, !suggestion.isEmpty {
+                return "\($0.title): \($0.message) \(suggestion)"
+            }
+            return "\($0.title): \($0.message)"
+        }
+        let structured: [BrothWarning] = filteredWarnings.map {
+            BrothWarning(code: mapWarningCode($0.code), severity: mapSeverity($0.severity), params: [])
+        }
+
+        let timeline = UltraSpecTimelineCatalog.steps(for: variant).map {
+            let drawerSubtitle = UltraSpecStepLibrary.all[$0.stepID]?.subtitle
+            return CookingTimelineItem(
+                minuteOffset: $0.minuteOffset,
+                timeLabel: $0.timeLabel,
+                title: $0.title,
+                subtitle: drawerSubtitle ?? $0.subtitle
+            )
+        }
+
+        return BrothCalculationResult(
+            waterLiters: ultra.waterStartL,
+            temperatureMin: config.temperature.minC,
+            temperatureMax: config.temperature.maxC,
+            totalMinutes: config.totalMinutes,
+            estimatedYieldLiters: ultra.estimatedYieldL,
+            startSaltGrams: ultra.startSaltG,
+            finalSaltGrams: ultra.targetSaltG,
+            appleCiderVinegarMl: useVinegar ? max(5, Int((ultra.waterStartL * 2).rounded())) : 0,
+            peppercornCount: ultra.spices.peppercornCount,
+            allspiceCount: ultra.spices.allspiceCount,
+            bayLeafCount: ultra.spices.bayLeafCount,
+            vegetables: vegRows,
+            meatParts: resolvedSelections.map { MeatAmount(name: $0.name, grams: $0.grams, note: nil) },
+            timeline: timeline,
+            warnings: warningTexts,
+            structuredWarnings: structured,
+            validationFailure: nil,
+            scoring: nil,
+            recommendedMeatRange: nil,
+            clarityMode: clarityMode,
+            useVinegar: useVinegar,
+            targetYieldLiters: nil,
+            vegetableBreakdown: nil,
+            spiceBreakdown: spice,
+            microMode: ultra.waterStartL < 0.7,
+            waterWasReducedToFit: ultra.waterStartL < ultra.waterRecipeL
+        )
+    }
+
+
+    private func makeUltraSpecFailureResult(error: UltraSpecEngineError) -> BrothCalculationResult {
+        let failureCode: BrothWarningCode
+        let message: String
+        switch error {
+        case .hardPotTooSmall:
+            failureCode = .hardPotTooSmall
+            message = "Garnek jest za mały (min. 0,25 L)."
+        case .hardPotTooBig:
+            failureCode = .hardPotTooBig
+            message = "Pojemność garnka wygląda na literówkę (max. 30 L)."
+        case .hardNotFit:
+            failureCode = .hardNotFit
+            message = "Składniki nie mieszczą się w garnku z bezpiecznym marginesem."
+        case .variantNotConfigured:
+            failureCode = .premiumBlocked
+            message = "Nie udało się dopasować konfiguracji wariantu ULTRA-SPEC."
+        case .hardNoBase:
+            failureCode = .hardNoMeat
+            message = "Brak bazy dla tego bulionu. Dodaj składniki bazowe."
+        }
+
+        return BrothCalculationResult(
+            waterLiters: 0,
+            temperatureMin: 0,
+            temperatureMax: 0,
+            totalMinutes: 0,
+            estimatedYieldLiters: 0,
+            startSaltGrams: 0,
+            finalSaltGrams: 0,
+            appleCiderVinegarMl: 0,
+            peppercornCount: 0,
+            allspiceCount: 0,
+            bayLeafCount: 0,
+            vegetables: [],
+            meatParts: resolvedSelections.map { MeatAmount(name: $0.name, grams: $0.grams, note: nil) },
+            timeline: [],
+            warnings: [message],
+            structuredWarnings: [.init(code: failureCode, severity: .error, params: [])],
+            validationFailure: .init(code: failureCode, messageFallback: message),
+            scoring: nil,
+            recommendedMeatRange: nil,
+            clarityMode: clarityMode,
+            useVinegar: useVinegar,
+            targetYieldLiters: nil,
+            vegetableBreakdown: nil,
+            spiceBreakdown: nil,
+            microMode: false,
+            waterWasReducedToFit: false
+        )
+    }
+
+    private func variantConfig(for variant: UltraSpecVariantID) -> UltraSpecVariantConfig? {
+        UltraSpecCatalog.variants.first(where: { $0.id == variant })
+    }
+
+    private func mapSeverity(_ severity: UltraSpecSeverity) -> BrothWarningSeverity {
+        switch severity {
+        case .info: return .info
+        case .warn: return .warn
+        case .error: return .error
+        }
+    }
+
+    private func mapWarningCode(_ code: UltraSpecWarningCode) -> BrothWarningCode {
+        switch code {
+        case .underpower: return .baseTooLowForWater
+        case .overpower: return .baseTooHighForWater
+        case .vegTooMuch: return .singleIngredientRisk
+        case .paperFilterLowerIntensity: return .paperFilterLowerIntensity
+        case .hardPotTooSmall: return .hardPotTooSmall
+        case .hardPotTooBig: return .hardPotTooBig
+        case .hardNotFit: return .hardNotFit
+        case .wingsTooHigh: return .wingsTooHighLight
+        case .beefTooHigh: return .heavyBeefProfile
+        case .offalTooHigh: return .offalDominantRisk
+        case .vegSweetRisk: return .singleIngredientRisk
+        }
+    }
+
+    private func prettyIngredientName(_ id: String) -> String {
+        UltraSpecCatalog.ingredients.first(where: { $0.id == id })?.name ?? id
+    }
+
     private var resolvedSelections: [BrothIngredientSelection] {
         if !initialSelections.isEmpty {
             return sortedSelections(initialSelections)
         }
 
         return sortedSelections(syntheticSelections())
+    }
+
+    private var activeUltraVariant: UltraSpecVariantID? {
+        guard case .custom = mode, let kind = selectedKind else { return nil }
+        let styleKey = UltraSpecStyleKeyResolver.resolve(kind: kind, styleName: selectedStyleName)
+        return UltraSpecVariantResolver.resolve(kind: kind, styleKey: styleKey)
     }
 
     private var usesUserSelections: Bool {
@@ -104,83 +310,194 @@ struct BrothResultView: View {
     }
 
     private var vegetableRows: [ResultListRowData] {
-        result.vegetables.map { item in
-            ResultListRowData(
+        result.vegetables.compactMap { item in
+            let baseValue = parseGrams(from: item.amount)
+            let grams = vegetableOverrides[item.name] ?? baseValue
+            guard grams > 0 else { return nil }
+            return ResultListRowData(
                 icon: iconKind(for: item.name),
                 title: item.name,
                 subtitle: vegetableSubtitle(for: item),
-                value: item.amount
+                value: "\(grams) g"
             )
         }
     }
 
     private var spiceRows: [ResultListRowData] {
-        [
-            ResultListRowData(
-                icon: .salt,
-                title: "Sól",
-                subtitle: "Start i korekta końcowa",
-                value: "\(numberString(result.startSaltGrams)) g / \(numberString(result.finalSaltGrams)) g"
-            ),
-            ResultListRowData(
-                icon: .pepper,
-                title: "Pieprz czarny ziarnisty",
-                subtitle: "Czysty aromat",
-                value: "\(result.peppercornCount) \(result.peppercornCount == 1 ? "ziarno" : "ziaren")"
-            ),
-            ResultListRowData(
-                icon: .allspice,
-                title: "Ziele angielskie",
-                subtitle: "Głębia smaku",
-                value: "\(result.allspiceCount) \(result.allspiceCount == 1 ? "ziarno" : "ziaren")"
-            ),
-            ResultListRowData(
-                icon: .bayLeaf,
-                title: "Liść laurowy",
-                subtitle: "Tło aromatu",
-                value: result.bayLeafCount == 1 ? "1 liść" : "\(result.bayLeafCount) liście"
-            ),
-            ResultListRowData(
-                icon: .vinegar,
-                title: "Ocet jabłkowy",
-                subtitle: useVinegar ? "dodatek startowy" : "wyłączony",
-                value: "\(result.appleCiderVinegarMl) ml"
+        let startSaltG = spiceOverrides["salt_start"] ?? Int(result.startSaltGrams.rounded())
+        let finalSaltG = spiceOverrides["salt_final"] ?? Int(result.finalSaltGrams.rounded())
+        let pepperCount = spiceOverrides["pepper"] ?? result.peppercornCount
+        let allspiceCount = spiceOverrides["allspice"] ?? result.allspiceCount
+        let bayLeafCount = spiceOverrides["bay"] ?? result.bayLeafCount
+        let vinegarMl = spiceOverrides["vinegar"] ?? result.appleCiderVinegarMl
+
+        var rows: [ResultListRowData] = [
+            ]
+
+        if startSaltG > 0 || finalSaltG > 0 {
+            rows.append(
+                ResultListRowData(
+                    icon: .salt,
+                    title: "Sól",
+                    subtitle: "Start i korekta końcowa",
+                    value: "\(startSaltG) g / \(finalSaltG) g"
+                )
             )
-        ]
+        }
+        if supportsPepper, pepperCount > 0 {
+            rows.append(
+                ResultListRowData(
+                    icon: .pepper,
+                    title: "Pieprz czarny ziarnisty",
+                    subtitle: "Czysty aromat",
+                    value: "\(pepperCount) \(pepperCount == 1 ? "ziarno" : "ziaren")"
+                )
+            )
+        }
+
+        if supportsAllspice, allspiceCount > 0 { rows.append(ResultListRowData(icon: .allspice, title: "Ziele angielskie", subtitle: "Głębia smaku", value: "\(allspiceCount) \(allspiceCount == 1 ? "ziarno" : "ziaren")")) }
+        if supportsBayLeaf, bayLeafCount > 0 { rows.append(ResultListRowData(icon: .bayLeaf, title: "Liść laurowy", subtitle: "Tło aromatu", value: bayLeafCount == 1 ? "1 liść" : "\(bayLeafCount) liście")) }
+
+        if supportsVinegar && vinegarMl > 0 {
+            rows.append(ResultListRowData(icon: .vinegar, title: "Ocet jabłkowy", subtitle: useVinegar ? "dodatek startowy" : "wyłączony", value: "\(vinegarMl) ml"))
+        }
+
+        return rows
+    }
+
+    private var effectiveResult: BrothCalculationResult {
+        let baseResult = recalculatedResultFromEditedBase ?? result
+
+        let updatedVegetables = baseResult.vegetables.map { veg in
+            let baseValue = parseGrams(from: veg.amount)
+            let grams = vegetableOverrides[veg.name] ?? baseValue
+            return VegetableAmount(name: veg.name, amount: "\(grams) g", note: veg.note)
+        }
+
+        let startSaltG = Double(spiceOverrides["salt_start"] ?? Int(baseResult.startSaltGrams.rounded()))
+        let finalSaltG = Double(spiceOverrides["salt_final"] ?? Int(baseResult.finalSaltGrams.rounded()))
+        let pepperCount = spiceOverrides["pepper"] ?? baseResult.peppercornCount
+        let allspiceCount = spiceOverrides["allspice"] ?? baseResult.allspiceCount
+        let bayLeafCount = spiceOverrides["bay"] ?? baseResult.bayLeafCount
+        let vinegarMl = supportsVinegar ? (spiceOverrides["vinegar"] ?? baseResult.appleCiderVinegarMl) : 0
+
+        return BrothCalculationResult(
+            waterLiters: baseResult.waterLiters,
+            temperatureMin: baseResult.temperatureMin,
+            temperatureMax: baseResult.temperatureMax,
+            totalMinutes: baseResult.totalMinutes,
+            estimatedYieldLiters: baseResult.estimatedYieldLiters,
+            startSaltGrams: startSaltG,
+            finalSaltGrams: finalSaltG,
+            appleCiderVinegarMl: vinegarMl,
+            peppercornCount: pepperCount,
+            allspiceCount: allspiceCount,
+            bayLeafCount: bayLeafCount,
+            vegetables: updatedVegetables,
+            meatParts: effectiveSelections.map { MeatAmount(name: $0.name, grams: $0.grams, note: nil) },
+            timeline: baseResult.timeline,
+            warnings: baseResult.warnings,
+            structuredWarnings: baseResult.structuredWarnings,
+            validationFailure: baseResult.validationFailure,
+            scoring: baseResult.scoring,
+            recommendedMeatRange: baseResult.recommendedMeatRange,
+            clarityMode: baseResult.clarityMode,
+            useVinegar: baseResult.useVinegar,
+            targetYieldLiters: baseResult.targetYieldLiters,
+            vegetableBreakdown: baseResult.vegetableBreakdown,
+            spiceBreakdown: baseResult.spiceBreakdown,
+            microMode: baseResult.microMode,
+            waterWasReducedToFit: baseResult.waterWasReducedToFit
+        )
+    }
+
+    private var recalculatedResultFromEditedBase: BrothCalculationResult? {
+        guard !meatOverrides.isEmpty else { return nil }
+        guard case .custom(let profile) = mode, let kind = selectedKind else { return nil }
+
+        do {
+            let styleKey = UltraSpecStyleKeyResolver.resolve(kind: kind, styleName: selectedStyleName)
+            let variant = UltraSpecVariantResolver.resolve(kind: kind, styleKey: styleKey)
+            let ultra = try UltraSpecBridge.calculateFromCurrentFlow(
+                kind: kind,
+                styleName: selectedStyleName,
+                potCapacityL: Double(potSizeLiters),
+                selections: effectiveSelections,
+                clarityMode: clarityMode
+            )
+            return makeBrothResultFromUltraSpec(ultra, variant: variant, profile: profile)
+        } catch let error as UltraSpecEngineError {
+            return makeUltraSpecFailureResult(error: error)
+        } catch {
+            return makeUltraSpecFailureResult(error: .variantNotConfigured)
+        }
     }
 
     private var meatRows: [MeatShoppingRowData] {
+        editableBaseItems.map { item in
+            MeatShoppingRowData(
+                icon: iconKind(for: item.name),
+                title: item.name,
+                subtitle: item.subtitle,
+                value: gramsString(item.currentGrams(overrides: meatOverrides))
+            )
+        }
+    }
+
+    private var editableBaseItems: [EditableBaseItem] {
         if usesUserSelections {
             return resolvedSelections.map { selection in
-                MeatShoppingRowData(
-                    icon: iconKind(for: selection.name),
-                    title: selection.name,
+                EditableBaseItem(
+                    id: selection.ingredientID,
+                    name: selection.ingredientName,
                     subtitle: subtitleForSelection(selection),
-                    value: gramsString(selection.grams)
+                    defaultGrams: selection.grams
                 )
             }
         }
 
         return result.meatParts.map { part in
-            MeatShoppingRowData(
-                icon: iconKind(for: part.name),
-                title: part.name,
+            EditableBaseItem(
+                id: part.name,
+                name: part.name,
                 subtitle: part.note ?? "Część przepisu.",
-                value: gramsString(part.grams)
+                defaultGrams: part.grams
             )
         }
     }
 
+    private var effectiveSelections: [BrothIngredientSelection] {
+        resolvedSelections.map { selection in
+            let overriddenGrams = meatOverrides[selection.ingredientID] ?? selection.grams
+            return BrothIngredientSelection(
+                ingredientID: selection.ingredientID,
+                ingredientName: selection.ingredientName,
+                category: selection.category,
+                grams: max(0, overriddenGrams)
+            )
+        }
+    }
+
+    private var effectiveTotalWeight: Int {
+        effectiveSelections.reduce(0) { $0 + $1.grams }
+    }
+
+    private var displayedBaseTotalWeight: Int {
+        editableBaseItems.reduce(0) { $0 + $1.currentGrams(overrides: meatOverrides) }
+    }
+
     private var totalVegetableGrams: Int {
-        result.vegetableBreakdown?.totalGrams ?? 0
+        effectiveResult.vegetables.reduce(0) { partial, item in
+            partial + parseGrams(from: item.amount)
+        }
     }
 
     private var additivesApproxGrams: Int {
-        totalVegetableGrams + Int(result.startSaltGrams.rounded()) + result.appleCiderVinegarMl
+        totalVegetableGrams + Int(effectiveResult.startSaltGrams.rounded()) + effectiveResult.appleCiderVinegarMl
     }
 
     private var loadDisplay: String {
-        let load = totalWeight + additivesApproxGrams
+        let load = effectiveTotalWeight + additivesApproxGrams
         return gramsString(load)
     }
 
@@ -194,16 +511,24 @@ struct BrothResultView: View {
         if !structured.isEmpty {
             let hasWaterReduction = structured.contains(where: { $0.code == .waterReducedToFit })
 
-            let filtered = structured.filter { warning in
-                if hasWaterReduction {
-                    if warning.code == .undermeatLight || warning.code == .undermeatIntense {
-                        return false
-                    }
+            let filtered: [BrothWarning]
+            if hasWaterReduction {
+                filtered = structured.filter { warning in
+                    warning.code != .undermeatLight && warning.code != .undermeatIntense
                 }
-                return true
+            } else {
+                filtered = structured
             }
 
-            return filtered.map {
+            var seenCodes = Set<BrothWarningCode>()
+            var uniqueWarnings: [BrothWarning] = []
+            for warning in filtered {
+                if seenCodes.insert(warning.code).inserted {
+                    uniqueWarnings.append(warning)
+                }
+            }
+
+            return uniqueWarnings.map {
                 WarningCardModel(
                     text: warningText(for: $0),
                     severity: $0.severity
@@ -238,9 +563,13 @@ struct BrothResultView: View {
                 VStack(alignment: .leading, spacing: 22) {
                     header
                     summaryGrid
-                    refinementSection
+                    if hasRefinementOptions {
+                        refinementSection
+                    }
                     ingredientsSection
-                    spicesSection
+                    if !spiceRows.isEmpty {
+                        spicesSection
+                    }
                     timelineSection
 
                     if !warningCards.isEmpty {
@@ -321,7 +650,7 @@ struct BrothResultView: View {
             }
         }
         .background(AppTheme.background)
-        .navigationTitle("Twój rosół")
+        .navigationTitle(screenNavigationTitle)
         .navigationBarTitleDisplayMode(.inline)
         .safeAreaInset(edge: .bottom) {
             Button {
@@ -346,7 +675,7 @@ struct BrothResultView: View {
             if let savedBatch {
                 CookingModeView(
                     batch: savedBatch,
-                    result: result,
+                    result: effectiveResult,
                     totalWeightGrams: totalWeight,
                     selectedIngredientCount: selectedIngredientCount,
                     hasThermometer: hasThermometer
@@ -361,6 +690,17 @@ struct BrothResultView: View {
         } message: {
             Text("Aktywne gotowanie „\(activeCookingTitleForConflict)” zostanie przerwane i zapisane w historii jako przerwane.")
         }
+        .onAppear {
+            defaultClarityModeRawValue = clarityMode.rawValue
+            defaultUseVinegar = useVinegar
+        }
+        .onChange(of: clarityMode) { _, newValue in
+            defaultClarityModeRawValue = newValue.rawValue
+        }
+        .onChange(of: useVinegar) { _, newValue in
+            defaultUseVinegar = newValue
+        }
+
     }
 
     private var header: some View {
@@ -374,6 +714,19 @@ struct BrothResultView: View {
                 .foregroundStyle(AppTheme.textSecondary)
                 .fixedSize(horizontal: false, vertical: true)
         }
+    }
+
+    private var screenNavigationTitle: String {
+        if selectedKind == .ramen || activeUltraVariant == .ramenShio || activeUltraVariant == .ramenTonkotsu || screenTitle.lowercased().contains("ramen") {
+            return "Twój ramen"
+        }
+        if selectedKind == .veggie || activeUltraVariant == .warzywnyJasny || activeUltraVariant == .warzywnyUmami {
+            return "Twój bulion warzywny"
+        }
+        if selectedKind == .fish || activeUltraVariant == .rybnyDelikatny || activeUltraVariant == .rybnyIntensywny {
+            return "Twój bulion rybny"
+        }
+        return "Twój rosół"
     }
 
     private var summaryGrid: some View {
@@ -405,7 +758,7 @@ struct BrothResultView: View {
             ResultMetricCard(
                 title: "Wsad",
                 value: loadDisplay,
-                subtitle: "mięso + warzywa",
+                subtitle: selectedKind == .veggie ? "warzywa + woda" : "mięso + warzywa",
                 tooltipKey: .load,
                 onInfoTap: {
                     withAnimation(.easeInOut(duration: 0.18)) {
@@ -435,7 +788,7 @@ struct BrothResultView: View {
                     .font(.system(size: 22, weight: .bold))
                     .foregroundStyle(AppTheme.textPrimary)
 
-                Text("Te opcje zmieniają finalny efekt po ugotowaniu, ale nie zmieniają doboru mięsa.")
+                Text(selectedKind == .veggie ? "Te opcje zmieniają finalny efekt po ugotowaniu, ale nie zmieniają wyliczonego koszyka." : "Te opcje zmieniają finalny efekt po ugotowaniu, ale nie zmieniają doboru mięsa.")
                     .font(.system(size: 14, weight: .medium))
                     .foregroundStyle(AppTheme.textSecondary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -443,58 +796,68 @@ struct BrothResultView: View {
 
             AppCard {
                 VStack(alignment: .leading, spacing: 18) {
-                    VStack(alignment: .leading, spacing: 10) {
-                        Text("Filtrowanie")
-                            .font(.system(size: 16, weight: .bold))
-                            .foregroundStyle(AppTheme.textPrimary)
+                    if supportsFiltering {
+                        VStack(alignment: .leading, spacing: 10) {
+                            Text("Filtrowanie")
+                                .font(.system(size: 16, weight: .bold))
+                                .foregroundStyle(AppTheme.textPrimary)
 
-                        BinaryChoiceControl(
-                            falseTitle: "Nie",
-                            trueTitle: "Tak",
-                            isOn: isFiltered,
-                            onFalse: {
-                                clarityMode = .normal
-                            },
-                            onTrue: {
-                                clarityMode = filteredClarityMode
-                            }
-                        )
+                            BinaryChoiceControl(
+                                falseTitle: "Nie",
+                                trueTitle: "Tak",
+                                isOn: isFiltered,
+                                onFalse: {
+                                    clarityMode = .normal
+                                },
+                                onTrue: {
+                                    clarityMode = filteredClarityMode
+                                }
+                            )
 
-                        Text(filteringDescription)
-                            .font(.system(size: 13, weight: .medium))
-                            .foregroundStyle(AppTheme.textSecondary)
-                            .fixedSize(horizontal: false, vertical: true)
+                            Text(filteringDescription)
+                                .font(.system(size: 13, weight: .medium))
+                                .foregroundStyle(AppTheme.textSecondary)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
                     }
 
-                    Divider()
-                        .overlay(AppTheme.border)
+                    if supportsVinegar {
+                        if supportsFiltering {
+                            Divider()
+                                .overlay(AppTheme.border)
+                        }
 
-                    VStack(alignment: .leading, spacing: 10) {
-                        Text("Ocet jabłkowy")
-                            .font(.system(size: 16, weight: .bold))
-                            .foregroundStyle(AppTheme.textPrimary)
+                        VStack(alignment: .leading, spacing: 10) {
+                            Text("Ocet jabłkowy")
+                                .font(.system(size: 16, weight: .bold))
+                                .foregroundStyle(AppTheme.textPrimary)
 
-                        BinaryChoiceControl(
-                            falseTitle: "Nie",
-                            trueTitle: "Tak",
-                            isOn: useVinegar,
-                            onFalse: {
-                                useVinegar = false
-                            },
-                            onTrue: {
-                                useVinegar = true
-                            }
-                        )
+                            BinaryChoiceControl(
+                                falseTitle: "Nie",
+                                trueTitle: "Tak",
+                                isOn: useVinegar,
+                                onFalse: {
+                                    useVinegar = false
+                                },
+                                onTrue: {
+                                    useVinegar = true
+                                }
+                            )
 
-                        Text(vinegarDescription)
-                            .font(.system(size: 13, weight: .medium))
-                            .foregroundStyle(AppTheme.textSecondary)
-                            .fixedSize(horizontal: false, vertical: true)
+                            Text(vinegarDescription)
+                                .font(.system(size: 13, weight: .medium))
+                                .foregroundStyle(AppTheme.textSecondary)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
                     }
                 }
             }
             .appSoftShadow()
         }
+    }
+
+    private var hasRefinementOptions: Bool {
+        supportsFiltering || supportsVinegar
     }
 
     private var ingredientsSection: some View {
@@ -511,12 +874,13 @@ struct BrothResultView: View {
             }
 
             MeatShoppingCard(
-                title: "Mięso",
-                totalWeight: formattedWeight,
+                title: selectedKind == .veggie ? "Baza" : (selectedKind == .fish ? "Baza rybna" : "Mięso"),
+                totalWeight: gramsString(displayedBaseTotalWeight),
                 rows: meatRows,
                 description: usesUserSelections
                     ? "To jest dokładnie Twój zestaw."
-                    : "To jest gotowy zestaw z przepisu."
+                    : "To jest gotowy zestaw z przepisu.",
+                onEdit: { showMeatEditor = true }
             )
 
             AppCard {
@@ -529,6 +893,7 @@ struct BrothResultView: View {
                         Spacer()
 
                         ResultMetaChip(title: "\(vegetableRows.count) pozycji")
+                        editHeaderButton { showVegetableEditor = true }
                     }
 
                     VStack(spacing: 0) {
@@ -546,22 +911,61 @@ struct BrothResultView: View {
             }
             .appSoftShadow()
         }
+        .sheet(isPresented: $showVegetableEditor) {
+            editorSheet(
+                title: "Edytuj warzywa",
+                onReset: { vegetableOverrides.removeAll() },
+                onDone: { showVegetableEditor = false }
+            ) {
+                ForEach(result.vegetables, id: \.name) { item in
+                    let baseValue = parseGrams(from: item.amount)
+                    editorRow(
+                        title: item.name,
+                        subtitle: vegetableSubtitle(for: item),
+                        value: vegetableOverrides[item.name] ?? baseValue,
+                        suffix: "g",
+                        step: 5,
+                        range: 0...2500
+                    ) { vegetableOverrides[item.name] = $0 }
+                }
+            }
+        }
+        .sheet(isPresented: $showMeatEditor) {
+            editorSheet(
+                title: "Edytuj bazę",
+                onReset: { meatOverrides.removeAll() },
+                onDone: { showMeatEditor = false }
+            ) {
+                ForEach(editableBaseItems) { item in
+                    editorRow(
+                        title: item.name,
+                        subtitle: item.subtitle,
+                        value: item.currentGrams(overrides: meatOverrides),
+                        suffix: "g",
+                        step: 50,
+                        range: 0...6000
+                    ) { meatOverrides[item.id] = $0 }
+                }
+            }
+        }
     }
 
     private var spicesSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Przyprawy")
-                    .font(.system(size: 22, weight: .bold))
-                    .foregroundStyle(AppTheme.textPrimary)
-
-                Text("Przygotuj wcześniej.")
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundStyle(AppTheme.textSecondary)
-            }
-
             AppCard {
-                VStack(spacing: 0) {
+                VStack(alignment: .leading, spacing: 12) {
+                    HStack {
+                        Text("Przyprawy")
+                            .font(.system(size: 17, weight: .bold))
+                            .foregroundStyle(AppTheme.textPrimary)
+                        Spacer()
+                        editHeaderButton { showSpiceEditor = true }
+                    }
+                    Text("Przygotuj wcześniej.")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundStyle(AppTheme.textSecondary)
+
+                    VStack(spacing: 0) {
                     ForEach(Array(spiceRows.enumerated()), id: \.offset) { index, item in
                         ResultListRow(item: item)
 
@@ -572,9 +976,198 @@ struct BrothResultView: View {
                         }
                     }
                 }
+                }
             }
             .appSoftShadow()
         }
+        .sheet(isPresented: $showSpiceEditor) {
+            editorSheet(
+                title: "Edytuj przyprawy",
+                onReset: { spiceOverrides.removeAll() },
+                onDone: { showSpiceEditor = false }
+            ) {
+                spiceStepperRow(title: "Sól start", key: "salt_start", defaultValue: Int(result.startSaltGrams.rounded()), suffix: "g", range: 0...200, step: 1)
+                spiceStepperRow(title: "Sól końcowa", key: "salt_final", defaultValue: Int(result.finalSaltGrams.rounded()), suffix: "g", range: 0...250, step: 1)
+                if supportsPepper {
+                    spiceStepperRow(title: "Pieprz", key: "pepper", defaultValue: result.peppercornCount, suffix: "ziaren", range: 0...200, step: 1)
+                }
+                if supportsAllspice {
+                    spiceStepperRow(title: "Ziele angielskie", key: "allspice", defaultValue: result.allspiceCount, suffix: "ziaren", range: 0...100, step: 1)
+                }
+                if supportsBayLeaf {
+                    spiceStepperRow(title: "Liść laurowy", key: "bay", defaultValue: result.bayLeafCount, suffix: "liści", range: 0...50, step: 1)
+                }
+                if supportsVinegar {
+                    spiceStepperRow(title: "Ocet jabłkowy", key: "vinegar", defaultValue: result.appleCiderVinegarMl, suffix: "ml", range: 0...200, step: 5)
+                }
+            }
+        }
+    }
+
+    private var supportsVinegar: Bool {
+        switch activeUltraVariant {
+        case .some(.ramenTonkotsu), .some(.warzywnyJasny), .some(.warzywnyUmami), .some(.rybnyDelikatny), .some(.rybnyIntensywny):
+            return false
+        default:
+            return true
+        }
+    }
+
+    private var supportsFiltering: Bool {
+        activeUltraVariant != .ramenTonkotsu
+    }
+
+    private var supportsPepper: Bool {
+        activeUltraVariant != .ramenTonkotsu
+    }
+
+    private var supportsAllspice: Bool {
+        switch activeUltraVariant {
+        case .some(.ramenShio), .some(.ramenTonkotsu), .some(.warzywnyJasny), .some(.warzywnyUmami), .some(.rybnyDelikatny), .some(.rybnyIntensywny):
+            return false
+        default:
+            return true
+        }
+    }
+
+    private var supportsBayLeaf: Bool {
+        supportsAllspice
+    }
+
+    private func editHeaderButton(action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: "square.and.pencil")
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundStyle(AppTheme.textSecondary)
+                .frame(width: 30, height: 30)
+                .background(
+                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        .fill(AppTheme.surfaceMuted)
+                )
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func editorSheet<Content: View>(
+        title: String,
+        onReset: @escaping () -> Void,
+        onDone: @escaping () -> Void,
+        @ViewBuilder content: () -> Content
+    ) -> some View {
+        NavigationStack {
+            ScrollView(showsIndicators: false) {
+                AppCard {
+                    VStack(spacing: 0) {
+                        content()
+                    }
+                }
+                .appSoftShadow()
+                .padding(AppSpacing.screen)
+            }
+            .background(AppTheme.background)
+            .navigationTitle(title)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) { Button("Reset", action: onReset) }
+                ToolbarItem(placement: .confirmationAction) { Button("Gotowe", action: onDone) }
+            }
+        }
+    }
+
+    private func editorRow(
+        title: String,
+        subtitle: String?,
+        value: Int,
+        suffix: String,
+        step: Int,
+        range: ClosedRange<Int>,
+        onChange: @escaping (Int) -> Void
+    ) -> some View {
+        let displayTitle = shortenedEditorTitle(for: title)
+        let displaySubtitle = subtitle?.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        return HStack(alignment: .center, spacing: 12) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(displayTitle)
+                    .font(.system(size: 16, weight: .bold))
+                    .lineLimit(2)
+                    .truncationMode(.tail)
+                    .fixedSize(horizontal: false, vertical: true)
+                if let displaySubtitle, !displaySubtitle.isEmpty {
+                    Text(displaySubtitle)
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundStyle(AppTheme.textSecondary)
+                        .lineLimit(1)
+                        .truncationMode(.tail)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+
+            Spacer()
+            Text("\(value) \(suffix)")
+                .font(.system(size: 15, weight: .bold))
+                .frame(minWidth: 78, alignment: .trailing)
+
+            HStack(spacing: 0) {
+                Button {
+                    onChange(max(range.lowerBound, value - step))
+                } label: {
+                    Image(systemName: "minus")
+                        .font(.system(size: 20, weight: .semibold))
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                }
+                    .disabled(value <= range.lowerBound)
+                Divider().frame(height: 26)
+                Button {
+                    onChange(min(range.upperBound, value + step))
+                } label: {
+                    Image(systemName: "plus")
+                        .font(.system(size: 20, weight: .semibold))
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                }
+                    .disabled(value >= range.upperBound)
+            }
+            .foregroundStyle(AppTheme.textPrimary)
+            .frame(width: 116, height: 50)
+            .background(
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .fill(AppTheme.surfaceSoft)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .stroke(AppTheme.border, lineWidth: 1)
+            )
+            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .contentShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        }
+        .padding(.vertical, 14)
+        .overlay(alignment: .bottom) { Divider().overlay(AppTheme.border) }
+    }
+
+    private func shortenedEditorTitle(for title: String) -> String {
+        let normalized = title.lowercased()
+        if normalized.contains("kura rosołowa / porcja rosołowa") { return "Kura rosołowa" }
+        if normalized.contains("kości wieprzowe stawowe") { return "Kości wieprzowe" }
+        if normalized.contains("kręgosłup / ości rybne") { return "Kręgosłup / ości" }
+        if normalized.contains("pietruszka korzeń") { return "Pietruszka korzeń" }
+        return title
+    }
+
+    private func spiceStepperRow(
+        title: String,
+        key: String,
+        defaultValue: Int,
+        suffix: String,
+        range: ClosedRange<Int>,
+        step: Int
+    ) -> some View {
+        return editorRow(
+            title: title,
+            subtitle: nil,
+            value: spiceOverrides[key] ?? defaultValue,
+            suffix: suffix,
+            step: step,
+            range: range
+        ) { spiceOverrides[key] = $0 }
     }
 
     private var timelineSection: some View {
@@ -646,7 +1239,7 @@ extension BrothResultView {
         if isFiltered {
             return "Po przecedzeniu użyj filtra papierowego albo bardzo drobnego filtra. Rosół wyjdzie czystszy, ale finalnie zostanie go trochę mniej."
         } else {
-            return "Bez dodatkowego filtrowania rosół będzie pełniejszy i zostanie go trochę więcej. Wystarczy zwykłe cedzenie przez sito."
+            return selectedKind == .veggie ? "Bez dodatkowego filtrowania bulion będzie pełniejszy i zostanie go trochę więcej. Wystarczy zwykłe cedzenie przez sito." : "Bez dodatkowego filtrowania rosół będzie pełniejszy i zostanie go trochę więcej. Wystarczy zwykłe cedzenie przez sito."
         }
     }
 
@@ -672,7 +1265,7 @@ extension BrothResultView {
         case .preset(let preset):
             return preset.title
         case .custom:
-            return "Własny rosół"
+            return selectedKind.map { "Własny \($0.rawValue.lowercased())" } ?? "Własny bulion"
         }
     }
 
@@ -681,7 +1274,13 @@ extension BrothResultView {
         case .preset:
             return "To podsumowanie kalkulatora dla wybranego przepisu i składników."
         case .custom:
-            return "To podsumowanie kalkulatora na bazie mięsa, które wybrałeś."
+            if let selectedStyleName {
+                if selectedKind == .veggie {
+                    return "Podsumowanie dla stylu \(selectedStyleName.lowercased()) i wyliczonego koszyka warzyw. Pominęliśmy krok wyboru bazy, bo w warzywnym koszyk liczymy automatycznie z wielkości garnka."
+                }
+                return "Podsumowanie dla stylu \(selectedStyleName.lowercased()) i wybranej bazy."
+            }
+            return "Podsumowanie kalkulatora na bazie wybranych składników."
         }
     }
 
@@ -690,7 +1289,7 @@ extension BrothResultView {
         case .preset:
             return "Mięso, warzywa i przyprawy policzyła aplikacja."
         case .custom:
-            return "Mięso dodałeś Ty, resztę policzyła aplikacja."
+            return selectedKind == .veggie ? "Koszyk warzyw policzyła aplikacja na podstawie garnka i wybranego stylu." : "Bazę dodałeś Ty, resztę policzyła aplikacja."
         }
     }
 
@@ -793,6 +1392,8 @@ extension BrothResultView {
                 return "Więcej smaku i trochę tłustości."
             }
             return "Część wybrana przez użytkownika."
+        case .pork:
+            return "Baza wieprzowa pod gęstszy, kremowy profil."
 
         case .beef:
             if normalizedID.contains("kosc") || normalizedID.contains("ogon") {
@@ -805,6 +1406,12 @@ extension BrothResultView {
                 return "Dodawaj ostrożnie — trafia pod koniec gotowania."
             }
             return "Dodatek pogłębiający smak."
+        case .fish:
+            return "Delikatna baza rybna, gotuj krócej i łagodniej."
+        case .seafood:
+            return "Morski akcent umami — używaj ostrożnie, by nie zdominować profilu."
+        case .veggies:
+            return "Warzywna baza budująca czysty profil bulionu."
         }
     }
 
@@ -908,6 +1515,20 @@ extension BrothResultView {
             return .offal
         }
 
+        if normalizedID.contains("ryb")
+            || normalizedID.contains("kregoslup")
+            || normalizedID.contains("osci")
+            || normalizedID.contains("glow") {
+            return .fish
+        }
+
+        if normalizedID.contains("krewet")
+            || normalizedID.contains("malz")
+            || normalizedID.contains("skorupiak")
+            || normalizedID.contains("shell") {
+            return .seafood
+        }
+
         return .poultry
     }
 
@@ -920,8 +1541,12 @@ extension BrothResultView {
     private func categorySortIndex(_ category: IngredientCategory) -> Int {
         switch category {
         case .poultry: return 0
-        case .beef: return 1
-        case .offal: return 2
+        case .pork: return 1
+        case .beef: return 2
+        case .offal: return 3
+        case .fish: return 4
+        case .seafood: return 5
+        case .veggies: return 6
         }
     }
 
@@ -967,19 +1592,25 @@ extension BrothResultView {
         case .hardItemTooBig:
             return "Jedna z wag wygląda podejrzanie wysoko. Sprawdź, czy na pewno wpisujesz gramy."
         case .hardNoMeat:
-            return "Dodaj mięso. Bez mięsa nie ugotujesz rosołu."
+            return selectedKind == .fish ? "Dodaj bazę rybną. Bez ryb/owoców morza nie policzymy bulionu rybnego." : "Dodaj mięso. Bez mięsa nie ugotujesz rosołu."
         case .hardNotFit:
             return "Ten zestaw fizycznie nie mieści się w tym garnku. Zmniejsz ilość mięsa albo użyj większego naczynia."
         case .premiumBlocked:
             return "Ten składnik jest dostępny dopiero w rozszerzonej wersji kalkulatora."
         case .undermeatLight:
-            return "Wybrałeś mniej mięsa, niż spokojnie pomieści ten garnek. Aplikacja dopasuje wodę i dodatki do tej ilości, ale jeśli chcesz mocniejszy rosół, możesz dodać jeszcze trochę mięsa."
+            return selectedKind == .veggie
+                ? "Ten garnek pozwala na większy wsad warzywny. Aplikacja dopasowała wodę i dodatki do aktualnej ilości, ale jeśli chcesz mocniejszy profil, możesz zwiększyć gramaturę warzyw."
+                : (selectedKind == .fish ? "Wybrałeś mało bazy rybnej jak na ten garnek. Aplikacja dopasuje wodę i dodatki, ale dla mocniejszego profilu możesz dodać trochę ryb lub owoców morza." : "Wybrałeś mniej mięsa, niż spokojnie pomieści ten garnek. Aplikacja dopasuje wodę i dodatki do tej ilości, ale jeśli chcesz mocniejszy rosół, możesz dodać jeszcze trochę mięsa.")
+        case .baseTooLowForWater:
+            return selectedKind == .veggie ? "Baza jest dość lekka względem ilości wody. Jeśli chcesz pełniejszy efekt, zwiększ koszyk warzyw lub zmniejsz wodę." : (selectedKind == .fish ? "Baza rybna jest lekka względem ilości wody. Dla pełniejszego bulionu zwiększ ryby/owoce morza albo zmniejsz wodę." : "Baza jest lekka względem ilości wody. Dla pełniejszego efektu dodaj więcej bazy lub zmniejsz wodę.")
         case .overmeatLight:
             return "Jak na czystszy profil mięsa jest bardzo dużo. Wywar może wyjść zbyt ciężki."
         case .undermeatIntense:
-            return "Jak na głębszy profil mięsa jest tu raczej mało. Aplikacja dopasuje proporcje do tej ilości, ale jeśli chcesz pełniejszy efekt, możesz dodać jeszcze trochę mięsa."
+            return selectedKind == .fish ? "Jak na intensywniejszy bulion rybny baza jest raczej mała. Aplikacja dopasuje proporcje, ale pełniejszy efekt da większa ilość ryb/owoców morza." : "Jak na głębszy profil mięsa jest tu raczej mało. Aplikacja dopasuje proporcje do tej ilości, ale jeśli chcesz pełniejszy efekt, możesz dodać jeszcze trochę mięsa."
         case .overmeatIntense:
-            return "Mięsa jest bardzo dużo. Wywar może wyjść zbyt ciężki i trudniejszy do zbalansowania."
+            return selectedKind == .fish ? "Bazy rybnej jest bardzo dużo jak na ten litraż. Bulion może wyjść ciężki i gorzkawy." : "Mięsa jest bardzo dużo. Wywar może wyjść zbyt ciężki i trudniejszy do zbalansowania."
+        case .baseTooHighForWater:
+            return selectedKind == .veggie ? "Koszyk warzyw jest bardzo gęsty względem ilości wody. Bulion może wyjść zbyt ciężki." : (selectedKind == .fish ? "Baza rybna jest bardzo gęsta względem ilości wody. Bulion może wyjść ciężki lub gorzkawy." : "Baza jest bardzo gęsta względem ilości wody. Bulion może wyjść zbyt ciężki.")
         case .overfatLight:
             return "Ten zestaw może wyjść tłusty. Do czystszego profilu lepiej sprawdza się więcej korpusu lub szyi i mniej cięższych elementów."
         case .wingsTooHighLight:
@@ -1038,7 +1669,7 @@ extension BrothResultView {
             CookingSessionCoordinator.interruptActiveCookingAndCleanup(in: batchStore)
         }
 
-        let ingredientSnapshots = resolvedSelections.map { selection in
+        let baseSnapshots = effectiveSelections.map { selection in
             BatchIngredientSnapshot(
                 ingredientID: selection.ingredientID,
                 ingredientName: selection.ingredientName,
@@ -1046,6 +1677,17 @@ extension BrothResultView {
                 grams: selection.grams
             )
         }
+
+        let vegetableSnapshots = effectiveResult.vegetables.map { vegetable in
+            let grams = parseGrams(from: vegetable.amount)
+            return BatchIngredientSnapshot(
+                ingredientID: "veg_\(vegetable.name.lowercased())",
+                ingredientName: vegetable.name,
+                categoryRawValue: IngredientCategory.veggies.rawValue,
+                grams: grams
+            )
+        }
+        let ingredientSnapshots = baseSnapshots + vegetableSnapshots
 
         let ingredientIDs = ingredientSnapshots.map(\.ingredientID)
 
@@ -1065,23 +1707,37 @@ extension BrothResultView {
             profileRawValue = profile.rawValue
         }
 
+        let completeSpiceSnapshot: [String: Int] = [
+            "salt_start": Int(effectiveResult.startSaltGrams.rounded()),
+            "salt_final": Int(effectiveResult.finalSaltGrams.rounded()),
+            "pepper": effectiveResult.peppercornCount,
+            "allspice": effectiveResult.allspiceCount,
+            "bay": effectiveResult.bayLeafCount,
+            "vinegar": effectiveResult.appleCiderVinegarMl
+        ]
+
         let batch = batchStore.createBatch(
             styleRawValue: compatibilityStyle.rawValue,
             modeRawValue: modeRawValue,
             presetRawValue: presetRawValue,
             profileRawValue: profileRawValue,
+            brothKindRawValue: selectedKind?.rawValue,
+            selectedStyleName: selectedStyleName,
             clarityModeRawValue: clarityMode.rawValue,
             useVinegar: useVinegar,
-            totalWeightGrams: totalWeight,
+            totalWeightGrams: effectiveTotalWeight,
             selectedIngredientCount: ingredientSnapshots.isEmpty ? selectedIngredientCount : ingredientSnapshots.count,
-            waterLiters: result.waterLiters,
-            estimatedYieldLiters: result.estimatedYieldLiters,
-            totalMinutes: result.totalMinutes,
-            activeCookingMinutes: result.totalMinutes,
+            waterLiters: effectiveResult.waterLiters,
+            estimatedYieldLiters: effectiveResult.estimatedYieldLiters,
+            totalMinutes: effectiveResult.totalMinutes,
+            activeCookingMinutes: effectiveResult.totalMinutes,
             warningCount: warningCards.count,
             hasThermometer: hasThermometer,
             selectedIngredientIDs: ingredientIDs,
             selectedIngredientsSnapshot: ingredientSnapshots,
+            meatOverrides: meatOverrides.isEmpty ? nil : meatOverrides,
+            vegetableOverrides: vegetableOverrides.isEmpty ? nil : vegetableOverrides,
+            spiceOverrides: completeSpiceSnapshot,
             customTitle: nil
         )
 
@@ -1104,6 +1760,11 @@ extension BrothResultView {
 
     private func litersString(_ value: Double) -> String {
         numberString(value) + " l"
+    }
+
+    private func parseGrams(from text: String) -> Int {
+        let digits = text.filter { $0.isNumber }
+        return Int(digits) ?? 0
     }
 
     private func numberString(_ value: Double) -> String {
@@ -1337,11 +1998,23 @@ private struct MeatShoppingRowData {
     let value: String
 }
 
+private struct EditableBaseItem: Identifiable {
+    let id: String
+    let name: String
+    let subtitle: String
+    let defaultGrams: Int
+
+    func currentGrams(overrides: [String: Int]) -> Int {
+        overrides[id] ?? defaultGrams
+    }
+}
+
 private struct MeatShoppingCard: View {
     let title: String
     let totalWeight: String
     let rows: [MeatShoppingRowData]
     let description: String
+    let onEdit: (() -> Void)?
 
     var body: some View {
         AppCard {
@@ -1360,6 +2033,19 @@ private struct MeatShoppingCard: View {
                     Spacer()
 
                     ResultMetaChip(title: totalWeight, accent: true)
+                    if let onEdit {
+                        Button(action: onEdit) {
+                            Image(systemName: "square.and.pencil")
+                                .font(.system(size: 14, weight: .semibold))
+                                .foregroundStyle(AppTheme.textSecondary)
+                                .frame(width: 30, height: 30)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                        .fill(AppTheme.surfaceMuted)
+                                )
+                        }
+                        .buttonStyle(.plain)
+                    }
                 }
 
                 VStack(spacing: 0) {

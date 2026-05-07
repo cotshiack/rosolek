@@ -25,10 +25,15 @@ final class BatchStore: ObservableObject {
         modeRawValue: String = "legacy",
         presetRawValue: String? = nil,
         profileRawValue: String? = nil,
+        brothKindRawValue: String? = nil,
+        selectedStyleName: String? = nil,
         clarityModeRawValue: String = BrothClarityMode.normal.rawValue,
         useVinegar: Bool = false,
         activeCookingMinutes: Int? = nil,
-        selectedIngredientsSnapshot: [BatchIngredientSnapshot]? = nil
+        selectedIngredientsSnapshot: [BatchIngredientSnapshot]? = nil,
+        meatOverrides: [String: Int]? = nil,
+        vegetableOverrides: [String: Int]? = nil,
+        spiceOverrides: [String: Int]? = nil
     ) -> BatchRecord {
         let batch = BatchRecord(
             createdAt: Date(),
@@ -36,6 +41,8 @@ final class BatchStore: ObservableObject {
             modeRawValue: modeRawValue,
             presetRawValue: presetRawValue,
             profileRawValue: profileRawValue,
+            brothKindRawValue: brothKindRawValue,
+            selectedStyleName: selectedStyleName,
             clarityModeRawValue: clarityModeRawValue,
             useVinegar: useVinegar,
             totalWeightGrams: totalWeightGrams,
@@ -48,6 +55,9 @@ final class BatchStore: ObservableObject {
             hasThermometer: hasThermometer,
             selectedIngredientIDs: selectedIngredientIDs,
             selectedIngredientsSnapshot: selectedIngredientsSnapshot,
+            meatOverrides: meatOverrides,
+            vegetableOverrides: vegetableOverrides,
+            spiceOverrides: spiceOverrides,
             customTitle: normalizedTitle(customTitle)
         )
 
@@ -63,6 +73,8 @@ final class BatchStore: ObservableObject {
         modeRawValue: String,
         presetRawValue: String?,
         profileRawValue: String?,
+        brothKindRawValue: String? = nil,
+        selectedStyleName: String? = nil,
         clarityModeRawValue: String,
         useVinegar: Bool,
         totalWeightGrams: Int,
@@ -75,6 +87,9 @@ final class BatchStore: ObservableObject {
         hasThermometer: Bool,
         selectedIngredientIDs: [String]? = nil,
         selectedIngredientsSnapshot: [BatchIngredientSnapshot]? = nil,
+        meatOverrides: [String: Int]? = nil,
+        vegetableOverrides: [String: Int]? = nil,
+        spiceOverrides: [String: Int]? = nil,
         customTitle: String? = nil
     ) -> BatchRecord {
         createBatch(
@@ -91,10 +106,15 @@ final class BatchStore: ObservableObject {
             modeRawValue: modeRawValue,
             presetRawValue: presetRawValue,
             profileRawValue: profileRawValue,
+            brothKindRawValue: brothKindRawValue,
+            selectedStyleName: selectedStyleName,
             clarityModeRawValue: clarityModeRawValue,
             useVinegar: useVinegar,
             activeCookingMinutes: activeCookingMinutes,
-            selectedIngredientsSnapshot: selectedIngredientsSnapshot
+            selectedIngredientsSnapshot: selectedIngredientsSnapshot,
+            meatOverrides: meatOverrides,
+            vegetableOverrides: vegetableOverrides,
+            spiceOverrides: spiceOverrides
         )
     }
 
@@ -104,6 +124,7 @@ final class BatchStore: ObservableObject {
         strengthFeedbackRawValue: String?,
         fatFeedbackRawValue: String?,
         clarityFeedbackRawValue: String?,
+        actualYieldLiters: Double?,
         notes: String
     ) {
         guard let index = batches.firstIndex(where: { $0.id == batchID }) else { return }
@@ -112,6 +133,7 @@ final class BatchStore: ObservableObject {
         batches[index].strengthFeedbackRawValue = strengthFeedbackRawValue
         batches[index].fatFeedbackRawValue = fatFeedbackRawValue
         batches[index].clarityFeedbackRawValue = clarityFeedbackRawValue
+        batches[index].actualYieldLiters = actualYieldLiters
         batches[index].notes = notes
 
         save()

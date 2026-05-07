@@ -56,6 +56,8 @@ struct BatchRecord: Identifiable, Codable, Hashable {
     let modeRawValue: String
     let presetRawValue: String?
     let profileRawValue: String
+    let brothKindRawValue: String?
+    let selectedStyleName: String?
     let clarityModeRawValue: String
     let useVinegar: Bool
 
@@ -64,6 +66,7 @@ struct BatchRecord: Identifiable, Codable, Hashable {
     let selectedIngredientCount: Int
     let waterLiters: Double
     let estimatedYieldLiters: Double
+    var actualYieldLiters: Double?
 
     // Legacy field kept for compatibility/history UI
     let totalMinutes: Int
@@ -76,6 +79,9 @@ struct BatchRecord: Identifiable, Codable, Hashable {
 
     var selectedIngredientIDs: [String]?
     var selectedIngredientsSnapshot: [BatchIngredientSnapshot]?
+    var meatOverrides: [String: Int]?
+    var vegetableOverrides: [String: Int]?
+    var spiceOverrides: [String: Int]?
     var customTitle: String?
     var cookingOutcomeRawValue: String
     var interruptedAt: Date?
@@ -93,18 +99,24 @@ struct BatchRecord: Identifiable, Codable, Hashable {
         modeRawValue: String = "legacy",
         presetRawValue: String? = nil,
         profileRawValue: String? = nil,
+        brothKindRawValue: String? = nil,
+        selectedStyleName: String? = nil,
         clarityModeRawValue: String = BrothClarityMode.normal.rawValue,
         useVinegar: Bool = false,
         totalWeightGrams: Int,
         selectedIngredientCount: Int,
         waterLiters: Double,
         estimatedYieldLiters: Double,
+        actualYieldLiters: Double? = nil,
         totalMinutes: Int,
         activeCookingMinutes: Int? = nil,
         warningCount: Int,
         hasThermometer: Bool,
         selectedIngredientIDs: [String]? = nil,
         selectedIngredientsSnapshot: [BatchIngredientSnapshot]? = nil,
+        meatOverrides: [String: Int]? = nil,
+        vegetableOverrides: [String: Int]? = nil,
+        spiceOverrides: [String: Int]? = nil,
         customTitle: String? = nil,
         cookingOutcomeRawValue: String = CookingOutcome.completed.rawValue,
         interruptedAt: Date? = nil,
@@ -120,18 +132,24 @@ struct BatchRecord: Identifiable, Codable, Hashable {
         self.modeRawValue = modeRawValue
         self.presetRawValue = presetRawValue
         self.profileRawValue = profileRawValue ?? Self.legacyProfileRawValue(from: styleRawValue)
+        self.brothKindRawValue = brothKindRawValue
+        self.selectedStyleName = selectedStyleName
         self.clarityModeRawValue = clarityModeRawValue
         self.useVinegar = useVinegar
         self.totalWeightGrams = totalWeightGrams
         self.selectedIngredientCount = selectedIngredientCount
         self.waterLiters = waterLiters
         self.estimatedYieldLiters = estimatedYieldLiters
+        self.actualYieldLiters = actualYieldLiters
         self.totalMinutes = totalMinutes
         self.activeCookingMinutes = activeCookingMinutes ?? totalMinutes
         self.warningCount = warningCount
         self.hasThermometer = hasThermometer
         self.selectedIngredientIDs = selectedIngredientIDs
         self.selectedIngredientsSnapshot = selectedIngredientsSnapshot
+        self.meatOverrides = meatOverrides
+        self.vegetableOverrides = vegetableOverrides
+        self.spiceOverrides = spiceOverrides
         self.customTitle = customTitle
         self.cookingOutcomeRawValue = cookingOutcomeRawValue
         self.interruptedAt = interruptedAt
@@ -149,18 +167,24 @@ struct BatchRecord: Identifiable, Codable, Hashable {
         case modeRawValue
         case presetRawValue
         case profileRawValue
+        case brothKindRawValue
+        case selectedStyleName
         case clarityModeRawValue
         case useVinegar
         case totalWeightGrams
         case selectedIngredientCount
         case waterLiters
         case estimatedYieldLiters
+        case actualYieldLiters
         case totalMinutes
         case activeCookingMinutes
         case warningCount
         case hasThermometer
         case selectedIngredientIDs
         case selectedIngredientsSnapshot
+        case meatOverrides
+        case vegetableOverrides
+        case spiceOverrides
         case customTitle
         case cookingOutcomeRawValue
         case interruptedAt
@@ -196,18 +220,24 @@ struct BatchRecord: Identifiable, Codable, Hashable {
         self.modeRawValue = try container.decodeIfPresent(String.self, forKey: .modeRawValue) ?? fallbackModeRawValue
         self.presetRawValue = try container.decodeIfPresent(String.self, forKey: .presetRawValue)
         self.profileRawValue = try container.decodeIfPresent(String.self, forKey: .profileRawValue) ?? fallbackProfileRawValue
+        self.brothKindRawValue = try container.decodeIfPresent(String.self, forKey: .brothKindRawValue)
+        self.selectedStyleName = try container.decodeIfPresent(String.self, forKey: .selectedStyleName)
         self.clarityModeRawValue = try container.decodeIfPresent(String.self, forKey: .clarityModeRawValue) ?? BrothClarityMode.normal.rawValue
         self.useVinegar = try container.decodeIfPresent(Bool.self, forKey: .useVinegar) ?? false
         self.totalWeightGrams = try container.decodeIfPresent(Int.self, forKey: .totalWeightGrams) ?? 0
         self.selectedIngredientCount = decodedSelectedIngredientCount
         self.waterLiters = try container.decodeIfPresent(Double.self, forKey: .waterLiters) ?? 0
         self.estimatedYieldLiters = try container.decodeIfPresent(Double.self, forKey: .estimatedYieldLiters) ?? 0
+        self.actualYieldLiters = try container.decodeIfPresent(Double.self, forKey: .actualYieldLiters)
         self.totalMinutes = decodedTotalMinutes
         self.activeCookingMinutes = try container.decodeIfPresent(Int.self, forKey: .activeCookingMinutes) ?? decodedTotalMinutes
         self.warningCount = try container.decodeIfPresent(Int.self, forKey: .warningCount) ?? 0
         self.hasThermometer = try container.decodeIfPresent(Bool.self, forKey: .hasThermometer) ?? false
         self.selectedIngredientIDs = decodedSelectedIngredientIDs
         self.selectedIngredientsSnapshot = try container.decodeIfPresent([BatchIngredientSnapshot].self, forKey: .selectedIngredientsSnapshot)
+        self.meatOverrides = try container.decodeIfPresent([String: Int].self, forKey: .meatOverrides)
+        self.vegetableOverrides = try container.decodeIfPresent([String: Int].self, forKey: .vegetableOverrides)
+        self.spiceOverrides = try container.decodeIfPresent([String: Int].self, forKey: .spiceOverrides)
         self.customTitle = try container.decodeIfPresent(String.self, forKey: .customTitle)
         self.cookingOutcomeRawValue = try container.decodeIfPresent(String.self, forKey: .cookingOutcomeRawValue) ?? CookingOutcome.completed.rawValue
         self.interruptedAt = try container.decodeIfPresent(Date.self, forKey: .interruptedAt)
@@ -227,18 +257,24 @@ struct BatchRecord: Identifiable, Codable, Hashable {
         try container.encode(modeRawValue, forKey: .modeRawValue)
         try container.encodeIfPresent(presetRawValue, forKey: .presetRawValue)
         try container.encode(profileRawValue, forKey: .profileRawValue)
+        try container.encodeIfPresent(brothKindRawValue, forKey: .brothKindRawValue)
+        try container.encodeIfPresent(selectedStyleName, forKey: .selectedStyleName)
         try container.encode(clarityModeRawValue, forKey: .clarityModeRawValue)
         try container.encode(useVinegar, forKey: .useVinegar)
         try container.encode(totalWeightGrams, forKey: .totalWeightGrams)
         try container.encode(selectedIngredientCount, forKey: .selectedIngredientCount)
         try container.encode(waterLiters, forKey: .waterLiters)
         try container.encode(estimatedYieldLiters, forKey: .estimatedYieldLiters)
+        try container.encodeIfPresent(actualYieldLiters, forKey: .actualYieldLiters)
         try container.encode(totalMinutes, forKey: .totalMinutes)
         try container.encode(activeCookingMinutes, forKey: .activeCookingMinutes)
         try container.encode(warningCount, forKey: .warningCount)
         try container.encode(hasThermometer, forKey: .hasThermometer)
         try container.encodeIfPresent(selectedIngredientIDs, forKey: .selectedIngredientIDs)
         try container.encodeIfPresent(selectedIngredientsSnapshot, forKey: .selectedIngredientsSnapshot)
+        try container.encodeIfPresent(meatOverrides, forKey: .meatOverrides)
+        try container.encodeIfPresent(vegetableOverrides, forKey: .vegetableOverrides)
+        try container.encodeIfPresent(spiceOverrides, forKey: .spiceOverrides)
         try container.encodeIfPresent(customTitle, forKey: .customTitle)
         try container.encode(cookingOutcomeRawValue, forKey: .cookingOutcomeRawValue)
         try container.encodeIfPresent(interruptedAt, forKey: .interruptedAt)
@@ -251,6 +287,10 @@ struct BatchRecord: Identifiable, Codable, Hashable {
 }
 
 extension BatchRecord {
+    var hasManualOverrides: Bool {
+        !(meatOverrides ?? [:]).isEmpty || !(vegetableOverrides ?? [:]).isEmpty || !(spiceOverrides ?? [:]).isEmpty
+    }
+
     var brothMode: BrothMode? {
         switch modeRawValue {
         case "preset":
@@ -282,6 +322,10 @@ extension BatchRecord {
     }
 
     var defaultTitle: String {
+        if let named = preferredKindTitle {
+            return named
+        }
+
         if let preset = selectedPreset {
             switch preset {
             case .poultryReady:
@@ -298,6 +342,25 @@ extension BatchRecord {
             return "Rosół czystszy"
         case .richer:
             return "Rosół głębszy"
+        }
+    }
+
+    private var preferredKindTitle: String? {
+        guard let kind = BrothKind(rawValue: brothKindRawValue ?? "") else { return nil }
+        let style = selectedStyleName?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+
+        switch kind {
+        case .ramen:
+            if !style.isEmpty { return "Ramen \(style)" }
+            return "Ramen"
+        case .rosol:
+            return "Rosół klasyczny"
+        case .beef:
+            return "Bulion wołowy"
+        case .veggie:
+            return "Bulion warzywny"
+        case .fish:
+            return "Bulion rybny"
         }
     }
 
@@ -373,6 +436,10 @@ extension BatchRecord {
     }
 
     var yieldDisplayText: String {
+        Self.litersString(actualYieldLiters ?? estimatedYieldLiters)
+    }
+
+    var estimatedYieldDisplayText: String {
         Self.litersString(estimatedYieldLiters)
     }
 

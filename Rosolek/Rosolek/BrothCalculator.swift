@@ -78,6 +78,8 @@ enum BrothWarningCode: String, Hashable {
     case paperFilterLowerIntensity
     case paperFilterHighLoss
     case waterReducedToFit
+    case baseTooLowForWater
+    case baseTooHighForWater
 }
 
 struct BrothWarningParameter: Hashable {
@@ -2101,6 +2103,10 @@ private func warningText(for warning: BrothWarning) -> String {
         return "Przy filtrze papierowym strata może być tu wyraźna. Finalnego rosołu zostanie zauważalnie mniej."
     case .waterReducedToFit:
         return "Dla tego zestawu i tego garnka klasyczna ilość wody byłaby za duża, więc policzyliśmy jej mniej. Rosół wyjdzie trochę mocniejszy i będzie go mniej."
+    case .baseTooLowForWater:
+        return "Baza jest lekka względem ilości wody. Dla pełniejszego efektu dodaj więcej bazy albo zmniejsz wodę."
+    case .baseTooHighForWater:
+        return "Baza jest bardzo gęsta względem ilości wody. Bulion może wyjść ciężki — rozważ dodanie wody."
     }
 }
 

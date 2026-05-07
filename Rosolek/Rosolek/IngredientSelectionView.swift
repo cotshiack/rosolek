@@ -2,8 +2,12 @@ import SwiftUI
 
 enum IngredientCategory: String, CaseIterable, Identifiable, Hashable {
     case poultry = "Drób"
+    case pork = "Wieprzowina"
     case beef = "Wołowina"
     case offal = "Podroby"
+    case fish = "Ryby"
+    case seafood = "Owoce morza"
+    case veggies = "Warzywa bazowe"
 
     var id: String { rawValue }
 }
@@ -19,6 +23,10 @@ enum IngredientIllustrationKind: Hashable {
     case hearts
     case gizzards
     case liver
+    case fish
+    case shrimpShells
+    case shellfish
+    case vegetables
 }
 
 struct IngredientOption: Identifiable, Hashable {
@@ -66,8 +74,12 @@ struct QuickInsight {
 
 struct IngredientSelectionView: View {
     let selectedProfile: BrothProfile
+    let selectedKind: BrothKind
+    let selectedStyleName: String
 
     @AppStorage("potSizeLiters") private var potSizeLiters = 7
+    @AppStorage("defaultClarityModeRawValue") private var defaultClarityModeRawValue = BrothClarityMode.normal.rawValue
+    @AppStorage("defaultUseVinegar") private var defaultUseVinegar = false
 
     @State private var amounts: [String: String] = [:]
     @State private var expandedCategory: IngredientCategory? = nil
@@ -75,8 +87,10 @@ struct IngredientSelectionView: View {
 
     @FocusState private var focusedFieldID: String?
 
-    init(selectedProfile: BrothProfile) {
+    init(selectedProfile: BrothProfile, selectedKind: BrothKind = .rosol, selectedStyleName: String = "Klasyczny") {
         self.selectedProfile = selectedProfile
+        self.selectedKind = selectedKind
+        self.selectedStyleName = selectedStyleName
     }
 
     private let ingredients: [IngredientOption] = [
@@ -91,6 +105,13 @@ struct IngredientSelectionView: View {
         .init(id: "korpus_kaczki", name: "Korpus z kaczki", subtitle: "Bogaty smak i wyższa tłustość.", category: .poultry, illustration: .duck, fatScore: 2.0, gelatinScore: 1.1, clarityPenalty: 1.4, isPoultry: true, isBeef: false, isOffal: false, isLiver: false, isBoneHeavy: true),
         .init(id: "szyja_kaczki", name: "Szyja z kaczki", subtitle: "Głębia, tłustość i więcej body.", category: .poultry, illustration: .duck, fatScore: 1.8, gelatinScore: 1.4, clarityPenalty: 1.2, isPoultry: true, isBeef: false, isOffal: false, isLiver: false, isBoneHeavy: true),
         .init(id: "skrzydla_kaczki", name: "Skrzydła z kaczki", subtitle: "Wyraźniejszy charakter i tłustość.", category: .poultry, illustration: .duck, fatScore: 1.9, gelatinScore: 0.9, clarityPenalty: 1.3, isPoultry: true, isBeef: false, isOffal: false, isLiver: false, isBoneHeavy: false),
+        .init(id: "udka_kurczaka", name: "Udka kurczaka", subtitle: "Mięsny i tłustszy profil.", category: .poultry, illustration: .chicken, fatScore: 2.4, gelatinScore: 1.0, clarityPenalty: 1.0, isPoultry: true, isBeef: false, isOffal: false, isLiver: false, isBoneHeavy: false),
+        .init(id: "porcja_rosolowa_drobiowa", name: "Porcja rosołowa drobiowa", subtitle: "Mieszana baza rosołowa.", category: .poultry, illustration: .chickenBones, fatScore: 1.6, gelatinScore: 1.8, clarityPenalty: 0.9, isPoultry: true, isBeef: false, isOffal: false, isLiver: false, isBoneHeavy: true),
+        
+        .init(id: "kosci_wieprzowe", name: "Kości wieprzowe stawowe", subtitle: "Baza kolagenowa pod tonkotsu.", category: .pork, illustration: .bones, fatScore: 1.6, gelatinScore: 2.1, clarityPenalty: 1.8, isPoultry: false, isBeef: false, isOffal: false, isLiver: false, isBoneHeavy: true),
+        .init(id: "gicz_wieprzowa", name: "Gicz wieprzowa", subtitle: "Dodatkowy kolagen i body.", category: .pork, illustration: .bones, fatScore: 1.8, gelatinScore: 1.9, clarityPenalty: 1.7, isPoultry: false, isBeef: false, isOffal: false, isLiver: false, isBoneHeavy: true),
+        .init(id: "lapki_wieprzowe", name: "Łapki wieprzowe", subtitle: "Maksimum żelatyny do tonkotsu.", category: .pork, illustration: .bones, fatScore: 1.2, gelatinScore: 2.4, clarityPenalty: 1.7, isPoultry: false, isBeef: false, isOffal: false, isLiver: false, isBoneHeavy: true),
+        .init(id: "kregi_wieprzowe", name: "Kręgi wieprzowe", subtitle: "Baza kolagenowa do tonkotsu.", category: .pork, illustration: .bones, fatScore: 1.5, gelatinScore: 2.1, clarityPenalty: 1.6, isPoultry: false, isBeef: false, isOffal: false, isLiver: false, isBoneHeavy: true),
 
         .init(id: "szponder", name: "Szponder", subtitle: "Klasyczna baza wołowa.", category: .beef, illustration: .beef, fatScore: 1.7, gelatinScore: 1.1, clarityPenalty: 1.0, isPoultry: false, isBeef: true, isOffal: false, isLiver: false, isBoneHeavy: false),
         .init(id: "prega", name: "Pręga", subtitle: "Smak, włókno i kolagen.", category: .beef, illustration: .beef, fatScore: 1.2, gelatinScore: 1.6, clarityPenalty: 0.8, isPoultry: false, isBeef: true, isOffal: false, isLiver: false, isBoneHeavy: false),
@@ -102,15 +123,29 @@ struct IngredientSelectionView: View {
 
         .init(id: "serca", name: "Serca drobiowe", subtitle: "Głębia i lekko mineralny smak.", category: .offal, illustration: .hearts, fatScore: 1.1, gelatinScore: 0.4, clarityPenalty: 1.0, isPoultry: false, isBeef: false, isOffal: true, isLiver: false, isBoneHeavy: false),
         .init(id: "zoladki", name: "Żołądki drobiowe", subtitle: "Wytrawny smak i więcej charakteru.", category: .offal, illustration: .gizzards, fatScore: 0.8, gelatinScore: 0.8, clarityPenalty: 0.9, isPoultry: false, isBeef: false, isOffal: true, isLiver: false, isBoneHeavy: false),
-        .init(id: "watrobka", name: "Wątróbka drobiowa", subtitle: "Bardzo intensywna. Używaj ostrożnie.", category: .offal, illustration: .liver, fatScore: 1.0, gelatinScore: 0.3, clarityPenalty: 1.9, isPoultry: false, isBeef: false, isOffal: true, isLiver: true, isBoneHeavy: false)
+        .init(id: "watrobka", name: "Wątróbka drobiowa", subtitle: "Bardzo intensywna. Używaj ostrożnie.", category: .offal, illustration: .liver, fatScore: 1.0, gelatinScore: 0.3, clarityPenalty: 1.9, isPoultry: false, isBeef: false, isOffal: true, isLiver: true, isBoneHeavy: false),
+
+        .init(id: "kregoslup_rybny", name: "Kręgosłup / ości rybne", subtitle: "Lekka baza rybna.", category: .fish, illustration: .bones, fatScore: 0.5, gelatinScore: 0.7, clarityPenalty: 0.4, isPoultry: false, isBeef: false, isOffal: false, isLiver: false, isBoneHeavy: true),
+        .init(id: "glowy_rybne", name: "Głowy rybne", subtitle: "Intensywniejszy smak.", category: .fish, illustration: .bones, fatScore: 0.8, gelatinScore: 1.1, clarityPenalty: 0.7, isPoultry: false, isBeef: false, isOffal: false, isLiver: false, isBoneHeavy: true),
+        .init(id: "filet_rybny", name: "Filet rybny", subtitle: "Delikatny aromat i ciało.", category: .fish, illustration: .fish, fatScore: 0.7, gelatinScore: 0.4, clarityPenalty: 0.5, isPoultry: false, isBeef: false, isOffal: false, isLiver: false, isBoneHeavy: false),
+        .init(id: "pancerze_krewetek", name: "Pancerze krewetek", subtitle: "Morski akcent i umami.", category: .seafood, illustration: .shrimpShells, fatScore: 0.4, gelatinScore: 0.4, clarityPenalty: 0.8, isPoultry: false, isBeef: false, isOffal: false, isLiver: false, isBoneHeavy: false),
+        .init(id: "skorupiaki_malze", name: "Skorupiaki / małże", subtitle: "Intensywny, morski boost umami.", category: .seafood, illustration: .shellfish, fatScore: 0.5, gelatinScore: 0.4, clarityPenalty: 0.9, isPoultry: false, isBeef: false, isOffal: false, isLiver: false, isBoneHeavy: false),
+
+        .init(id: "cebula_baza", name: "Cebula", subtitle: "Klasyczna baza warzywna.", category: .veggies, illustration: .vegetables, fatScore: 0.1, gelatinScore: 0.1, clarityPenalty: 0.1, isPoultry: false, isBeef: false, isOffal: false, isLiver: false, isBoneHeavy: false),
+        .init(id: "seler_baza", name: "Seler korzeniowy", subtitle: "Głębia i słodycz.", category: .veggies, illustration: .vegetables, fatScore: 0.1, gelatinScore: 0.1, clarityPenalty: 0.1, isPoultry: false, isBeef: false, isOffal: false, isLiver: false, isBoneHeavy: false),
+        .init(id: "por_baza", name: "Por", subtitle: "Warzywna łagodność.", category: .veggies, illustration: .vegetables, fatScore: 0.1, gelatinScore: 0.1, clarityPenalty: 0.1, isPoultry: false, isBeef: false, isOffal: false, isLiver: false, isBoneHeavy: false)
     ]
 
     var body: some View {
         ScrollView(showsIndicators: false) {
             VStack(alignment: .leading, spacing: 22) {
                 header
-                categorySections
-                diagnosticsSection
+                if isVegetableKind {
+                    autoBasketInfoSection
+                } else {
+                    categorySections
+                    diagnosticsSection
+                }
             }
             .padding(AppSpacing.screen)
             .padding(.bottom, 8)
@@ -135,30 +170,73 @@ struct IngredientSelectionView: View {
         .navigationDestination(isPresented: $navigateToSummary) {
             BrothResultView(
                 profile: selectedProfile,
-                selections: selectedIngredients
+                selections: selectedIngredients,
+                selectedKind: selectedKind,
+                selectedStyleName: selectedStyleName
             )
         }
     }
 
     private var header: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("Dodaj mięso\ndo własnego rosołu")
+            Text(headerTitle)
                 .font(.system(size: 34, weight: .bold))
                 .foregroundStyle(AppTheme.textPrimary)
 
-            Text("Profil „\(selectedProfile.title)” ustawia kierunek wywaru. Teraz wybierz części i wagę.")
+            Text(headerSubtitle)
                 .font(.system(size: 15, weight: .medium))
                 .foregroundStyle(AppTheme.textSecondary)
                 .fixedSize(horizontal: false, vertical: true)
         }
     }
 
+    private var autoBasketInfoSection: some View {
+        AppCard {
+            VStack(alignment: .leading, spacing: 10) {
+                Text("W bulionie warzywnym koszyk liczymy automatycznie.")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundStyle(AppTheme.textPrimary)
+                Text("Przejdziesz od razu do wyliczeń na podstawie wielkości garnka i wybranego profilu smakowego. Na kolejnym ekranie możesz dalej edytować gramatury warzyw.")
+                    .font(.system(size: 14, weight: .regular))
+                    .foregroundStyle(AppTheme.textSecondary)
+            }
+        }
+        .appSoftShadow()
+    }
+
+    private var visibleCategories: [IngredientCategory] {
+        switch selectedKind {
+        case .rosol:
+            return [.poultry, .beef, .offal]
+        case .ramen:
+            let styleKey = UltraSpecStyleKeyResolver.resolve(kind: .ramen, styleName: selectedStyleName)
+            if styleKey == "ramen_tonkotsu" {
+                return [.pork]
+            }
+            return [.poultry, .beef, .offal]
+        case .beef:
+            return [.beef, .offal]
+        case .veggie:
+            return [.veggies]
+        case .fish:
+            switch activeUltraVariant {
+            case .rybnyDelikatny:
+                return [.fish]
+            case .rybnyIntensywny:
+                return [.fish, .seafood]
+            default:
+                return [.fish]
+            }
+        }
+    }
+
     private var categorySections: some View {
-        VStack(spacing: 14) {
-            ForEach(IngredientCategory.allCases) { category in
+        let categoriesWithItems = visibleCategories.filter { !visibleItems(for: $0).isEmpty }
+        return VStack(spacing: 14) {
+            ForEach(categoriesWithItems) { category in
                 IngredientCategorySection(
                     category: category,
-                    items: ingredients.filter { $0.category == category },
+                    items: visibleItems(for: category),
                     isExpanded: expandedCategory == category,
                     amounts: $amounts,
                     focusedFieldID: $focusedFieldID,
@@ -170,6 +248,26 @@ struct IngredientSelectionView: View {
                 )
             }
         }
+    }
+
+    private func visibleItems(for category: IngredientCategory) -> [IngredientOption] {
+        let options = ingredients.filter { $0.category == category }
+        guard let variant = activeUltraVariant else { return options }
+
+        let allowedCanonicalIDs = Set(
+            UltraSpecCatalog.ingredients
+                .filter { $0.allowedVariants.contains(variant) }
+                .map(\.id)
+        )
+
+        return options.filter { option in
+            allowedCanonicalIDs.contains(UltraSpecRequestBuilder.mapIngredientID(option.id))
+        }
+    }
+
+    private var activeUltraVariant: UltraSpecVariantID? {
+        let styleKey = UltraSpecStyleKeyResolver.resolve(kind: selectedKind, styleName: selectedStyleName)
+        return UltraSpecVariantResolver.resolve(kind: selectedKind, styleKey: styleKey)
     }
 
     private var diagnosticsSection: some View {
@@ -198,16 +296,13 @@ struct IngredientSelectionView: View {
             AppCard {
                 VStack(alignment: .leading, spacing: 12) {
                     HStack(spacing: 8) {
-                        FloatingSummaryChip(
-                            title: selectedIngredientCount == 0 ? "0 skład." : "\(selectedIngredientCount) skład."
-                        )
-
-                        FloatingSummaryChip(
-                            title: totalWeight == 0 ? "0 g" : gramsString(totalWeight)
-                        )
+                        FloatingSummaryChip(title: selectedKind.rawValue)
+                        FloatingSummaryChip(title: selectedStyleName)
+                        FloatingSummaryChip(title: selectedIngredientCount == 0 ? "0 skład." : "\(selectedIngredientCount) skład.")
+                        FloatingSummaryChip(title: totalWeight == 0 ? "0 g" : gramsString(totalWeight))
                     }
 
-                    FloatingStatusPanel(insight: quickInsight)
+                    CompactFloatingStatusRow(insight: quickInsight)
                 }
             }
             .appSoftShadow()
@@ -260,14 +355,121 @@ struct IngredientSelectionView: View {
         selectedEntries.count
     }
 
+    private var previewClarityMode: BrothClarityMode {
+        BrothClarityMode(rawValue: defaultClarityModeRawValue) ?? .normal
+    }
+
+    private var previewUseVinegar: Bool {
+        defaultUseVinegar
+    }
+
     private var previewResult: BrothCalculationResult {
-        BrothCalculator.calculate(
+        guard let variant = activeUltraVariant else {
+            return BrothCalculator.calculate(
+                profile: selectedProfile,
+                meatItems: selectedIngredients,
+                potSizeLiters: Double(potSizeLiters),
+                clarityMode: previewClarityMode,
+                useVinegar: previewUseVinegar
+            )
+        }
+
+        do {
+            let ultra = try UltraSpecBridge.calculateFromCurrentFlow(
+                kind: selectedKind,
+                styleName: selectedStyleName,
+                potCapacityL: Double(potSizeLiters),
+                selections: selectedIngredients,
+                clarityMode: previewClarityMode
+            )
+            return makePreviewResultFromUltraSpec(ultra, variant: variant)
+        } catch {
+            return BrothCalculator.calculate(
+                profile: selectedProfile,
+                meatItems: selectedIngredients,
+                potSizeLiters: Double(potSizeLiters),
+                clarityMode: previewClarityMode,
+                useVinegar: previewUseVinegar
+            )
+        }
+    }
+
+
+    private func makePreviewResultFromUltraSpec(_ ultra: UltraSpecCalculationResult, variant: UltraSpecVariantID) -> BrothCalculationResult {
+        guard let config = UltraSpecCatalog.variants.first(where: { $0.id == variant }) else {
+            return BrothCalculator.calculate(
+                profile: selectedProfile,
+                meatItems: selectedIngredients,
+                potSizeLiters: Double(potSizeLiters),
+                clarityMode: previewClarityMode,
+                useVinegar: previewUseVinegar
+            )
+        }
+
+        let warnings: [BrothWarning] = ultra.warningMessages.map {
+            BrothWarning(code: mapWarningCodeForPreview($0.code), severity: mapSeverityForPreview($0.severity), params: [])
+        }
+
+        let baseline = BrothCalculator.calculate(
             profile: selectedProfile,
             meatItems: selectedIngredients,
             potSizeLiters: Double(potSizeLiters),
-            clarityMode: .normal,
-            useVinegar: false
+            clarityMode: previewClarityMode,
+            useVinegar: previewUseVinegar
         )
+
+        return BrothCalculationResult(
+            waterLiters: ultra.waterStartL,
+            temperatureMin: config.temperature.minC,
+            temperatureMax: config.temperature.maxC,
+            totalMinutes: config.totalMinutes,
+            estimatedYieldLiters: ultra.estimatedYieldL,
+            startSaltGrams: ultra.startSaltG,
+            finalSaltGrams: ultra.targetSaltG,
+            appleCiderVinegarMl: previewUseVinegar ? max(5, Int((ultra.waterStartL * 2).rounded())) : 0,
+            peppercornCount: ultra.spices.peppercornCount,
+            allspiceCount: ultra.spices.allspiceCount,
+            bayLeafCount: ultra.spices.bayLeafCount,
+            vegetables: ultra.vegetables.map { VegetableAmount(name: $0.ingredientID, amount: "\($0.grams) g", note: nil) },
+            meatParts: selectedIngredients.map { MeatAmount(name: $0.name, grams: $0.grams, note: nil) },
+            timeline: UltraSpecTimelineCatalog.steps(for: variant).map { .init(minuteOffset: $0.minuteOffset, timeLabel: $0.timeLabel, title: $0.title, subtitle: $0.subtitle) },
+            warnings: ultra.warningMessages.map { "\($0.title): \($0.message)" },
+            structuredWarnings: warnings,
+            validationFailure: baseline.validationFailure,
+            scoring: baseline.scoring,
+            recommendedMeatRange: baseline.recommendedMeatRange,
+            clarityMode: previewClarityMode,
+            useVinegar: previewUseVinegar,
+            targetYieldLiters: nil,
+            vegetableBreakdown: nil,
+            spiceBreakdown: nil,
+            microMode: ultra.waterStartL < 0.7,
+            waterWasReducedToFit: ultra.waterStartL < ultra.waterRecipeL
+        )
+    }
+
+    private func mapSeverityForPreview(_ severity: UltraSpecSeverity) -> BrothWarningSeverity {
+        switch severity {
+        case .info: return .info
+        case .warn: return .warn
+        case .error: return .error
+        }
+    }
+
+    private func mapWarningCodeForPreview(_ code: UltraSpecWarningCode) -> BrothWarningCode {
+        switch code {
+        case .underpower: return .baseTooLowForWater
+        case .overpower: return .baseTooHighForWater
+        case .vegTooMuch: return .singleIngredientRisk
+        case .paperFilterLowerIntensity: return .paperFilterLowerIntensity
+        case .hardPotTooSmall: return .hardPotTooSmall
+        case .hardPotTooBig: return .hardPotTooBig
+        case .hardNotFit: return .hardNotFit
+        case .wingsTooHigh: return .wingsTooHighLight
+        case .beefTooHigh: return .heavyBeefProfile
+        case .offalTooHigh: return .offalDominantRisk
+        case .vegSweetRisk: return .singleIngredientRisk
+        }
     }
 
     private var scoring: BrothScoring? {
@@ -275,7 +477,8 @@ struct IngredientSelectionView: View {
     }
 
     private var canProceed: Bool {
-        previewResult.validationFailure == nil
+        if isVegetableKind { return true }
+        return previewResult.validationFailure == nil
     }
 
     private var recommendedRangeText: String {
@@ -338,14 +541,29 @@ struct IngredientSelectionView: View {
         }
     }
 
+    private var headerTitle: String {
+        isVegetableKind ? "Przejdź do\nwyliczonego koszyka" : "Dodaj bazę\ndo własnego bulionu"
+    }
+
+    private var headerSubtitle: String {
+        if isVegetableKind {
+            return "Bulion: \(selectedKind.rawValue) • Styl: \(selectedStyleName). W tym wariancie pomijamy wybór bazy i od razu liczymy koszyk warzyw."
+        }
+        return "Bulion: \(selectedKind.rawValue) • Styl: \(selectedStyleName). Na tym etapie wybierasz tylko bazę bulionu."
+    }
+
+    private var isVegetableKind: Bool {
+        selectedKind == .veggie
+    }
+
     private var quickInsight: QuickInsight {
         if let failure = previewResult.validationFailure {
             switch failure.code {
             case .hardNoMeat:
                 return QuickInsight(
                     systemImage: "tray",
-                    shortText: "Dodaj mięso",
-                    detailText: "Wybierz przynajmniej jeden składnik, żeby aplikacja mogła policzyć rosół.",
+                    shortText: selectedKind == .veggie ? "Gotowe do wyliczeń" : "Dodaj bazę",
+                    detailText: selectedKind == .veggie ? "W warzywnym koszyk liczymy automatycznie na kolejnym ekranie." : "Wybierz przynajmniej jeden składnik, żeby aplikacja mogła policzyć bulion.",
                     tone: .danger
                 )
             default:
@@ -361,8 +579,8 @@ struct IngredientSelectionView: View {
         guard totalWeight > 0 else {
             return QuickInsight(
                 systemImage: "questionmark.circle",
-                shortText: "Wybierz mięso",
-                detailText: "Dodaj przynajmniej jeden składnik, żeby zobaczyć proporcje i przewidywany uzysk.",
+                shortText: isVegetableKind ? "Przejdź dalej" : "Wybierz mięso",
+                detailText: isVegetableKind ? "Koszyk warzyw policzymy automatycznie po przejściu do obliczeń." : "Dodaj bazę, żeby zobaczyć proporcje i przewidywany uzysk.",
                 tone: .neutral
             )
         }
@@ -376,24 +594,24 @@ struct IngredientSelectionView: View {
             )
         }
 
-        if hasWarning(.undermeatLight) || hasWarning(.undermeatIntense) {
+        if (activeUltraVariant != nil && hasWarning(.baseTooLowForWater)) || (activeUltraVariant == nil && (hasWarning(.undermeatLight) || hasWarning(.undermeatIntense))) {
             return QuickInsight(
                 systemImage: "plus.circle",
                 shortText: "Możesz dodać więcej",
                 detailText: hasWarning(.undermeatLight)
                     ? messageForWarningCode(.undermeatLight)
-                    : messageForWarningCode(.undermeatIntense),
+                    : (activeUltraVariant != nil ? messageForWarningCode(.baseTooLowForWater) : messageForWarningCode(.undermeatIntense)),
                 tone: .neutral
             )
         }
 
-        if hasWarning(.overmeatLight) || hasWarning(.overmeatIntense) {
+        if (activeUltraVariant != nil && hasWarning(.baseTooHighForWater)) || (activeUltraVariant == nil && (hasWarning(.overmeatLight) || hasWarning(.overmeatIntense))) {
             return QuickInsight(
                 systemImage: "arrow.up.circle",
                 shortText: "Cięższy wsad",
                 detailText: hasWarning(.overmeatLight)
                     ? messageForWarningCode(.overmeatLight)
-                    : messageForWarningCode(.overmeatIntense),
+                    : (activeUltraVariant != nil ? messageForWarningCode(.baseTooHighForWater) : messageForWarningCode(.overmeatIntense)),
                 tone: .warning
             )
         }
@@ -437,7 +655,7 @@ struct IngredientSelectionView: View {
         return QuickInsight(
             systemImage: "checkmark.circle",
             shortText: "Dobry balans",
-            detailText: "Zestaw wygląda sensownie i dobrze pasuje do wybranego profilu.",
+            detailText: "Zestaw wygląda sensownie i pasuje do wybranego bulionu.",
             tone: .good
         )
     }
@@ -467,23 +685,27 @@ struct IngredientSelectionView: View {
         case .hardItemTooBig:
             return "Jedna z wag wygląda podejrzanie wysoko. Sprawdź, czy na pewno wpisujesz gramy."
         case .hardNoMeat:
-            return "Dodaj mięso. Bez mięsa nie ugotujesz rosołu."
+            return selectedKind == .veggie ? "W warzywnym nie wybierasz bazy na tym ekranie — przejdź dalej do wyliczenia koszyka." : "Dodaj bazę. Bez niej nie ugotujesz bulionu."
         case .hardNotFit:
             return "Ten zestaw fizycznie nie mieści się w tym garnku. Zmniejsz ilość mięsa albo użyj większego naczynia."
         case .premiumBlocked:
             return "Ten składnik jest dostępny dopiero w rozszerzonej wersji kalkulatora."
         case .undermeatLight:
-            return "Wybrałeś mniej mięsa niż zwykle mieści ten garnek. Aplikacja przeliczy rosół do tej ilości, ale jeśli chcesz ugotować większą porcję, możesz dodać jeszcze trochę mięsa."
+            return "Wybrałeś mniej mięsa niż zwykle mieści ten garnek. Aplikacja przeliczy bulion do tej ilości, ale jeśli chcesz ugotować większą porcję, możesz dodać jeszcze trochę mięsa."
+        case .baseTooLowForWater:
+            return selectedKind == .fish ? "Baza rybna jest lekka względem ilości wody. Dla pełniejszego bulionu zwiększ ryby/owoce morza albo zmniejsz wodę." : (selectedKind == .veggie ? "Koszyk warzyw jest lekki względem ilości wody. Dla pełniejszego smaku zwiększ warzywa albo zmniejsz wodę." : "Baza jest lekka względem ilości wody. Dla pełniejszego smaku dodaj więcej bazy albo zmniejsz wodę.")
         case .overmeatLight:
-            return "Jak na czystszy profil mięsa jest już sporo. Rosół może wyjść cięższy niż zwykle."
+            return "Jak na czystszy profil mięsa jest już sporo. Bulion może wyjść cięższy niż zwykle."
         case .undermeatIntense:
             return "To raczej mniejsza partia jak na tak głęboki profil. Aplikacja przeliczy całość do tej ilości, ale jeśli chcesz mocniejszy efekt i większy uzysk, możesz dodać jeszcze trochę mięsa."
         case .overmeatIntense:
             return "Mięsa jest bardzo dużo. Rosół może wyjść ciężki i trudniejszy do zbalansowania."
+        case .baseTooHighForWater:
+            return selectedKind == .fish ? "Baza rybna jest bardzo gęsta względem ilości wody. Bulion może wyjść ciężki lub gorzkawy." : (selectedKind == .veggie ? "Koszyk warzyw jest bardzo gęsty względem ilości wody. Bulion może wyjść ciężki." : "Baza jest bardzo gęsta względem ilości wody. Bulion może wyjść zbyt ciężki.")
         case .overfatLight:
             return "Ten zestaw może wyjść tłusty. Do czystszego profilu lepiej sprawdza się więcej korpusu lub szyi i mniej cięższych elementów."
         case .wingsTooHighLight:
-            return "Skrzydełka w większej ilości podbijają tłuszcz. W czystszym rosole warto trzymać je z umiarem."
+            return "Skrzydełka w większej ilości podbijają tłuszcz. W czystszym bulionie warto trzymać je z umiarem."
         case .lowGelatinIntense:
             return "Smak może być głęboki, ale wywar będzie mniej sprężysty, bo jest tu mało kości i kolagenu."
         case .heavyBeefProfile:
@@ -725,7 +947,7 @@ struct IngredientRow: View {
     }
 }
 
-private struct FloatingStatusPanel: View {
+private struct CompactFloatingStatusRow: View {
     let insight: QuickInsight
 
     var body: some View {
@@ -749,7 +971,8 @@ private struct FloatingStatusPanel: View {
 
             Spacer(minLength: 0)
         }
-        .padding(14)
+         .padding(.horizontal, 12)
+        .padding(.vertical, 10)
         .background(backgroundColor)
         .overlay(
             RoundedRectangle(cornerRadius: 16, style: .continuous)
@@ -918,10 +1141,18 @@ struct CategoryIllustrationBadge: View {
         switch category {
         case .poultry:
             ChickenCategoryIllustration(selected: selected)
+        case .pork:
+            BeefCategoryIllustration(selected: selected)
         case .beef:
             BeefCategoryIllustration(selected: selected)
         case .offal:
             OffalCategoryIllustration(selected: selected)
+        case .fish:
+            FishIllustration()
+        case .seafood:
+            SeafoodIllustration()
+        case .veggies:
+            VegetableIllustration()
         }
     }
 }
@@ -966,7 +1197,95 @@ struct IngredientIllustrationBadge: View {
             GizzardsIllustration()
         case .liver:
             LiverIllustration()
+        case .fish:
+            FishIllustration()
+        case .shrimpShells:
+            ShrimpIllustration()
+        case .shellfish:
+            ShellfishIllustration()
+        case .vegetables:
+            VegetableIllustration()
         }
+    }
+}
+
+struct SeafoodIllustration: View {
+    var body: some View {
+        ShellfishIllustration()
+    }
+}
+
+struct ShrimpIllustration: View {
+    var body: some View {
+        ZStack {
+            Circle()
+                .stroke(Color(hex: "4E6D85"), lineWidth: 2)
+                .frame(width: 16, height: 16)
+                .offset(x: -2)
+
+            Circle()
+                .stroke(Color(hex: "4E6D85"), lineWidth: 2)
+                .frame(width: 10, height: 10)
+                .offset(x: 4, y: 2)
+
+            Circle()
+                .fill(Color(hex: "4E6D85"))
+                .frame(width: 2.5, height: 2.5)
+                .offset(x: -6, y: -3)
+        }
+        .frame(width: 24, height: 20)
+    }
+}
+
+struct ShellfishIllustration: View {
+    var body: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .fill(Color(hex: "9EB5C7"))
+                .frame(width: 20, height: 14)
+
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .stroke(Color(hex: "4E6D85"), lineWidth: 1.6)
+                .frame(width: 20, height: 14)
+
+            Rectangle()
+                .fill(Color(hex: "4E6D85").opacity(0.35))
+                .frame(width: 1.2, height: 10)
+        }
+        .frame(width: 24, height: 20)
+    }
+}
+
+struct VegetableIllustration: View {
+    var body: some View {
+        Image(systemName: "carrot.fill")
+            .font(.system(size: 18, weight: .semibold))
+            .foregroundStyle(Color(hex: "4F7A1D"))
+    }
+}
+
+struct FishIllustration: View {
+    var body: some View {
+        ZStack {
+            Ellipse()
+                .fill(Color(hex: "9EB5C7"))
+                .frame(width: 24, height: 12)
+
+            Path { path in
+                path.move(to: CGPoint(x: 26, y: 0))
+                path.addLine(to: CGPoint(x: 34, y: 6))
+                path.addLine(to: CGPoint(x: 26, y: 12))
+                path.closeSubpath()
+            }
+            .fill(Color(hex: "86A1B5"))
+            .offset(x: 2)
+
+            Circle()
+                .fill(Color(hex: "2C3E4D"))
+                .frame(width: 2.5, height: 2.5)
+                .offset(x: -7, y: -1)
+        }
+        .frame(width: 34, height: 16)
     }
 }
 

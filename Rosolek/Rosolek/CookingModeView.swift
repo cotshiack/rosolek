@@ -32,6 +32,7 @@ private enum LivePhaseKind {
 
 private struct LivePhase: Identifiable {
     let id = UUID()
+    var stepID: String? = nil
     let kind: LivePhaseKind
     let title: String
     let shortText: String
@@ -39,6 +40,14 @@ private struct LivePhase: Identifiable {
     let durationSeconds: Int?
     let timelineLabel: String
     let bottomActionTitle: String?
+}
+
+private extension LivePhase {
+    func withStepID(_ stepID: String) -> LivePhase {
+        var copy = self
+        copy.stepID = stepID
+        return copy
+    }
 }
 
 private struct InstructionSheetContent: Identifiable {
@@ -51,12 +60,16 @@ private struct InstructionSheetContent: Identifiable {
     let hasPoultry: Bool
     let hasLiver: Bool
     let isGrandmaStyle: Bool
+    let stepID: String?
+    let isRamenTonkotsu: Bool
+    let ultraVariant: UltraSpecVariantID?
 }
 
 private struct TemperatureSheetContent: Identifiable {
     let id = UUID()
     let hasThermometer: Bool
     let targetLabel: String
+    let allowsBoiling: Bool
 }
 
 private struct IngredientsReminderSheetContent: Identifiable {
@@ -190,6 +203,28 @@ struct CookingModeView: View {
         currentBatch.brothProfile
     }
 
+    private var activeUltraVariant: UltraSpecVariantID? {
+        if let rawKind = currentBatch.brothKindRawValue,
+           let kind = BrothKind(rawValue: rawKind) {
+            let styleName = currentBatch.selectedStyleName ?? currentBatch.styleRawValue
+            let styleKey = UltraSpecStyleKeyResolver.resolve(kind: kind, styleName: styleName)
+            return UltraSpecVariantResolver.resolve(kind: kind, styleKey: styleKey)
+        }
+
+        let legacyStyle = currentBatch.styleRawValue.lowercased()
+        if legacyStyle.contains("ramen_tonkotsu") || legacyStyle.contains("tonkotsu") {
+            return .ramenTonkotsu
+        }
+        if legacyStyle.contains("ramen") || legacyStyle.contains("shio") {
+            return .ramenShio
+        }
+        return nil
+    }
+
+    private var isRamenUltraVariant: Bool {
+        activeUltraVariant == .ramenShio || activeUltraVariant == .ramenTonkotsu
+    }
+
     private var activePreset: BrothPreset? {
         guard currentBatch.modeRawValue == "preset",
               let raw = currentBatch.presetRawValue else { return nil }
@@ -241,8 +276,10 @@ struct CookingModeView: View {
     }
 
     private var vegetableReminderRows: [LiveIngredientReminderRowData] {
-        result.vegetables.map { item in
-            LiveIngredientReminderRowData(
+        result.vegetables.compactMap { item in
+            let grams = Int((item.amount.filter { $0.isNumber }))
+            if let grams, grams <= 0 { return nil }
+            return LiveIngredientReminderRowData(
                 icon: ingredientIconKind(for: item.name),
                 title: item.name,
                 subtitle: vegetableSubtitle(for: item),
@@ -254,7 +291,7 @@ struct CookingModeView: View {
     private var spiceReminderRows: [LiveIngredientReminderRowData] {
         var rows: [LiveIngredientReminderRowData] = []
 
-        if !isGrandmaPreset {
+        if !isGrandmaPreset, result.startSaltGrams > 0 {
             rows.append(
                 LiveIngredientReminderRowData(
                     icon: .salt,
@@ -265,30 +302,36 @@ struct CookingModeView: View {
             )
         }
 
-        rows.append(
-            LiveIngredientReminderRowData(
-                icon: .pepper,
-                title: "Pieprz czarny ziarnisty",
-                subtitle: "Czysty aromat.",
-                value: "\(result.peppercornCount) \(result.peppercornCount == 1 ? "ziarno" : "ziaren")"
+        if result.peppercornCount > 0 {
+            rows.append(
+                LiveIngredientReminderRowData(
+                    icon: .pepper,
+                    title: "Pieprz czarny ziarnisty",
+                    subtitle: "Czysty aromat.",
+                    value: "\(result.peppercornCount) \(result.peppercornCount == 1 ? "ziarno" : "ziaren")"
+                )
             )
-        )
-        rows.append(
-            LiveIngredientReminderRowData(
-                icon: .allspice,
-                title: "Ziele angielskie",
-                subtitle: "Głębia smaku.",
-                value: "\(result.allspiceCount) \(result.allspiceCount == 1 ? "ziarno" : "ziaren")"
+        }
+        if result.allspiceCount > 0 {
+            rows.append(
+                LiveIngredientReminderRowData(
+                    icon: .allspice,
+                    title: "Ziele angielskie",
+                    subtitle: "Głębia smaku.",
+                    value: "\(result.allspiceCount) \(result.allspiceCount == 1 ? "ziarno" : "ziaren")"
+                )
             )
-        )
-        rows.append(
-            LiveIngredientReminderRowData(
-                icon: .bayLeaf,
-                title: "Liść laurowy",
-                subtitle: "Tło aromatu.",
-                value: result.bayLeafCount == 1 ? "1 liść" : "\(result.bayLeafCount) liście"
+        }
+        if result.bayLeafCount > 0 {
+            rows.append(
+                LiveIngredientReminderRowData(
+                    icon: .bayLeaf,
+                    title: "Liść laurowy",
+                    subtitle: "Tło aromatu.",
+                    value: result.bayLeafCount == 1 ? "1 liść" : "\(result.bayLeafCount) liście"
+                )
             )
-        )
+        }
 
         return rows
     }
@@ -318,6 +361,10 @@ struct CookingModeView: View {
     }
 
     private var phases: [LivePhase] {
+        if activeUltraVariant != nil {
+            return ultraSpecPhases
+        }
+
         if isGrandmaPreset {
             return [
                 LivePhase(
@@ -578,6 +625,32 @@ struct CookingModeView: View {
         return items
     }
 
+    private var ultraSpecPhases: [LivePhase] {
+        guard let variant = activeUltraVariant else { return [] }
+        let steps = UltraSpecTimelineCatalog.steps(for: variant)
+        guard !steps.isEmpty else { return [] }
+
+        return steps.enumerated().map { index, step in
+            let durationSeconds: Int? = {
+                if index == 0 || step.isManual {
+                    return nil
+                }
+                let previousOffset = steps[index - 1].minuteOffset
+                return max(0, (step.minuteOffset - previousOffset) * 60)
+            }()
+
+            return LivePhase(
+                kind: livePhaseKind(forUltraStepID: step.stepID),
+                title: step.title,
+                shortText: step.subtitle,
+                detailText: UltraSpecStepLibrary.all[step.stepID]?.extendedHint ?? step.subtitle,
+                durationSeconds: durationSeconds,
+                timelineLabel: step.timeLabel,
+                bottomActionTitle: durationSeconds == nil ? "Dalej" : nil
+            ).withStepID(step.stepID)
+        }
+    }
+
     private var currentPhase: LivePhase {
         phases[min(phaseIndex, phases.count - 1)]
     }
@@ -612,6 +685,9 @@ struct CookingModeView: View {
     }
 
     private var canStartCooking: Bool {
+        if activeUltraVariant == .warzywnyJasny || activeUltraVariant == .warzywnyUmami {
+            return prepMeatReady && prepWaterReady && prepPotReady && prepThermometerReady
+        }
         if batchUsesVinegar {
             return prepMeatReady && prepWaterReady && prepPotReady && prepThermometerReady && prepVinegarReady
         }
@@ -650,21 +726,55 @@ struct CookingModeView: View {
     }
 
     private var targetTemperaturePillText: String {
-        hasThermometer ? "\(result.temperatureMin)–\(result.temperatureMax)°C" : "Bez wrzenia"
+        if !hasThermometer, activeUltraVariant == .ramenTonkotsu {
+            return "Wrzenie celowe"
+        }
+        return hasThermometer ? "\(result.temperatureMin)–\(result.temperatureMax)°C" : "Bez wrzenia"
     }
 
     private var nextButtonTitle: String {
         guard sessionStarted else { return "Dalej" }
+        if phaseIndex == phases.count - 1 && !currentPhaseHasTimer {
+            return "Zakończ"
+        }
         if currentPhaseHasTimer { return "Pomiń" }
         return currentPhase.bottomActionTitle ?? "Dalej"
     }
 
+    private func livePhaseKind(forUltraStepID stepID: String) -> LivePhaseKind {
+        switch stepID {
+        case "prep":
+            return .prep
+        case "heat_up_clear":
+            return .heatUp
+        case "strain_season":
+            return .strainAndSeason
+        case "add_veg_spices", "tonkotsu_aromatics_end":
+            return .addVegetables
+        case "simmer_clear":
+            return .simmerToVegetablesOut
+        case "stabilize_base", "tonkotsu_boil_emulsify", "finish_clear", "veg_simmer_limit", "fish_poach_limit":
+            return .stabilization
+        case "rest_settle":
+            return .rest
+        default:
+            assertionFailure("Unhandled ultra timeline stepID: \(stepID)")
+            return .stabilization
+        }
+    }
+
     private var shouldShowIngredientReminderButton: Bool {
-        currentPhase.kind == .addVegetables && (!vegetableReminderRows.isEmpty || !spiceReminderRows.isEmpty)
+        if activeUltraVariant != nil {
+            let id = currentPhase.stepID
+            return (id == "add_veg_spices" || id == "tonkotsu_aromatics_end")
+                && (!vegetableReminderRows.isEmpty || !spiceReminderRows.isEmpty)
+        }
+        return currentPhase.kind == .addVegetables && (!vegetableReminderRows.isEmpty || !spiceReminderRows.isEmpty)
     }
 
     private var shouldShowFoamCard: Bool {
-        currentPhase.kind == .heatUp || currentPhase.kind == .stabilization
+        if isRamenUltraVariant || activeUltraVariant == .warzywnyJasny || activeUltraVariant == .warzywnyUmami || activeUltraVariant == .rybnyDelikatny || activeUltraVariant == .rybnyIntensywny { return false }
+        return currentPhase.kind == .heatUp || currentPhase.kind == .stabilization
     }
 
     private var phaseSupportNote: String? {
@@ -683,13 +793,17 @@ struct CookingModeView: View {
     }
 
     private var manualCompletionNote: String? {
-        guard !currentPhaseHasTimer, let actionTitle = currentPhase.bottomActionTitle, sessionStarted else { return nil }
+        guard !currentPhaseHasTimer, currentPhase.bottomActionTitle != nil, sessionStarted else { return nil }
 
-        if currentPhase.kind == .strainAndSeason {
-            return "Gdy skończysz, naciśnij „\(actionTitle)” w dolnym panelu."
+        if phaseIndex == phases.count - 1 {
+            return "Gdy skończysz, naciśnij „\(nextButtonTitle)” w dolnym panelu."
         }
 
-        return "Po wykonaniu tego kroku naciśnij „\(actionTitle)” w dolnym panelu."
+        if currentPhase.kind == .strainAndSeason {
+            return "Gdy skończysz, naciśnij „\(nextButtonTitle)” w dolnym panelu."
+        }
+
+        return "Po wykonaniu tego kroku naciśnij „\(nextButtonTitle)” w dolnym panelu."
     }
 
     var body: some View {
@@ -723,7 +837,7 @@ struct CookingModeView: View {
                 NavigationLink {
                     BatchFeedbackView(batch: currentBatch)
                 } label: {
-                    AppPrimaryButtonLabel(title: "Oceń rosół")
+                    AppPrimaryButtonLabel(title: isRamenUltraVariant ? "Oceń ramen" : (activeUltraVariant == .warzywnyJasny || activeUltraVariant == .warzywnyUmami ? "Oceń bulion warzywny" : "Oceń rosół"))
                 }
                 .padding(.horizontal, AppSpacing.screen)
                 .padding(.bottom, 8)
@@ -782,7 +896,7 @@ struct CookingModeView: View {
                 UINotificationFeedbackGenerator().notificationOccurred(.success)
             }
         } message: {
-            Text("Po zakończeniu przejdziesz do oceny swojego rosołu.")
+            Text("Po zakończeniu przejdziesz do oceny swojego \(isRamenUltraVariant ? "ramenu" : (activeUltraVariant == .warzywnyJasny || activeUltraVariant == .warzywnyUmami ? "bulionu warzywnego" : "rosołu")).")
         }
         .onAppear {
             UIApplication.shared.isIdleTimerDisabled = true
@@ -849,6 +963,8 @@ struct CookingModeView: View {
                         waterLiters: result.waterLiters,
                         useVinegar: batchUsesVinegar,
                         vinegarMl: result.appleCiderVinegarMl,
+                        isVegetableVariant: activeUltraVariant == .warzywnyJasny || activeUltraVariant == .warzywnyUmami,
+                        isFishVariant: activeUltraVariant == .rybnyDelikatny || activeUltraVariant == .rybnyIntensywny,
                         prepMeatReady: $prepMeatReady,
                         prepWaterReady: $prepWaterReady,
                         prepPotReady: $prepPotReady,
@@ -901,7 +1017,7 @@ struct CookingModeView: View {
 
                 CurrentMiniStepsCard(
                     title: "Teraz zrób",
-                    steps: miniSteps(for: currentPhase.kind)
+                    steps: miniSteps(for: currentPhase)
                 )
 
                 if let manualCompletionNote {
@@ -1165,7 +1281,10 @@ struct CookingModeView: View {
                 useVinegar: batchUsesVinegar,
                 hasPoultry: hasPoultry,
                 hasLiver: hasLiver,
-                isGrandmaStyle: isGrandmaPreset
+                isGrandmaStyle: isGrandmaPreset,
+                stepID: phases[index].stepID,
+                isRamenTonkotsu: activeUltraVariant == .ramenTonkotsu,
+                ultraVariant: activeUltraVariant
             )
         )
     }
@@ -1174,7 +1293,8 @@ struct CookingModeView: View {
         activeSheet = .temperature(
             TemperatureSheetContent(
                 hasThermometer: hasThermometer,
-                targetLabel: targetTemperaturePillText
+                targetLabel: targetTemperaturePillText,
+                allowsBoiling: activeUltraVariant == .ramenTonkotsu
             )
         )
     }
@@ -1182,15 +1302,80 @@ struct CookingModeView: View {
     private func openIngredientsReminderSheet() {
         activeSheet = .ingredients(
             IngredientsReminderSheetContent(
-                title: "Lista składników do dodania",
-                subtitle: "Sprawdź dokładnie, co i ile powinieneś teraz dodać.",
+                title: currentPhase.stepID == "tonkotsu_aromatics_end" ? "Aromaty końcowe — dodaj teraz" : "Lista składników do dodania",
+                subtitle: currentPhase.stepID == "tonkotsu_aromatics_end"
+                    ? "Dodaj cebulę, por, imbir i czosnek w ilościach z listy. To krótki etap przed cedzeniem."
+                    : currentPhase.stepID == "add_veg_spices"
+                        ? "Dodaj aromaty z listy dla shio (cebula, imbir, czosnek, opcjonalnie dymka)."
+                    : "Sprawdź dokładnie, co i ile powinieneś teraz dodać.",
                 vegetableRows: vegetableReminderRows,
                 spiceRows: spiceReminderRows
             )
         )
     }
 
-    private func miniSteps(for kind: LivePhaseKind) -> [String] {
+    private func miniSteps(for phase: LivePhase) -> [String] {
+        if activeUltraVariant != nil, let stepID = phase.stepID {
+            let minutesText: String? = {
+                guard let duration = phase.durationSeconds, duration > 0 else { return nil }
+                return "\(duration / 60)"
+            }()
+
+            switch stepID {
+            case "prep":
+                return [
+                    "Przygotuj garnek, składniki i narzędzia do cedzenia.",
+                    "Ustaw stanowisko tak, żeby po starcie nie przerywać procesu.",
+                    "Uruchom etap dopiero gdy wszystko jest gotowe."
+                ]
+            case "stabilize_base", "tonkotsu_boil_emulsify":
+                return [
+                    minutesText.map { "Utrzymuj ten etap przez około \($0) min." } ?? "Utrzymuj ten etap do kolejnego kroku.",
+                    stepID == "tonkotsu_boil_emulsify" ? "W tonkotsu wrzenie jest celem — pilnuj poziomu wody." : "Pracuj stabilnie w docelowym zakresie temperatury.",
+                    "Kontroluj garnek regularnie i koryguj ogień małymi krokami."
+                ]
+            case "add_veg_spices", "tonkotsu_aromatics_end":
+                return [
+                    "Dodaj składniki z listy dla tego etapu.",
+                    "Po dodaniu wróć do stabilnej pracy wywaru.",
+                    stepID == "tonkotsu_aromatics_end" ? "Nie przeciągaj aromatów — to krótki finisz przed cedzeniem." : "Pilnuj czasu, żeby nie przeciągnąć aromatów."
+                ]
+            case "simmer_clear":
+                return [
+                    minutesText.map { "Prowadź finisz przez około \($0) min." } ?? "Prowadź finisz do kolejnego kroku.",
+                    "Utrzymuj stabilną pracę i nie przeciągaj etapu.",
+                    "Przygotuj się do cedzenia."
+                ]
+            case "veg_simmer_limit":
+                return [
+                    minutesText.map { "Prowadź etap maksymalnie około \($0) min." } ?? "Pilnuj limitu czasu tego etapu.",
+                    "Trzymaj temperaturę stabilnie i poniżej wrzenia.",
+                    "Jeśli profil robi się zbyt słodki lub płaski, zakończ etap wcześniej i cedź."
+                ]
+            case "fish_poach_limit":
+                return [
+                    minutesText.map { "Pilnuj limitu: około \($0) min." } ?? "Pilnuj krótkiego limitu czasu.",
+                    "Nie dopuszczaj do wrzenia — smak rybny szybko robi się ciężki.",
+                    "W razie wątpliwości zakończ etap wcześniej i od razu przecedź."
+                ]
+            case "rest_settle":
+                return [
+                    "Odstaw garnek na 5–10 minut bez mieszania.",
+                    "Nie poruszaj osadu z dna — to poprawi klarowność.",
+                    "Po krótkim odpoczynku przejdź do cedzenia."
+                ]
+            case "strain_season":
+                return [
+                    "Przecedź bulion bez wyciskania składników.",
+                    "Doprawiaj dopiero po cedzeniu, stopniowo.",
+                    isRamenUltraVariant ? "Przy ramenie końcową słoność ustawiaj przez tare." : "Jeśli przesolisz, rozcieńczaj porcję zamiast korygować cały garnek."
+                ]
+            default:
+                break
+            }
+        }
+
+        let kind = phase.kind
         switch kind {
         case .prep:
             if isGrandmaPreset {
@@ -1428,6 +1613,11 @@ struct CookingModeView: View {
 
     private func handleNextAction() {
         guard canUseNextButton else { return }
+
+        if phaseIndex == phases.count - 1 {
+            showFinishAlert = true
+            return
+        }
 
         if currentPhase.kind == .optionalClarityTip
             || (currentPhase.kind == .strainAndSeason && !isGrandmaPreset) {
@@ -1913,6 +2103,8 @@ private struct StartChecklistCard: View {
     let waterLiters: Double
     let useVinegar: Bool
     let vinegarMl: Int
+    let isVegetableVariant: Bool
+    let isFishVariant: Bool
 
     @Binding var prepMeatReady: Bool
     @Binding var prepWaterReady: Bool
@@ -1927,7 +2119,7 @@ private struct StartChecklistCard: View {
         ) {
             VStack(spacing: 0) {
                 ChecklistRow(
-                    title: "Mięso włóż do garnka",
+                    title: isVegetableVariant ? "Przygotuj warzywa z koszyka (umyj, obierz i pokrój)" : (isFishVariant ? "Przygotuj ryby i/lub owoce morza do gotowania" : "Mięso włóż do garnka"),
                     isOn: $prepMeatReady
                 )
 
@@ -1935,7 +2127,7 @@ private struct StartChecklistCard: View {
                     .overlay(AppTheme.border)
 
                 ChecklistRow(
-                    title: "Dolej \(waterLabel) wody",
+                    title: isVegetableVariant || isFishVariant ? "Wlej \(waterLabel) wody do garnka" : "Dolej \(waterLabel) wody",
                     isOn: $prepWaterReady
                 )
 
@@ -1953,7 +2145,7 @@ private struct StartChecklistCard: View {
                     .overlay(AppTheme.border)
 
                 ChecklistRow(
-                    title: "Garnek ustaw na kuchence",
+                    title: isVegetableVariant || isFishVariant ? "Postaw garnek na kuchence" : "Garnek ustaw na kuchence",
                     isOn: $prepPotReady
                 )
 
@@ -1962,7 +2154,7 @@ private struct StartChecklistCard: View {
                         .overlay(AppTheme.border)
 
                     ChecklistRow(
-                        title: "Termometr włóż do wody",
+                        title: isVegetableVariant || isFishVariant ? "Włóż termometr do wody (nie dotykaj dna garnka)" : "Termometr włóż do wody",
                         isOn: $prepThermometerReady
                     )
                 }
@@ -2544,13 +2736,19 @@ private struct TemperatureDetailsSheet: View {
     let content: TemperatureSheetContent
 
     private var heroText: String {
-        content.hasThermometer
+        if content.allowsBoiling {
+            return "W tonkotsu aktywne wrzenie jest celem — budujesz emulsję i mleczność. Pilnuj, by kości były stale przykryte wodą."
+        }
+        return content.hasThermometer
             ? "Zakres 88–90°C pomaga budować smak równomiernie, utrzymać klarowność i nie rozbijać osadu."
             : "Szukasz spokojnej pracy bez pełnego wrzenia. Liczy się stabilność powierzchni, nie szybkie bulgotanie."
     }
 
     private var foamSupportText: String {
-        "Najwięcej szumowin pojawia się zwykle podczas dochodzenia wywaru od zimnej wody do około 75–90°C. Zbieraj je delikatnie tylko wtedy, gdy same wypływają na powierzchnię."
+        if content.allowsBoiling {
+            return "W tonkotsu wrzenie jest celowe. Najważniejsze: kontroluj poziom płynu i dolewaj gorącą wodę małymi porcjami, gdy kości zaczynają się odsłaniać."
+        }
+        return "Najwięcej szumowin pojawia się zwykle podczas dochodzenia wywaru od zimnej wody do około 75–90°C. Zbieraj je delikatnie tylko wtedy, gdy same wypływają na powierzchnię."
     }
 
     var body: some View {
@@ -2568,7 +2766,8 @@ private struct TemperatureDetailsSheet: View {
                     )
 
                     TemperatureMechanicsPanel(
-                        hasThermometer: content.hasThermometer
+                        hasThermometer: content.hasThermometer,
+                        allowsBoiling: content.allowsBoiling
                     )
 
                     SheetSupportStrip(
@@ -2590,55 +2789,71 @@ private struct TemperatureDetailsSheet: View {
 
 private struct TemperatureMechanicsPanel: View {
     let hasThermometer: Bool
+    let allowsBoiling: Bool
 
     private var lowRange: String {
-        hasThermometer ? "Poniżej 88°C" : "Za słaba praca"
+        if allowsBoiling { return "Poniżej aktywnego wrzenia" }
+        return hasThermometer ? "Poniżej 88°C" : "Za słaba praca"
     }
 
     private var goodRange: String {
-        hasThermometer ? "88–90°C" : "Spokojna praca"
+        if allowsBoiling { return "Mocne, stabilne wrzenie" }
+        return hasThermometer ? "88–90°C" : "Spokojna praca"
     }
 
     private var highRange: String {
-        hasThermometer ? "Powyżej 92°C lub wrzenie" : "Za mocno lub wrzenie"
+        if allowsBoiling { return "Za gwałtowne / ryzyko wykipienia" }
+        return hasThermometer ? "Powyżej 92°C lub wrzenie" : "Za mocno lub wrzenie"
     }
 
     private var introText: String {
-        "Temperatura steruje nie tylko tempem gotowania, ale też klarownością, ciężarem smaku i zachowaniem osadu. Najlepszy efekt daje spokojna, stabilna praca."
+        if allowsBoiling {
+            return "W tonkotsu celem jest aktywne wrzenie, które buduje emulsję. Kontrolujesz intensywność tak, aby gotowanie było mocne, ale stabilne i bez wykipienia."
+        }
+        return "Temperatura steruje nie tylko tempem gotowania, ale też klarownością, ciężarem smaku i zachowaniem osadu. Najlepszy efekt daje spokojna, stabilna praca."
     }
 
     private var lowExplanation: String {
-        hasThermometer
+        if allowsBoiling { return "Ekstrakcja i emulgacja są za słabe — bulion będzie mniej kremowy i płytszy w smaku." }
+        return hasThermometer
             ? "Ekstrakcja zwalnia, mięso oddaje smak wolniej, a etap zaczyna się rozmywać."
             : "Powierzchnia jest zbyt spokojna, więc wywar buduje się wolniej i trudniej utrzymać rytm etapu."
     }
 
     private var goodExplanation: String {
-        hasThermometer
+        if allowsBoiling { return "Wrzenie jest aktywne i równomierne, kości pozostają przykryte, a emulsja buduje się stabilnie." }
+        return hasThermometer
             ? "To zakres, w którym smak przechodzi do wywaru równomiernie, a osad ma szansę spokojnie opaść."
             : "Powierzchnia delikatnie drży, przy brzegu pojawiają się pojedyncze bąble, ale środek nie bulgocze."
     }
 
     private var highExplanation: String {
-        hasThermometer
+        if allowsBoiling { return "Za agresywne bulgotanie zwiększa ryzyko wykipienia i nadmiernej utraty wody." }
+        return hasThermometer
             ? "Białka i tłuszcz są mocniej rozbijane, rośnie ryzyko mętności, a profil robi się cięższy."
             : "Pełne bulgotanie rozbija szumowiny i miesza je w płynie, przez co rosół łatwo traci klarowność."
     }
 
     private var lowAction: String {
-        "Lekko zwiększ ogień i obserwuj zmiany spokojnie, bez gwałtownego skoku."
+        if allowsBoiling { return "Lekko zwiększ moc i obserwuj, czy wrzenie staje się stałe." }
+        return "Lekko zwiększ ogień i obserwuj zmiany spokojnie, bez gwałtownego skoku."
     }
 
     private var goodAction: String {
-        "Nie zmieniaj ustawień. Utrzymuj równą pracę i nie mieszaj garnka."
+        if allowsBoiling { return "Utrzymuj stabilne wrzenie. Dolewaj gorącą wodę, gdy poziom opada." }
+        return "Nie zmieniaj ustawień. Utrzymuj równą pracę i nie mieszaj garnka."
     }
 
     private var highAction: String {
-        "Zmniejsz ogień albo zdejmij garnek na 60–120 sekund, aż powierzchnia wróci do spokojnej pracy."
+        if allowsBoiling { return "Zmniejsz moc o jeden krok, żeby utrzymać stabilne wrzenie bez wykipienia." }
+        return "Zmniejsz ogień albo zdejmij garnek na 60–120 sekund, aż powierzchnia wróci do spokojnej pracy."
     }
 
     private var sensoryNote: String {
-        hasThermometer
+        if allowsBoiling {
+            return "Dla tonkotsu obserwuj poziom płynu i charakter wrzenia: ma być stałe i mocne, ale kontrolowane."
+        }
+        return hasThermometer
             ? "Termometr daje punkt odniesienia, ale nadal obserwuj powierzchnię: stabilna praca jest ważniejsza niż pojedynczy odczyt."
             : "Bez termometru patrz na powierzchnię. Szukasz delikatnego drżenia i pojedynczych bąbli przy brzegu — nie pełnego wrzenia."
     }
@@ -2781,6 +2996,178 @@ private struct PhaseDetailsSheet: View {
     let content: InstructionSheetContent
 
     private var model: PhaseSheetModel {
+        if content.isRamenTonkotsu, content.stepID == "prep" {
+            return PhaseSheetModel(
+                eyebrow: "Start tonkotsu",
+                intro: "Przygotuj stanowisko i ustaw proces pod długie, aktywne wrzenie.",
+                sections: [
+                    PhaseSheetSection(
+                        title: "Przed uruchomieniem",
+                        systemImage: "checklist",
+                        text: "Miej pod ręką narzędzia i naczynie z gorącą wodą do dolewek.",
+                        bullets: ["Kości i dodatki przygotuj wcześniej.", "Sito/gaza przyda się na końcu do cedzenia.", "Pilnuj, by po starcie nie szukać sprzętu."]
+                    ),
+                    PhaseSheetSection(
+                        title: "Temperatura etapu",
+                        systemImage: "thermometer.medium",
+                        text: "W tonkotsu docelowo pracujesz na aktywnym wrzeniu (95–100°C).",
+                        bullets: ["Wrzenie jest celem.", "Kontroluj poziom wody przez cały proces."]
+                    )
+                ],
+                footer: "Po starcie przechodzisz do długiego etapu emulsyfikacji.",
+                footerLabel: "Gotowość"
+            )
+        }
+
+        if (content.ultraVariant == .warzywnyJasny || content.ultraVariant == .warzywnyUmami), content.stepID == "prep" {
+            return PhaseSheetModel(
+                eyebrow: "Start bulionu warzywnego",
+                intro: "Przygotuj stanowisko pod krótki, kontrolowany proces. W warzywnym kluczowe są czas i temperatura.",
+                sections: [
+                    PhaseSheetSection(
+                        title: "Przed startem",
+                        systemImage: "checklist",
+                        text: "Przygotuj warzywa i narzędzia tak, aby gotować bez pośpiechu.",
+                        bullets: ["Warzywa umyj i przygotuj zgodnie z koszykiem.", "Przygotuj sito/gazę do cedzenia.", "Ustaw timer — ten wariant nie lubi przeciągania."]
+                    ),
+                    PhaseSheetSection(
+                        title: "Temperatura pracy",
+                        systemImage: "thermometer.medium",
+                        text: "Pracuj stabilnie poniżej intensywnego wrzenia.",
+                        bullets: ["Utrzymuj zakres z karty temperatury.", "Unikaj mocnego bulgotania."]
+                    )
+                ],
+                footer: "Po starcie przechodzisz do kontrolowanego etapu ekstrakcji warzyw.",
+                footerLabel: "Kontrola procesu"
+            )
+        }
+
+        if content.stepID == "strain_season" {
+            let seasoningBullets: [String] = {
+                if content.ultraVariant == .ramenShio || content.ultraVariant == .ramenTonkotsu {
+                    return ["W ramenie końcową słoność ustawiaj przez tare.", "Jeśli przesolisz, rozcieńcz porcję."]
+                }
+                return ["Doprawiaj małymi krokami i próbuj po każdej korekcie.", "Jeśli przesolisz, rozcieńcz część porcji niesolonym bulionem."]
+            }()
+            return PhaseSheetModel(
+                eyebrow: "Końcowy etap",
+                intro: "Najpierw dokładnie przecedź, dopiero potem ustaw końcowy smak.",
+                sections: [
+                    PhaseSheetSection(
+                        title: "Kolejność",
+                        systemImage: "line.3.horizontal.decrease.circle",
+                        text: "Przecedź bulion bez wyciskania składników i bez podnoszenia osadu z dna.",
+                        bullets: ["Nie wyciskaj zawartości sita.", "Lej spokojnie, cienkim strumieniem."]
+                    ),
+                    PhaseSheetSection(
+                        title: "Doprawianie",
+                        systemImage: "fork.knife",
+                        text: "Doprawiaj po cedzeniu, stopniowo.",
+                        bullets: seasoningBullets
+                    )
+                ],
+                footer: "Po tym kroku kończysz gotowanie.",
+                footerLabel: "Finalizacja"
+            )
+        }
+
+        if content.stepID == "veg_simmer_limit" {
+            return PhaseSheetModel(
+                eyebrow: "Warzywny — etap krytyczny",
+                intro: "Ten krok wymaga kontroli czasu i temperatury. Przeciąganie daje nadmierną słodycz i spłaszcza profil.",
+                sections: [
+                    PhaseSheetSection(
+                        title: "Jak prowadzić etap",
+                        systemImage: "clock",
+                        text: "Prowadź spokojnie, bez intensywnego wrzenia i bez niepotrzebnego przeciągania.",
+                        bullets: ["Trzymaj się limitu z timera.", "Kontroluj smak pod koniec etapu.", "Gdy profil jest gotowy, zakończ i przejdź do cedzenia."]
+                    ),
+                    PhaseSheetSection(
+                        title: "Typowe błędy",
+                        systemImage: "exclamationmark.triangle",
+                        text: "Najczęstszy problem to zbyt długi czas gotowania.",
+                        bullets: ["Za długo = słodszy i płytszy smak.", "Nie próbuj nadrabiać przez mocniejsze gotowanie."]
+                    )
+                ],
+                footer: "Lepiej skończyć ten etap odrobinę wcześniej niż przeciągnąć.",
+                footerLabel: "Kontrola czasu"
+            )
+        }
+
+        if content.stepID == "fish_poach_limit" {
+            return PhaseSheetModel(
+                eyebrow: "Rybny — krótki limit",
+                intro: "Bulion rybny jest bardzo wrażliwy na czas i temperaturę. Tu precyzja jest ważniejsza niż długie gotowanie.",
+                sections: [
+                    PhaseSheetSection(
+                        title: "Prowadzenie etapu",
+                        systemImage: "thermometer.medium",
+                        text: "Utrzymuj temperaturę stabilnie i nie dopuszczaj do pełnego wrzenia.",
+                        bullets: ["Pilnuj krótkiego czasu etapu.", "Lepiej skończyć wcześniej niż przeciągnąć."]
+                    ),
+                    PhaseSheetSection(
+                        title: "Gdy przekroczysz limit",
+                        systemImage: "drop.triangle",
+                        text: "Przy przekroczeniu czasu ryzyko ciężkiego aromatu i goryczy szybko rośnie.",
+                        bullets: ["Zakończ etap natychmiast.", "Od razu przecedź.", "Nie redukuj dalej."]
+                    )
+                ],
+                footer: "W rybnym liczy się delikatność i krótka ekstrakcja.",
+                footerLabel: "Krótko i precyzyjnie"
+            )
+        }
+
+        if !content.isRamenTonkotsu, content.stepID == "heat_up_clear" {
+            return PhaseSheetModel(
+                eyebrow: "Shio — dojście do temperatury",
+                intro: "Podgrzewaj spokojnie do zakresu pracy shio (88–92°C), bez pełnego wrzenia.",
+                sections: [
+                    PhaseSheetSection(
+                        title: "Cel etapu",
+                        systemImage: "thermometer.medium",
+                        text: "Masz wejść w stabilną temperaturę pracy bez gwałtownego bulgotania.",
+                        bullets: ["Nie mieszaj garnka.", "Zbieraj tylko to, co samo wypływa na powierzchnię."]
+                    )
+                ],
+                footer: "Gdy wejdziesz w temperaturę pracy, przechodzisz do głównego gotowania.",
+                footerLabel: "Spokojny start"
+            )
+        }
+
+        if !content.isRamenTonkotsu, content.stepID == "add_veg_spices" {
+            return PhaseSheetModel(
+                eyebrow: "Shio — aromaty",
+                intro: "Dodajesz aromaty ramenowe na finisz: cebula, imbir, czosnek (opcjonalnie dymka).",
+                sections: [
+                    PhaseSheetSection(
+                        title: "Jak dodać",
+                        systemImage: "list.bullet",
+                        text: "Dodaj składniki zgodnie z listą i ilościami z kalkulatora.",
+                        bullets: ["Po dodaniu wróć do stabilnej pracy.", "Nie przeciągaj tego etapu."]
+                    )
+                ],
+                footer: "To etap krótszy niż główne gotowanie — aromaty mają tylko domknąć profil.",
+                footerLabel: "Krótki finisz"
+            )
+        }
+
+        if content.isRamenTonkotsu, content.stepID == "tonkotsu_aromatics_end" {
+            return PhaseSheetModel(
+                eyebrow: "Zmiana w garnku",
+                intro: "To krótki etap przed cedzeniem: dodajesz końcowe aromaty tonkotsu.",
+                sections: [
+                    PhaseSheetSection(
+                        title: "Co dodać",
+                        systemImage: "list.bullet",
+                        text: "Dodaj aromaty z listy etapu: cebula, por, imbir, czosnek (zgodnie z wyliczeniami).",
+                        bullets: ["Po dodaniu utrzymuj aktywną, ale kontrolowaną pracę.", "Nie przeciągaj tego etapu."]
+                    )
+                ],
+                footer: "Po tym etapie przechodzisz od razu do cedzenia.",
+                footerLabel: "Krótki finisz"
+            )
+        }
+
         switch content.phaseKind {
         case .prep:
             if content.isGrandmaStyle {
@@ -2808,7 +3195,7 @@ private struct PhaseDetailsSheet: View {
                         systemImage: "checklist",
                         text: "Zanim uruchomisz gotowanie, ustaw wszystko tak, żeby w trakcie pracy nie szukać narzędzi ani nie wykonywać nerwowych ruchów.",
                         bullets: [
-                            "Mięso włóż do garnka i wlej wodę z kalkulatora.",
+                            content.ultraVariant == .rybnyDelikatny || content.ultraVariant == .rybnyIntensywny ? "Przygotuj ryby/owoce morza i wlej wodę z kalkulatora." : "Mięso włóż do garnka i wlej wodę z kalkulatora.",
                             content.hasThermometer ? "Sondę umieść w wodzie tak, aby nie dotykała dna ani ścian garnka." : "Obserwuj powierzchnię spokojnie i nie mieszaj garnka.",
                             "Przygotuj sitko lub łyżkę do szumowin, szczypce albo łyżkę cedzakową oraz sito lub gazę do cedzenia."
                         ]
@@ -2817,7 +3204,7 @@ private struct PhaseDetailsSheet: View {
                         title: "Dodatkowe uwagi",
                         systemImage: "text.badge.star",
                         text: "Ten etap porządkuje start. Dzięki temu później łatwiej utrzymać klarowność i właściwe tempo pracy.",
-                        bullets: content.useVinegar ? ["Mięso możesz krótko opłukać tylko z luźnych resztek z pakowania. Nie blanszuj.", "Ocet działa tu funkcjonalnie i w małej ilości nie powinien być wyczuwalny w smaku."] : ["Mięso możesz krótko opłukać tylko z luźnych resztek z pakowania. Nie blanszuj."]
+                        bullets: (content.ultraVariant == .rybnyDelikatny || content.ultraVariant == .rybnyIntensywny) ? ["Ryb nie gotuj gwałtownie: trzymaj spokojną temperaturę i nie mieszaj agresywnie."] : (content.useVinegar ? ["Mięso możesz krótko opłukać tylko z luźnych resztek z pakowania. Nie blanszuj.", "Ocet działa tu funkcjonalnie i w małej ilości nie powinien być wyczuwalny w smaku."] : ["Mięso możesz krótko opłukać tylko z luźnych resztek z pakowania. Nie blanszuj."])
                     )
                 ],
                 footer: "Gdy wszystko będzie gotowe, uruchom Start i dalej prowadź rosół już bez pośpiechu.",
@@ -2862,6 +3249,28 @@ private struct PhaseDetailsSheet: View {
             )
 
         case .stabilization:
+            if content.isRamenTonkotsu, content.stepID == "tonkotsu_boil_emulsify" {
+                return PhaseSheetModel(
+                    eyebrow: "Tonkotsu — etap główny",
+                    intro: "W tym wariancie aktywne wrzenie jest celem. Budujesz emulsję tłuszczu i kolagenu, która da kremowy, mleczny bulion.",
+                    sections: [
+                        PhaseSheetSection(
+                            title: "Jak prowadzić etap",
+                            systemImage: "flame",
+                            text: "Utrzymuj mocne, stabilne wrzenie przez cały etap.",
+                            bullets: ["Kości muszą być stale przykryte płynem.", "Gdy poziom spada, dolewaj gorącą wodę małymi porcjami.", "Mieszaj tylko delikatnie, żeby zapobiec przywieraniu."]
+                        ),
+                        PhaseSheetSection(
+                            title: "Czego unikać",
+                            systemImage: "exclamationmark.triangle",
+                            text: "Problemem nie jest samo wrzenie, tylko utrata kontroli nad garnkiem.",
+                            bullets: ["Nie dopuszczaj do wykipienia.", "Nie zostawiaj odkrytych kości.", "Nie osłabiaj zbyt mocno ognia na dłużej."]
+                        )
+                    ],
+                    footer: "To etap o największym wpływie na finalną kremowość tonkotsu.",
+                    footerLabel: "Wrzenie celowe"
+                )
+            }
             if content.isGrandmaStyle {
                 return PhaseSheetModel(
                     eyebrow: "30 minut samo mięso",

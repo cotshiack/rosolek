@@ -22,6 +22,7 @@ struct LastBatchDetailView: View {
                         header
                         summaryCard(batch)
                         cookingSection(batch)
+                        ingredientsSection(batch)
                         qualitySection(batch)
                         notesSection(batch)
                         replaySection(batch)
@@ -134,12 +135,23 @@ struct LastBatchDetailView: View {
             AppCard {
                 VStack(alignment: .leading, spacing: 12) {
                     AppInfoRow(title: "Styl", value: batch.profileTitle.lowercased())
+                    if let kind = batch.brothKindRawValue {
+                        AppInfoRow(title: "Rodzaj bulionu", value: kind)
+                    }
+                    if let styleName = batch.selectedStyleName, !styleName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                        AppInfoRow(title: "Wybrany wariant", value: styleName)
+                    }
                     AppInfoRow(title: "Masa mięsa", value: batch.weightDisplayText)
                     AppInfoRow(title: "Woda start", value: batch.waterDisplayText)
-                    AppInfoRow(title: "Szacowany uzysk", value: batch.yieldDisplayText)
+                    AppInfoRow(title: "Uzysk", value: batch.yieldDisplayText)
+                    if batch.actualYieldLiters != nil {
+                        AppInfoRow(title: "Szacowany uzysk", value: batch.estimatedYieldDisplayText)
+                    }
                     AppInfoRow(title: "Czas gotowania", value: batch.timeDisplayText)
-                    AppInfoRow(title: "Liczba składników", value: batch.ingredientCountDisplayText)
                     AppInfoRow(title: "Termometr", value: batch.thermometerDisplayText)
+                    if let actualYield = batch.actualYieldLiters {
+                        AppInfoRow(title: "Realny uzysk", value: litersLabel(actualYield))
+                    }
 
                     if let interruption = batch.interruptionDisplayText {
                         AppInfoRow(title: "Status", value: interruption)
@@ -195,6 +207,35 @@ struct LastBatchDetailView: View {
         }
     }
 
+    private func ingredientsSection(_ batch: BatchRecord) -> some View {
+        let entries = ingredientEntries(for: batch)
+        let hasSnapshot = batch.selectedIngredientsSnapshot?.isEmpty == false
+        let hasSpices = !(batch.spiceOverrides ?? [:]).isEmpty
+
+        return Group {
+            if hasSnapshot || hasSpices {
+                VStack(alignment: .leading, spacing: 10) {
+                    AppSectionLabel(text: "Użyte składniki")
+
+                    AppCard {
+                        VStack(alignment: .leading, spacing: 14) {
+                            if !hasSnapshot {
+                                Text("Brak pełnego zapisu listy składników (stara wersja aplikacji).")
+                                    .font(.system(size: 14, weight: .medium))
+                                    .foregroundStyle(AppTheme.textSecondary)
+                            }
+
+                            ingredientGroupCard(title: "Baza", entries: entries.base, totalSuffix: "g")
+                            ingredientGroupCard(title: "Warzywa", entries: entries.vegetables, totalSuffix: "g")
+                            spiceGroupCard(batch)
+                        }
+                    }
+                    .appSoftShadow()
+                }
+            }
+        }
+    }
+
     private func notesSection(_ batch: BatchRecord) -> some View {
         Group {
             if !batch.notes.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
@@ -216,23 +257,23 @@ struct LastBatchDetailView: View {
     private func replaySection(_ batch: BatchRecord) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             if let replayIngredientIDs = batch.selectedIngredientIDs, !replayIngredientIDs.isEmpty {
-                NavigationLink {
-                    BrothResultView(
-                        mode: .custom(batch.brothProfile),
-                        totalWeight: batch.totalWeightGrams,
-                        selectedIngredientCount: replayIngredientIDs.count,
-                        selectedIDs: replayIngredientIDs,
-                        initialSelections: batch.selectedIngredientsSnapshot?.map {
-                            BrothIngredientSelection(
-                                ingredientID: $0.ingredientID,
-                                ingredientName: $0.ingredientName,
-                                category: IngredientCategory(rawValue: $0.categoryRawValue) ?? .poultry,
-                                grams: $0.grams
-                            )
-                        } ?? []
-                    )
-                } label: {
-                    AppPrimaryButtonLabel(title: "Ugotuj ponownie")
+                VStack(alignment: .leading, spacing: 8) {
+                    NavigationLink {
+                        BrothResultView(
+                            mode: .custom(batch.brothProfile),
+                            totalWeight: batch.totalWeightGrams,
+                            selectedIngredientCount: replayIngredientIDs.count,
+                            selectedIDs: replayIngredientIDs,
+                            initialSelections: replaySelections(from: batch),
+                            meatOverrides: batch.meatOverrides,
+                            vegetableOverrides: batch.vegetableOverrides,
+                            spiceOverrides: batch.spiceOverrides,
+                            selectedKind: replayBrothKind(from: batch),
+                            selectedStyleName: batch.selectedStyleName
+                        )
+                    } label: {
+                        AppPrimaryButtonLabel(title: "Ugotuj jeszcze raz")
+                    }
                 }
             } else {
                 AppCard {
@@ -300,6 +341,227 @@ struct LastBatchDetailView: View {
         guard let raw = batch.clarityFeedbackRawValue else { return nil }
         return BatchClarityFeedback(rawValue: raw)?.title
     }
+
+    private func sortedVegetableOverrides(_ batch: BatchRecord) -> [(key: String, value: Int)] {
+        (batch.vegetableOverrides ?? [:])
+            .sorted { $0.key.localizedCaseInsensitiveCompare($1.key) == .orderedAscending }
+    }
+
+    private func sortedMeatOverrides(_ batch: BatchRecord) -> [(key: String, value: Int)] {
+        (batch.meatOverrides ?? [:])
+            .sorted { $0.key.localizedCaseInsensitiveCompare($1.key) == .orderedAscending }
+    }
+
+    private func sortedSpiceOverrides(_ batch: BatchRecord) -> [(key: String, value: Int)] {
+        let order: [String] = ["salt_start", "salt_final", "pepper", "allspice", "bay", "vinegar"]
+        return (batch.spiceOverrides ?? [:])
+            .sorted { lhs, rhs in
+                let li = order.firstIndex(of: lhs.key) ?? Int.max
+                let ri = order.firstIndex(of: rhs.key) ?? Int.max
+                if li == ri {
+                    return lhs.key < rhs.key
+                }
+                return li < ri
+            }
+    }
+
+    private func spiceLabel(for key: String) -> String {
+        switch key {
+        case "salt_start": return "Sól start"
+        case "salt_final": return "Sól końcowa"
+        case "pepper": return "Pieprz"
+        case "allspice": return "Ziele angielskie"
+        case "bay": return "Liść laurowy"
+        case "vinegar": return "Ocet jabłkowy"
+        default: return key
+        }
+    }
+
+    private func meatLabel(for key: String, batch: BatchRecord) -> String {
+        if let match = batch.selectedIngredientsSnapshot?.first(where: { $0.ingredientID == key }) {
+            return match.ingredientName
+        }
+        return key
+    }
+
+    private func spiceValueLabel(for key: String, value: Int) -> String {
+        switch key {
+        case "salt_start", "salt_final":
+            return "\(value) g"
+        case "pepper", "allspice":
+            return "\(value) ziaren"
+        case "bay":
+            return value == 1 ? "1 liść" : "\(value) liści"
+        case "vinegar":
+            return "\(value) ml"
+        default:
+            return "\(value)"
+        }
+    }
+
+    private func ingredientEntries(for batch: BatchRecord) -> (base: [IngredientEntry], vegetables: [IngredientEntry]) {
+        let snapshot = batch.selectedIngredientsSnapshot ?? []
+        let base = snapshot
+            .filter { isBaseCategory(rawValue: $0.categoryRawValue) }
+            .map {
+                IngredientEntry(
+                    id: $0.ingredientID,
+                    name: $0.ingredientName,
+                    initialValue: $0.grams,
+                    finalValue: batch.meatOverrides?[$0.ingredientID] ?? $0.grams
+                )
+            }
+            .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+
+        let vegetables = snapshot
+            .filter { $0.categoryRawValue == IngredientCategory.veggies.rawValue }
+            .map {
+                IngredientEntry(
+                    id: $0.ingredientID,
+                    name: $0.ingredientName,
+                    initialValue: $0.grams,
+                    finalValue: batch.vegetableOverrides?[$0.ingredientName] ?? $0.grams
+                )
+            }
+            .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+
+        if !vegetables.isEmpty {
+            return (base, vegetables)
+        }
+
+        let fallbackVegetables = (batch.vegetableOverrides ?? [:])
+            .map { IngredientEntry(id: $0.key, name: $0.key, initialValue: $0.value, finalValue: $0.value) }
+            .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+
+        return (base, fallbackVegetables)
+    }
+
+    private func isBaseCategory(rawValue: String) -> Bool {
+        guard let category = IngredientCategory(rawValue: rawValue) else { return false }
+        switch category {
+        case .poultry, .beef, .pork, .offal, .fish, .seafood:
+            return true
+        default:
+            return false
+        }
+    }
+
+    @ViewBuilder
+    private func ingredientGroupCard(title: String, entries: [IngredientEntry], totalSuffix: String) -> some View {
+        if !entries.isEmpty {
+            let total = entries.reduce(0) { $0 + $1.finalValue }
+            VStack(alignment: .leading, spacing: 8) {
+                categoryHeader(title: title, value: "\(total) \(totalSuffix)")
+                Divider().overlay(AppTheme.border)
+                VStack(alignment: .leading, spacing: 6) {
+                    ForEach(entries) { entry in
+                        VStack(alignment: .leading, spacing: 2) {
+                            ingredientValueRow(title: entry.name, value: "\(entry.finalValue) g")
+                            if entry.isChanged {
+                                Text("z \(entry.initialValue) g na \(entry.finalValue) g")
+                                    .font(.system(size: 12, weight: .medium))
+                                    .foregroundStyle(AppTheme.textSecondary)
+                            }
+                        }
+                    }
+                }
+            }
+            .padding(.vertical, 4)
+        }
+    }
+
+    @ViewBuilder
+    private func spiceGroupCard(_ batch: BatchRecord) -> some View {
+        let spices = fullSpiceEntries(batch)
+        if !spices.isEmpty {
+            VStack(alignment: .leading, spacing: 8) {
+                categoryHeader(title: "Przyprawy i dodatki", value: "\(spices.count)")
+                Divider().overlay(AppTheme.border)
+                VStack(alignment: .leading, spacing: 6) {
+                    ForEach(spices) { entry in
+                        ingredientValueRow(
+                            title: spiceLabel(for: entry.key),
+                            value: spiceValueLabel(for: entry.key, value: entry.value)
+                        )
+                    }
+                }
+            }
+            .padding(.vertical, 4)
+        } else {
+            Text("Brak zapisu przypraw dla tego batcha.")
+                .font(.system(size: 13, weight: .medium))
+                .foregroundStyle(AppTheme.textSecondary)
+        }
+    }
+
+    private func fullSpiceEntries(_ batch: BatchRecord) -> [SpiceEntry] {
+        let order: [String] = ["salt_start", "salt_final", "pepper", "allspice", "bay", "vinegar"]
+        let overrides = batch.spiceOverrides ?? [:]
+        return order.compactMap { key in
+            guard let value = overrides[key] else { return nil }
+            return SpiceEntry(key: key, value: value)
+        }
+    }
+
+    private func litersLabel(_ liters: Double) -> String {
+        String(format: "%.2f l", liters).replacingOccurrences(of: ".", with: ",")
+    }
+
+    private func categoryHeader(title: String, value: String) -> some View {
+        HStack(spacing: 8) {
+            Text(title)
+                .font(.system(size: 17, weight: .bold))
+                .foregroundStyle(AppTheme.textPrimary.opacity(0.92))
+            Spacer()
+            Text(value)
+                .font(.system(size: 17, weight: .bold))
+                .foregroundStyle(AppTheme.textPrimary)
+        }
+    }
+
+    private func ingredientValueRow(title: String, value: String) -> some View {
+        HStack(alignment: .firstTextBaseline) {
+            Text(title)
+                .font(.system(size: 14, weight: .medium))
+                .foregroundStyle(AppTheme.textSecondary)
+            Spacer()
+            Text(value)
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundStyle(AppTheme.textPrimary)
+        }
+    }
+
+    private func replaySelections(from batch: BatchRecord) -> [BrothIngredientSelection] {
+        batch.selectedIngredientsSnapshot?.map {
+            BrothIngredientSelection(
+                ingredientID: $0.ingredientID,
+                ingredientName: $0.ingredientName,
+                category: IngredientCategory(rawValue: $0.categoryRawValue) ?? .poultry,
+                grams: $0.grams
+            )
+        } ?? []
+    }
+
+    private func replayBrothKind(from batch: BatchRecord) -> BrothKind? {
+        guard let raw = batch.brothKindRawValue else { return nil }
+        return BrothKind(rawValue: raw)
+    }
+}
+
+private struct IngredientEntry: Identifiable {
+    let id: String
+    let name: String
+    let initialValue: Int
+    let finalValue: Int
+
+    var isChanged: Bool { initialValue != finalValue }
+}
+
+private struct SpiceEntry: Identifiable {
+    let key: String
+    let value: Int
+
+    var id: String { key }
 }
 
 private struct DetailRatingBadge: View {
