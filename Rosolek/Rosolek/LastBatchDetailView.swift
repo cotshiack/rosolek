@@ -453,7 +453,7 @@ struct LastBatchDetailView: View {
         if !entries.isEmpty {
             let total = entries.reduce(0) { $0 + $1.finalValue }
             VStack(alignment: .leading, spacing: 8) {
-                categoryHeader(title: title, value: "\(total) \(totalSuffix)", color: categoryAccentColor(for: title))
+                categoryHeader(title: title, value: "\(total) \(totalSuffix)")
                 Divider().overlay(AppTheme.border)
                 VStack(alignment: .leading, spacing: 6) {
                     ForEach(entries) { entry in
@@ -477,7 +477,7 @@ struct LastBatchDetailView: View {
         let spices = fullSpiceEntries(batch)
         if !spices.isEmpty {
             VStack(alignment: .leading, spacing: 8) {
-                categoryHeader(title: "Przyprawy i dodatki", value: "\(spices.count)", color: AppTheme.accent.opacity(0.9))
+                categoryHeader(title: "Przyprawy i dodatki", value: "\(spices.count)")
                 Divider().overlay(AppTheme.border)
                 VStack(alignment: .leading, spacing: 6) {
                     ForEach(spices) { entry in
@@ -509,28 +509,14 @@ struct LastBatchDetailView: View {
         String(format: "%.2f l", liters).replacingOccurrences(of: ".", with: ",")
     }
 
-    private func categoryAccentColor(for title: String) -> Color {
-        switch title {
-        case "Baza":
-            return AppTheme.accent
-        case "Warzywa":
-            return Color.green.opacity(0.7)
-        default:
-            return AppTheme.textSecondary
-        }
-    }
-
-    private func categoryHeader(title: String, value: String, color: Color) -> some View {
+    private func categoryHeader(title: String, value: String) -> some View {
         HStack(spacing: 8) {
-            Circle()
-                .fill(color)
-                .frame(width: 8, height: 8)
             Text(title)
-                .font(.system(size: 20, weight: .bold))
+                .font(.system(size: 18, weight: .bold))
                 .foregroundStyle(AppTheme.textPrimary)
             Spacer()
             Text(value)
-                .font(.system(size: 20, weight: .bold))
+                .font(.system(size: 18, weight: .bold))
                 .foregroundStyle(AppTheme.textPrimary)
         }
     }
