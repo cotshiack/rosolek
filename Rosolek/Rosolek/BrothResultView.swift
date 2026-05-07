@@ -482,6 +482,10 @@ struct BrothResultView: View {
         effectiveSelections.reduce(0) { $0 + $1.grams }
     }
 
+    private var displayedBaseTotalWeight: Int {
+        editableBaseItems.reduce(0) { $0 + $1.currentGrams(overrides: meatOverrides) }
+    }
+
     private var totalVegetableGrams: Int {
         effectiveResult.vegetables.reduce(0) { partial, item in
             partial + parseGrams(from: item.amount)
@@ -871,7 +875,7 @@ struct BrothResultView: View {
 
             MeatShoppingCard(
                 title: selectedKind == .veggie ? "Baza" : (selectedKind == .fish ? "Baza rybna" : "Mięso"),
-                totalWeight: gramsString(effectiveTotalWeight),
+                totalWeight: gramsString(displayedBaseTotalWeight),
                 rows: meatRows,
                 description: usesUserSelections
                     ? "To jest dokładnie Twój zestaw."

@@ -226,7 +226,9 @@ struct LastBatchDetailView: View {
                             }
 
                             ingredientGroupCard(title: "Baza", entries: entries.base, totalSuffix: "g")
+                            Divider().overlay(AppTheme.border.opacity(0.6))
                             ingredientGroupCard(title: "Warzywa", entries: entries.vegetables, totalSuffix: "g")
+                            Divider().overlay(AppTheme.border.opacity(0.6))
                             spiceGroupCard(batch)
                         }
                     }
@@ -466,9 +468,7 @@ struct LastBatchDetailView: View {
                     }
                 }
             }
-            .padding(12)
-            .background(AppTheme.surfaceMuted)
-            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .padding(.vertical, 4)
         }
     }
 
@@ -488,9 +488,7 @@ struct LastBatchDetailView: View {
                     }
                 }
             }
-            .padding(12)
-            .background(AppTheme.surfaceMuted)
-            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .padding(.vertical, 4)
         } else {
             Text("Brak zapisu przypraw dla tego batcha.")
                 .font(.system(size: 13, weight: .medium))
