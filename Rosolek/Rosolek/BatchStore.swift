@@ -129,7 +129,7 @@ final class BatchStore: ObservableObject {
     ) {
         guard let index = batches.firstIndex(where: { $0.id == batchID }) else { return }
 
-        batches[index].overallRating = overallRating
+        batches[index].overallRating = min(10, max(1, overallRating))
         batches[index].strengthFeedbackRawValue = strengthFeedbackRawValue
         batches[index].fatFeedbackRawValue = fatFeedbackRawValue
         batches[index].clarityFeedbackRawValue = clarityFeedbackRawValue
