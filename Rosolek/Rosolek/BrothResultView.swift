@@ -31,6 +31,7 @@ struct BrothResultView: View {
     @State private var spiceOverrides: [String: Int] = [:]
     @State private var showMeatEditor = false
     @State private var meatOverrides: [String: Int] = [:]
+    @State private var frozenResult: BrothCalculationResult?
 
     init(
         mode: BrothMode,
@@ -97,6 +98,10 @@ struct BrothResultView: View {
     }
 
     private var result: BrothCalculationResult {
+        frozenResult ?? computeCurrentResult()
+    }
+
+    private func computeCurrentResult() -> BrothCalculationResult {
         switch mode {
         case .preset(let preset):
             return BrothCalculator.calculate(
@@ -707,12 +712,17 @@ struct BrothResultView: View {
         .onAppear {
             defaultClarityModeRawValue = clarityMode.rawValue
             defaultUseVinegar = useVinegar
+            if frozenResult == nil {
+                frozenResult = computeCurrentResult()
+            }
         }
         .onChange(of: clarityMode) { _, newValue in
             defaultClarityModeRawValue = newValue.rawValue
+            frozenResult = computeCurrentResult()
         }
         .onChange(of: useVinegar) { _, newValue in
             defaultUseVinegar = newValue
+            frozenResult = computeCurrentResult()
         }
 
     }

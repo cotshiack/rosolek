@@ -58,8 +58,11 @@ struct UltraSpecRequestBuilder {
         case "skrzydla_kurczaka": return "POULTRY_WINGS"
         case "udka_kurczaka": return "POULTRY_THIGHS"
         case "porcja_rosolowa_drobiowa": return "POULTRY_SOUP_MIX"
-        case "lapki", "szyja_indyka", "skrzydlo_indyka", "korpus_indyka": return "POULTRY_NECK"
-        case "korpus_kaczki", "szyja_kaczki", "skrzydla_kaczki": return "POULTRY_WINGS"
+        case "lapki", "szyja_indyka": return "POULTRY_NECK"
+        case "skrzydlo_indyka": return "POULTRY_WINGS"
+        case "korpus_indyka", "korpus_kaczki": return "POULTRY_CARCASS"
+        case "szyja_kaczki": return "POULTRY_NECK"
+        case "skrzydla_kaczki": return "POULTRY_WINGS"
         case "szponder": return "BEEF_SHORT_RIB"
         case "prega": return "BEEF_SHANK"
         case "ogon", "ogon_wolowy": return "BEEF_OXTAIL"
@@ -70,6 +73,8 @@ struct UltraSpecRequestBuilder {
         case "kosci_wieprzowe": return "PORK_JOINT_BONES"
         case "lapki_wieprzowe", "gicz_wieprzowa": return "PORK_TROTTERS"
         case "kregi_wieprzowe": return "PORK_SPINE"
+        // Serca i żołądki trafiają do OFFAL_CHICKEN_LIVER — jedynej kategorii offal w katalogu.
+        // Profil tłuszczu/kolagenu wątróbki jest zbliżony do tych podrobów.
         case "serca", "zoladki", "watrobka": return "OFFAL_CHICKEN_LIVER"
         case "kregoslup_rybny": return "FISH_WHITE_BONES"
         case "glowy_rybne": return "FISH_HEADS"
