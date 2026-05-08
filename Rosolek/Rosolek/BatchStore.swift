@@ -194,9 +194,24 @@ final class BatchStore: ObservableObject {
             batches = try JSONDecoder().decode([BatchRecord].self, from: data)
             sortBatches()
         } catch {
-            print("Nie udało się wczytać batchy: \(error.localizedDescription)")
-            batches = []
+            print("BatchStore: decode całej tablicy nie powiódł się (\(error.localizedDescription)), próba per-element.")
+            batches = recoverBatchesFromCorruptedData(data)
+            sortBatches()
         }
+    }
+
+    private func recoverBatchesFromCorruptedData(_ data: Data) -> [BatchRecord] {
+        guard let rawArray = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]] else {
+            print("BatchStore: dane nie są tablicą JSON — historia niedostępna.")
+            return []
+        }
+        let decoder = JSONDecoder()
+        let recovered = rawArray.compactMap { dict -> BatchRecord? in
+            guard let elementData = try? JSONSerialization.data(withJSONObject: dict) else { return nil }
+            return try? decoder.decode(BatchRecord.self, from: elementData)
+        }
+        print("BatchStore: odzyskano \(recovered.count)/\(rawArray.count) rekordów.")
+        return recovered
     }
 
     private func sortBatches() {

@@ -774,7 +774,7 @@ struct CookingModeView: View {
         case "rest_settle":
             return .rest
         default:
-            assertionFailure("Unhandled ultra timeline stepID: \(stepID)")
+            print("⚠️ CookingModeView: nieobsługiwany ultra timeline stepID: \(stepID) — fallback na .stabilization")
             return .stabilization
         }
     }
