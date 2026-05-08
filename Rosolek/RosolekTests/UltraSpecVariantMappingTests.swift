@@ -57,4 +57,31 @@ final class UltraSpecVariantMappingTests: XCTestCase {
 
         XCTAssertEqual(request.items.map(\.ingredientID), ["VEG_CELERIAC", "VEG_LEEK", "FISH_WHITE_BONES"])
     }
+
+    // MARK: - H-2 fix: correct poultry ingredient ID mappings
+
+    func testKorpusIndykaMapsToCarcass() {
+        XCTAssertEqual(UltraSpecRequestBuilder.mapIngredientID("korpus_indyka"), "POULTRY_CARCASS")
+    }
+
+    func testSkrzydloIndykaMapsToWings() {
+        XCTAssertEqual(UltraSpecRequestBuilder.mapIngredientID("skrzydlo_indyka"), "POULTRY_WINGS")
+    }
+
+    func testKorpusKaczkiMapsToCarcass() {
+        XCTAssertEqual(UltraSpecRequestBuilder.mapIngredientID("korpus_kaczki"), "POULTRY_CARCASS")
+    }
+
+    func testSzyjaKaczkiMapsToNeck() {
+        XCTAssertEqual(UltraSpecRequestBuilder.mapIngredientID("szyja_kaczki"), "POULTRY_NECK")
+    }
+
+    func testSkrzydlaKaczkiMapsToWings() {
+        XCTAssertEqual(UltraSpecRequestBuilder.mapIngredientID("skrzydla_kaczki"), "POULTRY_WINGS")
+    }
+
+    func testUnknownIngredientIDPassesThrough() {
+        let unknown = "custom_local_ingredient_xyz"
+        XCTAssertEqual(UltraSpecRequestBuilder.mapIngredientID(unknown), unknown)
+    }
 }
