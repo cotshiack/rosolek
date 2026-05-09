@@ -151,6 +151,8 @@ private struct LiveIngredientReminderRowData: Hashable {
     let value: String
 }
 
+
+// MARK: - CookingModeView
 struct CookingModeView: View {
     let batch: BatchRecord
     let result: BrothCalculationResult
@@ -179,8 +181,9 @@ struct CookingModeView: View {
     @State private var prepVinegarReady = false
 
     @State private var liveActivity: Activity<CookingActivityAttributes>?
+    @State private var timerCancellable: (any Cancellable)?
 
-    private let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
+    private let timerPublisher = Timer.publish(every: 1, on: .main, in: .common)
 
     private var liveControlsOverlayHeight: CGFloat { 238 }
     private var finishButtonOverlayHeight: CGFloat { 92 }
@@ -288,8 +291,8 @@ struct CookingModeView: View {
 
     private var vegetableReminderRows: [LiveIngredientReminderRowData] {
         result.vegetables.compactMap { item in
-            let grams = Int((item.amount.filter { $0.isNumber }))
-            if let grams, grams <= 0 { return nil }
+            let grams = item.amount.extractGrams()
+            if grams <= 0 { return nil }
             return LiveIngredientReminderRowData(
                 icon: ingredientIconKind(for: item.name),
                 title: item.name,
@@ -769,8 +772,10 @@ struct CookingModeView: View {
             return .addVegetables
         case "simmer_clear":
             return .simmerToVegetablesOut
-        case "stabilize_base", "tonkotsu_boil_emulsify", "finish_clear", "veg_simmer_limit", "fish_poach_limit":
+        case "stabilize_base", "tonkotsu_boil_emulsify", "veg_simmer_limit", "fish_poach_limit":
             return .stabilization
+        case "finish_clear":
+            return .rest
         case "rest_settle":
             return .rest
         default:
@@ -905,6 +910,8 @@ struct CookingModeView: View {
             Button("Zakończ gotowanie", role: .destructive) {
                 finalStepCompleted = true
                 isStageRunning = false
+                timerCancellable?.cancel()
+                timerCancellable = nil
                 CookingSession.clear()
                 CookingNotificationService.shared.cancelAll()
                 endLiveActivity()
@@ -919,6 +926,9 @@ struct CookingModeView: View {
             prepThermometerReady = !hasThermometer
             prepVinegarReady = !batchUsesVinegar
             restoreSessionIfNeeded()
+            if isStageRunning {
+                timerCancellable = timerPublisher.connect()
+            }
             attachToExistingLiveActivityIfNeeded()
             updateLiveActivity()
         }
@@ -936,8 +946,12 @@ struct CookingModeView: View {
                 updateLiveActivity()
             }
         }
-        .onReceive(timer) { _ in
+        .onReceive(timerPublisher) { _ in
             handleTick()
+        }
+        .onDisappear {
+            timerCancellable?.cancel()
+            timerCancellable = nil
         }
     }
     
@@ -1604,8 +1618,11 @@ struct CookingModeView: View {
 
         isStageRunning.toggle()
         if isStageRunning {
+            timerCancellable = timerPublisher.connect()
             schedulePhaseNotification()
         } else {
+            timerCancellable?.cancel()
+            timerCancellable = nil
             CookingNotificationService.shared.cancelAll()
         }
         updateLiveActivity()
@@ -1624,6 +1641,7 @@ struct CookingModeView: View {
             phaseElapsedSeconds = 0
             isStageRunning = true
         }
+        timerCancellable = timerPublisher.connect()
         schedulePhaseNotification()
         startLiveActivity()
         playStartSignal()
@@ -1946,9 +1964,7 @@ struct CookingModeView: View {
 }
 
 private func normalizeCookingID(_ value: String) -> String {
-    value
-        .folding(options: .diacriticInsensitive, locale: nil)
-        .lowercased()
+    value.normalizedForMatching()
 }
 
 private struct TemperatureMiniPill: View {

@@ -1577,9 +1577,7 @@ extension BrothResultView {
     }
 
     private func normalize(_ value: String) -> String {
-        value
-            .folding(options: .diacriticInsensitive, locale: .current)
-            .lowercased()
+        value.normalizedForMatching()
     }
 
     private func categorySortIndex(_ category: IngredientCategory) -> Int {
@@ -1830,8 +1828,7 @@ extension BrothResultView {
     }
 
     private func parseGrams(from text: String) -> Int {
-        let digits = text.filter { $0.isNumber }
-        return Int(digits) ?? 0
+        text.extractGrams()
     }
 
     private func numberString(_ value: Double) -> String {

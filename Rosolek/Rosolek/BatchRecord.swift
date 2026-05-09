@@ -540,6 +540,39 @@ extension BatchRecord {
     }
 
     func calculationResult(potSizeLiters: Int) -> BrothCalculationResult {
+        // UltraSpec path: batch created through the new flow with a known BrothKind
+        if let kindRaw = brothKindRawValue,
+           let kind = BrothKind(rawValue: kindRaw),
+           let snapshot = selectedIngredientsSnapshot, !snapshot.isEmpty {
+            let selections = snapshot.map { snap in
+                BrothIngredientSelection(
+                    ingredientID: snap.ingredientID,
+                    ingredientName: snap.ingredientName,
+                    category: IngredientCategory(rawValue: snap.categoryRawValue) ?? .poultry,
+                    grams: snap.grams
+                )
+            }
+            let mode = clarityMode
+            if let ultra = try? UltraSpecBridge.calculateFromCurrentFlow(
+                kind: kind,
+                styleName: selectedStyleName,
+                potCapacityL: Double(potSizeLiters),
+                selections: selections,
+                clarityMode: mode
+            ) {
+                let key = UltraSpecStyleKeyResolver.resolve(kind: kind, styleName: selectedStyleName)
+                let variant = UltraSpecVariantResolver.resolve(kind: kind, styleKey: key)
+                return UltraSpecBridge.makeBrothResult(
+                    from: ultra,
+                    variant: variant,
+                    selections: selections,
+                    clarityMode: mode,
+                    useVinegar: useVinegar
+                )
+            }
+        }
+
+        // Legacy path: old batches or UltraSpec fallback on engine error
         if let snapshot = selectedIngredientsSnapshot, !snapshot.isEmpty {
             let selections = snapshot.map { snap in
                 BrothIngredientSelection(

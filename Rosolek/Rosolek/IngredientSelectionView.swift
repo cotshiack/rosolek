@@ -84,6 +84,7 @@ struct IngredientSelectionView: View {
     @State private var amounts: [String: String] = [:]
     @State private var expandedCategory: IngredientCategory? = nil
     @State private var navigateToSummary = false
+    @State private var cachedPreviewResult: BrothCalculationResult?
 
     @FocusState private var focusedFieldID: String?
 
@@ -163,6 +164,15 @@ struct IngredientSelectionView: View {
                     }
                 }
             }
+        }
+        .onAppear {
+            cachedPreviewResult = computePreviewResult()
+        }
+        .onChange(of: amounts) { _, _ in
+            cachedPreviewResult = computePreviewResult()
+        }
+        .onChange(of: potSizeLiters) { _, _ in
+            cachedPreviewResult = computePreviewResult()
         }
         .safeAreaInset(edge: .bottom) {
             floatingBottomBar
@@ -364,6 +374,10 @@ struct IngredientSelectionView: View {
     }
 
     private var previewResult: BrothCalculationResult {
+        cachedPreviewResult ?? computePreviewResult()
+    }
+
+    private func computePreviewResult() -> BrothCalculationResult {
         guard let variant = activeUltraVariant else {
             return BrothCalculator.calculate(
                 profile: selectedProfile,
