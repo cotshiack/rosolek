@@ -941,13 +941,6 @@ private struct OnboardingOptionCard: View {
 }
 
 
-#Preview("Home") {
-    NavigationStack {
-        HomeView()
-            .environmentObject(BatchStore())
-    }
-}
-
 private struct OnboardingPreviewHost: View {
     @State private var hasCompletedOnboarding = false
     @State private var userFirstName = "Paweł"
