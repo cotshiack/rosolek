@@ -53,13 +53,6 @@ private enum LiveSheet: Identifiable {
     }
 }
 
-private struct OverheatMessage: Identifiable {
-    let id = UUID()
-    let title: String
-    let text: String
-    let isCritical: Bool
-}
-
 private struct PhaseSheetSection: Identifiable {
     let id: UUID
     let title: String
@@ -104,7 +97,6 @@ struct CookingModeView: View {
     @State private var finalStepCompleted = false
     @State private var showFinishAlert = false
     @State private var activeSheet: LiveSheet?
-    @State private var overheatMessage: OverheatMessage?
     @State private var isTimelineExpanded = false
 
     @State private var prepMeatReady = false
@@ -356,9 +348,9 @@ struct CookingModeView: View {
                     .presentationDragIndicator(.visible)
             }
         }
-        .alert("Zakończyć gotowanie?", isPresented: $showFinishAlert) {
+        .alert("Zakończyć i przejść do oceny?", isPresented: $showFinishAlert) {
             Button("Anuluj", role: .cancel) { }
-            Button("Zakończ gotowanie", role: .destructive) {
+            Button("Zakończ gotowanie") {
                 finalStepCompleted = true
                 isStageRunning = false
                 timerCancellable?.cancel()
@@ -516,11 +508,6 @@ struct CookingModeView: View {
                     SupportNoteCard(text: phaseSupportNote)
                 }
 
-                if let overheatMessage {
-                    OverheatBanner(message: overheatMessage) {
-                        self.overheatMessage = nil
-                    }
-                }
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -1123,7 +1110,6 @@ struct CookingModeView: View {
         withAnimation(.easeInOut(duration: 0.25)) {
             phaseIndex += 1
             phaseElapsedSeconds = 0
-            overheatMessage = nil
         }
         schedulePhaseNotification()
         updateLiveActivity()
@@ -1136,7 +1122,6 @@ struct CookingModeView: View {
         withAnimation(.easeInOut(duration: 0.25)) {
             phaseIndex -= 1
             phaseElapsedSeconds = 0
-            overheatMessage = nil
         }
         schedulePhaseNotification()
         updateLiveActivity()
@@ -1991,55 +1976,6 @@ private struct StageTextControlButton: View {
     }
 }
 
-private struct OverheatBanner: View {
-    let message: OverheatMessage
-    let dismiss: () -> Void
-
-    var body: some View {
-        HStack(alignment: .top, spacing: 12) {
-            Image(systemName: message.isCritical ? "exclamationmark.octagon.fill" : "exclamationmark.triangle.fill")
-                .font(.system(size: 16, weight: .bold))
-                .foregroundStyle(message.isCritical ? Color(red: 0.71, green: 0.17, blue: 0.16) : Color(red: 0.74, green: 0.41, blue: 0.08))
-                .padding(.top, 2)
-
-            VStack(alignment: .leading, spacing: 4) {
-                Text(message.title)
-                    .font(.system(size: 15, weight: .bold))
-                    .foregroundStyle(AppTheme.textPrimary)
-
-                Text(message.text)
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundStyle(AppTheme.textPrimary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-
-            Spacer(minLength: 0)
-
-            Button(action: dismiss) {
-                Image(systemName: "xmark")
-                    .font(.system(size: 12, weight: .bold))
-                    .foregroundStyle(AppTheme.textSecondary)
-                    .frame(width: 30, height: 30)
-                    .background(AppTheme.surface.opacity(0.7))
-                    .clipShape(Circle())
-            }
-            .buttonStyle(.plain)
-        }
-        .padding(16)
-        .background(message.isCritical ? Color(red: 1.0, green: 0.93, blue: 0.93) : Color(red: 1.0, green: 0.96, blue: 0.90))
-        .overlay(
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .stroke(
-                    message.isCritical
-                        ? Color(red: 0.95, green: 0.67, blue: 0.62)
-                        : Color(red: 0.96, green: 0.76, blue: 0.47),
-                    lineWidth: 1
-                )
-        )
-        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-    }
-}
-
 private struct IngredientsReminderSheet: View {
     let content: IngredientsReminderSheetContent
 
@@ -2580,7 +2516,24 @@ private struct PhaseDetailsSheet: View {
             )
         }
 
+        let isFishUltraVariant = content.ultraVariant == .rybnyDelikatny || content.ultraVariant == .rybnyIntensywny
         if !content.isRamenTonkotsu, content.stepID == "heat_up_clear" {
+            if isFishUltraVariant {
+                return PhaseSheetModel(
+                    eyebrow: "Rybny — delikatny rozruch",
+                    intro: "Podgrzewaj powoli do zakresu pracy bulionu rybnego, bez pełnego wrzenia.",
+                    sections: [
+                        PhaseSheetSection(
+                            title: "Cel etapu",
+                            systemImage: "thermometer.medium",
+                            text: "Masz wejść w stabilną temperaturę pracy. Tu liczy się delikatność — gwałtowne bulgotanie psuje smak.",
+                            bullets: ["Nie mieszaj garnka.", "Zbieraj szumowiny, które same wypływają."]
+                        )
+                    ],
+                    footer: "Gdy wejdziesz w temperaturę pracy, przechodzisz do głównego gotowania.",
+                    footerLabel: "Spokojny start"
+                )
+            }
             return PhaseSheetModel(
                 eyebrow: "Shio — dojście do temperatury",
                 intro: "Podgrzewaj spokojnie do zakresu pracy shio (88–92°C), bez pełnego wrzenia.",
@@ -2600,7 +2553,7 @@ private struct PhaseDetailsSheet: View {
         if !content.isRamenTonkotsu, content.stepID == "add_veg_spices" {
             return PhaseSheetModel(
                 eyebrow: "Shio — aromaty",
-                intro: "Dodajesz aromaty ramenowe na finisz: cebula, imbir, czosnek (opcjonalnie dymka).",
+                intro: "Dodajesz aromaty na finisz: cebula, imbir, czosnek (opcjonalnie dymka).",
                 sections: [
                     PhaseSheetSection(
                         title: "Jak dodać",

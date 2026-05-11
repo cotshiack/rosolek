@@ -2175,7 +2175,7 @@ private func recommendedMeatRange(
         )
     }
 
-    let minMultiplier = profile == .cleaner ? 0.72 : 0.78
+    let minMultiplier = profile == .cleaner ? 0.55 : 0.65
     let minGrams = max(100, roundedToInt(Double(maxComfortGrams) * minMultiplier))
 
     return BrothRecommendedMeatRange(
