@@ -107,4 +107,25 @@ enum UltraSpecTimelineCatalog {
             ]
         }
     }
+
+    static func steps(
+        for variant: UltraSpecVariantID,
+        hasBeef: Bool,
+        hasPoultry: Bool
+    ) -> [UltraSpecTimelineStep] {
+        guard variant == .rosolBogaty else { return steps(for: variant) }
+        guard hasBeef else { return steps(for: .rosolLekki) }
+
+        var s = steps(for: .rosolBogaty)
+        if !hasPoultry {
+            if let i = s.firstIndex(where: { $0.stepID == "remove_poultry" }) {
+                var toRemove = IndexSet([i])
+                if i + 1 < s.count && s[i + 1].stepID == "simmer_clear" {
+                    toRemove.insert(i + 1)
+                }
+                s = s.enumerated().filter { !toRemove.contains($0.offset) }.map { $0.element }
+            }
+        }
+        return s
+    }
 }

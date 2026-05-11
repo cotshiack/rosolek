@@ -169,13 +169,14 @@ struct BrothResultView: View {
             BrothWarning(code: mapWarningCode($0.code), severity: mapSeverity($0.severity), params: [])
         }
 
-        let timeline = UltraSpecTimelineCatalog.steps(for: variant).map {
-            let drawerSubtitle = UltraSpecStepLibrary.all[$0.stepID]?.subtitle
-            return CookingTimelineItem(
+        let hasBeef = resolvedSelections.contains { $0.category == .beef }
+        let hasPoultry = resolvedSelections.contains { $0.category == .poultry }
+        let timeline = UltraSpecTimelineCatalog.steps(for: variant, hasBeef: hasBeef, hasPoultry: hasPoultry).map {
+            CookingTimelineItem(
                 minuteOffset: $0.minuteOffset,
                 timeLabel: $0.timeLabel,
                 title: $0.title,
-                subtitle: drawerSubtitle ?? $0.subtitle
+                subtitle: $0.subtitle
             )
         }
 
