@@ -291,14 +291,19 @@ struct CookingModeView: View {
 
     private var hasBeef: Bool {
         if !ingredientSnapshots.isEmpty {
-            return ingredientSnapshots.contains {
-                normalizeCookingID($0.categoryRawValue) == normalizeCookingID(IngredientCategory.beef.rawValue)
+            return ingredientSnapshots.contains { snap in
+                let cat = normalizeCookingID(snap.categoryRawValue)
+                // "wolowina" = IngredientCategory.beef ("Wołowina") normalised
+                // "beef"     = UltraSpecIngredientCategory.beef raw value
+                return cat == "wolowina" || cat == "beef"
+                    || snap.ingredientID.lowercased().hasPrefix("beef_")
             }
         }
         return ingredientIDs.contains { id in
             let n = normalizeCookingID(id)
             return n.contains("prega") || n.contains("szponder") || n.contains("ogon")
                 || n.contains("wolowy") || n.contains("szpik") || n.contains("mostek")
+                || n.contains("golen") || n.hasPrefix("beef_")
         }
     }
 
@@ -657,27 +662,81 @@ struct CookingModeView: View {
         return items
     }
 
+    // MARK: — Rosół Bogaty step selection (ingredient-aware)
+    //
+    // Path A  hasBeef + hasPoultry   → full Bogaty (drobiowo-wołowy) timeline
+    // Path B  hasBeef + !hasPoultry  → Bogaty without remove_poultry / closing simmer
+    // Path C  !hasBeef               → Lekki (poultry-only) schedule regardless of variant
+    private func stepsForBogaty() -> [UltraSpecTimelineStep] {
+        guard hasBeef else {
+            return UltraSpecTimelineCatalog.steps(for: .rosolLekki)
+        }
+
+        var steps = UltraSpecTimelineCatalog.steps(for: .rosolBogaty)
+
+        if !hasPoultry {
+            // Beef only: drop remove_poultry and the short closing simmer that follows it
+            if let rpi = steps.firstIndex(where: { $0.stepID == "remove_poultry" }) {
+                var toRemove = IndexSet([rpi])
+                let next = rpi + 1
+                if next < steps.count && steps[next].stepID == "simmer_clear" {
+                    toRemove.insert(next)
+                }
+                steps = steps.enumerated()
+                    .filter { !toRemove.contains($0.offset) }
+                    .map { $0.element }
+            }
+        }
+
+        return steps
+    }
+
     private var ultraSpecPhases: [LivePhase] {
         guard let variant = activeUltraVariant else { return [] }
-        // Rosół Bogaty without beef: use the Lekki poultry-only schedule
-        // (the longer beef-specific stages — 165 min simmer, 30 min closing, 75 min finish — don't apply)
-        let effectiveVariant: UltraSpecVariantID = (variant == .rosolBogaty && !hasBeef) ? .rosolLekki : variant
-        let steps = UltraSpecTimelineCatalog.steps(for: effectiveVariant)
+
+        let steps = (variant == .rosolBogaty)
+            ? stepsForBogaty()
+            : UltraSpecTimelineCatalog.steps(for: variant)
+
         guard !steps.isEmpty else { return [] }
+
+        // Contextual subtitle overrides for Bogaty so steps mention beef/drób explicitly
+        let beefOnlyBogaty = (variant == .rosolBogaty && hasBeef && !hasPoultry)
+        let fullBogaty     = (variant == .rosolBogaty && hasBeef && hasPoultry)
 
         return steps.enumerated().map { index, step in
             let durationSeconds: Int? = {
-                if index == 0 || step.isManual {
-                    return nil
-                }
+                if index == 0 || step.isManual { return nil }
                 let previousOffset = steps[index - 1].minuteOffset
                 return max(0, (step.minuteOffset - previousOffset) * 60)
             }()
 
+            // Build context-aware subtitle
+            var subtitle = step.subtitle
+            if fullBogaty {
+                switch step.stepID {
+                case "simmer_clear" where step.minuteOffset == 225:
+                    subtitle = "Drób i wołowina gotują się razem. Bez mieszania, bez wrzenia."
+                case "simmer_clear" where step.minuteOffset == 255:
+                    subtitle = "Wołowina dochodzi po wyjęciu drobiu."
+                case "finish_clear":
+                    subtitle = "Wołowina kończy gotowanie. Wyrównaj smak, bez wrzenia."
+                default: break
+                }
+            } else if beefOnlyBogaty {
+                switch step.stepID {
+                case "simmer_clear":
+                    subtitle = "Wołowina gotuje się spokojnie. Bez mieszania, bez wrzenia."
+                case "finish_clear":
+                    subtitle = "Wołowina kończy gotowanie. Wyrównaj smak, bez wrzenia."
+                default: break
+                }
+            }
+
             return LivePhase(
                 kind: livePhaseKind(forUltraStepID: step.stepID),
                 title: step.title,
-                shortText: step.subtitle,
+                shortText: subtitle,
                 detailText: UltraSpecStepLibrary.all[step.stepID]?.extendedHint ?? step.subtitle,
                 durationSeconds: durationSeconds,
                 timelineLabel: step.timeLabel,
