@@ -182,6 +182,64 @@ final class UltraSpecEdgeCaseTests: XCTestCase {
         }
     }
 
+    // MARK: - Pot capacity zero
+
+    func testPotZeroLitersThrowsHardPotTooSmall() {
+        let request = UltraSpecCalculationRequest(
+            variant: .rosolLekki,
+            potCapacityL: 0.0,
+            items: [.init(ingredientID: "POULTRY_OLD_HEN", grams: 500)],
+            clarityMode: .normal
+        )
+        XCTAssertThrowsError(try UltraSpecEngine.calculate(request: request)) { error in
+            XCTAssertEqual(error as? UltraSpecEngineError, .hardPotTooSmall)
+        }
+    }
+
+    // MARK: - New catalog entries (H-2 fix) are accepted by the engine
+
+    func testOffalHeartIsAcceptedByEngine() throws {
+        let request = UltraSpecCalculationRequest(
+            variant: .rosolLekki,
+            potCapacityL: 7,
+            items: [
+                .init(ingredientID: "POULTRY_OLD_HEN", grams: 1000),
+                .init(ingredientID: "OFFAL_HEART", grams: 200)
+            ],
+            clarityMode: .normal
+        )
+        let result = try UltraSpecEngine.calculate(request: request)
+        XCTAssertEqual(result.totalAnimalG, 1200)
+    }
+
+    func testOffalGizzardIsAcceptedByEngine() throws {
+        let request = UltraSpecCalculationRequest(
+            variant: .rosolLekki,
+            potCapacityL: 7,
+            items: [
+                .init(ingredientID: "POULTRY_OLD_HEN", grams: 1000),
+                .init(ingredientID: "OFFAL_GIZZARD", grams: 200)
+            ],
+            clarityMode: .normal
+        )
+        let result = try UltraSpecEngine.calculate(request: request)
+        XCTAssertEqual(result.totalAnimalG, 1200)
+    }
+
+    func testPoultryFeetIsAcceptedByEngine() throws {
+        let request = UltraSpecCalculationRequest(
+            variant: .rosolLekki,
+            potCapacityL: 7,
+            items: [
+                .init(ingredientID: "POULTRY_OLD_HEN", grams: 800),
+                .init(ingredientID: "POULTRY_FEET", grams: 400)
+            ],
+            clarityMode: .normal
+        )
+        let result = try UltraSpecEngine.calculate(request: request)
+        XCTAssertEqual(result.totalAnimalG, 1200)
+    }
+
     // MARK: - Unknown ingredient ID is silently ignored
 
     func testUnknownIngredientIDIsIgnored() throws {
