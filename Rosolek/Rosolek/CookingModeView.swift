@@ -778,6 +778,10 @@ struct CookingModeView: View {
             return .rest
         case "rest_settle":
             return .rest
+        case "remove_poultry":
+            return .removePoultry
+        case "remove_veg":
+            return .removeVegetables
         default:
             print("⚠️ CookingModeView: nieobsługiwany ultra timeline stepID: \(stepID) — fallback na .stabilization")
             return .stabilization

@@ -122,6 +122,24 @@ enum UltraSpecStepLibrary {
         recoveryAction: "Jeśli przesolone: rozcieńcz porcję lub połącz z niesolonym wywarem."
     )
 
+    static let removePoultry = UltraSpecStepDetail(
+        stepID: "remove_poultry",
+        title: "Wyjmij drób",
+        subtitle: "Wyjmij delikatnie, bez wyciskania nad płynem.",
+        extendedHint: "Wyjmij drób szczypcami albo łyżką cedzakową. Nie wyciskaj mięsa nad wywarem: wyciskanie wprowadza drobiny białek i tłuszczu do płynu. Jeśli zależy Ci na czystym rosole, po wyjęciu pozwól płynowi chwilę opaść bez mieszania.",
+        commonMistakes: "Wyciskanie, wzburzanie płynu, rozrywanie mięsa w garnku.",
+        recoveryAction: "Jeśli wzburzyłeś płyn, odstaw na 5–10 min bez ruchu przed kolejnym krokiem."
+    )
+
+    static let removeVeg = UltraSpecStepDetail(
+        stepID: "remove_veg",
+        title: "Wyjmij warzywa",
+        subtitle: "Wyjmij bez wyciskania. Zostaw osad w garnku.",
+        extendedHint: "Warzywa wyjmij delikatnie łyżką cedzakową. Wyciskanie zwiększa mętność i wnosi dodatkową słodycz. Nie przelewaj płynu do końca — ostatnie 200–300 ml z dna ma najwięcej osadu.",
+        commonMistakes: "Wyciskanie, przelewanie osadu, mieszanie po wyjęciu.",
+        recoveryAction: "Jeśli osad się podniósł, odstaw 10–15 min i przecedź przez gazę."
+    )
+
     static let all: [String: UltraSpecStepDetail] = [
         prep.stepID: prep,
         heatUpClear.stepID: heatUpClear,
@@ -134,6 +152,8 @@ enum UltraSpecStepLibrary {
         tonkotsuAromaticsEnd.stepID: tonkotsuAromaticsEnd,
         vegSimmerLimit.stepID: vegSimmerLimit,
         restSettle.stepID: restSettle,
-        addVegSpices.stepID: addVegSpices
+        addVegSpices.stepID: addVegSpices,
+        removePoultry.stepID: removePoultry,
+        removeVeg.stepID: removeVeg
     ]
 }
