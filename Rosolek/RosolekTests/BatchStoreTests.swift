@@ -214,4 +214,58 @@ final class BatchStoreTests: XCTestCase {
         let store = BatchStore()
         XCTAssertEqual(store.batches.count, 0)
     }
+
+    // MARK: - Rating clamping (M-5 fix)
+
+    func testOverallRatingAboveTenIsClampedToTen() {
+        let store = BatchStore()
+        let batch = store.createBatch(
+            styleRawValue: "light",
+            totalWeightGrams: 1000,
+            selectedIngredientCount: 1,
+            waterLiters: 3.0,
+            estimatedYieldLiters: 2.4,
+            totalMinutes: 180,
+            warningCount: 0,
+            hasThermometer: false
+        )
+
+        store.updateFeedback(
+            batchID: batch.id,
+            overallRating: 99,
+            strengthFeedbackRawValue: nil,
+            fatFeedbackRawValue: nil,
+            clarityFeedbackRawValue: nil,
+            actualYieldLiters: nil,
+            notes: ""
+        )
+
+        XCTAssertEqual(store.batch(for: batch.id)?.overallRating, 10)
+    }
+
+    func testOverallRatingBelowOneIsClampedToOne() {
+        let store = BatchStore()
+        let batch = store.createBatch(
+            styleRawValue: "light",
+            totalWeightGrams: 1000,
+            selectedIngredientCount: 1,
+            waterLiters: 3.0,
+            estimatedYieldLiters: 2.4,
+            totalMinutes: 180,
+            warningCount: 0,
+            hasThermometer: false
+        )
+
+        store.updateFeedback(
+            batchID: batch.id,
+            overallRating: -5,
+            strengthFeedbackRawValue: nil,
+            fatFeedbackRawValue: nil,
+            clarityFeedbackRawValue: nil,
+            actualYieldLiters: nil,
+            notes: ""
+        )
+
+        XCTAssertEqual(store.batch(for: batch.id)?.overallRating, 1)
+    }
 }
