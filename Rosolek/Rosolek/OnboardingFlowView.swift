@@ -18,7 +18,7 @@ struct OnboardingFlowView: View {
     private let standardPotSizes = UserPreferencesConstants.standardPotSizes
 
     private var welcomeBackgroundColor: Color {
-        Color(red: 0.914, green: 0.827, blue: 0.220)
+        Color(red: 0.110, green: 0.102, blue: 0.090) // #1C1A17 — RMAccentDark
     }
 
     var body: some View {
@@ -117,18 +117,18 @@ struct OnboardingFlowView: View {
 
                         Text("Zaczynamy")
                             .font(.system(size: 17, weight: .bold))
-                            .foregroundStyle(Color.black)
+                            .foregroundStyle(Color(red: 0.110, green: 0.102, blue: 0.090))
 
                         Spacer(minLength: 0)
 
                         Image(systemName: "arrow.right")
                             .font(.system(size: 20, weight: .bold))
-                            .foregroundStyle(Color.black)
+                            .foregroundStyle(Color(red: 0.110, green: 0.102, blue: 0.090))
                     }
                     .padding(.horizontal, 22)
                     .frame(maxWidth: .infinity)
                     .frame(height: 54)
-                    .background(Color.white)
+                    .background(Color(red: 0.788, green: 0.659, blue: 0.478)) // #C9A87A golden
                     .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
                 }
                 .buttonStyle(.plain)
@@ -261,7 +261,10 @@ struct OnboardingFlowView: View {
     }
 
     private func welcomeStep(in geo: GeometryProxy) -> some View {
-        ZStack(alignment: .topLeading) {
+        let dark = Color(red: 0.110, green: 0.102, blue: 0.090)
+
+        return ZStack(alignment: .topLeading) {
+            // Hero photo — full bleed
             Image("OnboardingHeroRosolek")
                 .resizable()
                 .scaledToFill()
@@ -270,16 +273,47 @@ struct OnboardingFlowView: View {
                 .ignoresSafeArea()
                 .allowsHitTesting(false)
 
-            VStack(alignment: .leading, spacing: 0) {
-                Spacer()
-                    .frame(height: geo.safeAreaInsets.top + 20)
+            // Dark gradient — left side protects text area, fades to photo on right
+            LinearGradient(
+                stops: [
+                    .init(color: dark,                  location: 0.00),
+                    .init(color: dark,                  location: 0.38),
+                    .init(color: dark.opacity(0.72),    location: 0.55),
+                    .init(color: dark.opacity(0.20),    location: 0.78),
+                    .init(color: dark.opacity(0.0),     location: 1.00)
+                ],
+                startPoint: .leading,
+                endPoint: .trailing
+            )
+            .ignoresSafeArea()
 
-                VStack(alignment: .leading, spacing: 18) {
-                    Text("Awansuj na rosołowego eksperta")
+            // Top gradient — status bar legibility
+            LinearGradient(
+                colors: [dark, dark.opacity(0)],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            .frame(height: geo.safeAreaInsets.top + 72)
+            .frame(maxWidth: .infinity, alignment: .top)
+            .ignoresSafeArea(edges: .top)
+
+            // Content
+            VStack(alignment: .leading, spacing: 0) {
+                Spacer().frame(height: geo.safeAreaInsets.top + 22)
+
+                // App logo mark — small, top-left, contextual
+                Image("RosolekLogoMark")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 36, height: 36)
+                    .padding(.bottom, 22)
+
+                VStack(alignment: .leading, spacing: 16) {
+                    Text("Awansuj na\nrosołowego eksperta")
                         .font(.system(size: 32, weight: .bold))
                         .foregroundStyle(Color.white)
                         .fixedSize(horizontal: false, vertical: true)
-                        .lineSpacing(-4)
+                        .lineSpacing(2)
 
                     LinearGradient(
                         colors: [
@@ -292,15 +326,13 @@ struct OnboardingFlowView: View {
                     .frame(width: 118, height: 5)
                     .clipShape(Capsule())
 
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("Złocisty, klarowny, pachnący — i tym razem naprawdę twój.")
-                            .fontWeight(.bold)
-                    }
-                    .font(.system(size: 18, weight: .medium))
-                    .foregroundStyle(Color.white)
-                    .lineSpacing(1)
+                    Text("Złocisty, klarowny, pachnący — i tym razem naprawdę twój.")
+                        .font(.system(size: 18, weight: .medium))
+                        .foregroundStyle(Color.white.opacity(0.88))
+                        .lineSpacing(1)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
-                .frame(maxWidth: geo.size.width * 0.44, alignment: .leading)
+                .frame(maxWidth: geo.size.width * 0.56, alignment: .leading)
 
                 Spacer(minLength: 0)
             }
