@@ -203,7 +203,7 @@ struct CookingPhaseBuilder {
         let normalized = normalizeCookingID(item.name)
         if normalized.contains("marchew") { return "Słodycz." }
         if normalized.contains("seler") { return "Głębia smaku." }
-        if normalized.contains("pietruszka") { return "Świeższy finisz." }
+        if normalized.contains("pietruszka") { return "Lekko odświeża smak." }
         if normalized.contains("por") { return "Łagodna cebulowość." }
         if normalized.contains("cebula") { return item.note ?? "Opalana." }
         return item.note
@@ -333,7 +333,7 @@ struct CookingPhaseBuilder {
                 detailText: "Po dodaniu wróć do spokojnego pyrkania i kontynuuj 60–75 minut.",
                 durationSeconds: nil, timelineLabel: "Dodaj", bottomActionTitle: "Dodałem"),
             LivePhase(kind: .simmerToPoultryOut,
-                title: "Prowadź rosół dalej",
+                title: "Gotuj rosół z warzywami",
                 shortText: "Gotuj spokojnie przez 60–75 minut po dodaniu warzyw.",
                 detailText: "Nie mieszaj i nie dopuszczaj do wrzenia.",
                 durationSeconds: 70 * 60, timelineLabel: "70 min", bottomActionTitle: nil),
@@ -353,7 +353,7 @@ struct CookingPhaseBuilder {
                 detailText: "Przelewaj powoli przez sito i nie wyciskaj składników.",
                 durationSeconds: nil, timelineLabel: "Cedzenie", bottomActionTitle: "Dalej"),
             LivePhase(kind: .optionalClarityTip,
-                title: "Opcjonalnie: klarowniejszy finisz",
+                title: "Opcjonalnie: jak uzyskać klarowniejszy rosół",
                 shortText: "Zostaw w garnku ostatnie 200–300 ml z osadem.",
                 detailText: "To prosty sposób na klarowniejszy efekt bez dodatkowych działań.",
                 durationSeconds: nil, timelineLabel: "Opcjonalnie", bottomActionTitle: "Zakończ")
@@ -374,19 +374,19 @@ struct CookingPhaseBuilder {
                     : "Na tym etapie przygotuj mięso, wodę, garnek i termometr. Zegar uruchamiasz dopiero wtedy, gdy wszystko jest już gotowe.",
                 durationSeconds: nil, timelineLabel: "Przygotuj", bottomActionTitle: nil),
             LivePhase(kind: .heatUp,
-                title: "Podgrzewaj do spokojnej pracy",
+                title: "Podgrzewaj powoli",
                 shortText: hasThermometer
                     ? "Grzej powoli, zbieraj szumowiny i przejdź dalej dopiero po stabilnym wejściu w zakres 88–90°C."
-                    : "Grzej powoli, zbieraj szumowiny i przejdź dalej dopiero wtedy, gdy wywar pracuje spokojnie, bez wrzenia.",
+                    : "Grzej powoli, zbieraj szumowiny i przejdź dalej dopiero gdy wywar pracuje spokojnie, bez wrzenia.",
                 detailText: hasThermometer
                     ? "To etap spokojnego dochodzenia wywaru do temperatury 88–90°C. Najwięcej szumowin zwykle pojawia się właśnie wtedy, gdy wywar przechodzi od zimnej wody do około 75–90°C."
-                    : "To etap spokojnego dochodzenia wywaru do delikatnej pracy. Szukaj lekkiego drżenia powierzchni i pojedynczych bąbli przy brzegu. Nie dopuszczaj do pełnego wrzenia.",
+                    : "To etap wolnego podgrzewania. Szukaj lekkiego drżenia powierzchni i pojedynczych bąbli przy brzegu — to znak, że temperatura jest dobra. Nie dopuszczaj do wrzenia.",
                 durationSeconds: nil, timelineLabel: "Podgrzewaj", bottomActionTitle: "Gotowe"),
             LivePhase(kind: .stabilization,
-                title: "Stabilizuj samo mięso",
+                title: "Gotuj samo mięso",
                 shortText: isCollagenPoultryPreset
-                    ? "Przez pełne 75 minut utrzymuj spokojną temperaturę. Warzywa dodasz dopiero po tym etapie."
-                    : "Przez pełne 60 minut utrzymuj spokojną temperaturę. Warzywa dodasz dopiero po tym etapie.",
+                    ? "Przez 75 minut gotuj samo mięso spokojnie. Warzywa dodasz w następnym kroku."
+                    : "Przez 60 minut gotuj samo mięso spokojnie. Warzywa dodasz w następnym kroku.",
                 detailText: "To najważniejszy etap budowania czystej bazy mięsnej. Nie mieszaj wywaru. Zbieraj tylko to, co samo wypływa na powierzchnię.",
                 durationSeconds: (isCollagenPoultryPreset ? 75 : 60) * 60,
                 timelineLabel: isCollagenPoultryPreset ? "75 min" : "1 h",
@@ -400,10 +400,10 @@ struct CookingPhaseBuilder {
 
         if hasPoultry {
             items.append(LivePhase(kind: .simmerToPoultryOut,
-                title: "Prowadź wywar z warzywami",
+                title: "Gotuj wywar z warzywami",
                 shortText: "Utrzymuj spokojną temperaturę i przygotuj naczynie na wyjęty drób.",
                 detailText: "Od tej chwili wywar ma pracować spokojnie. Nie mieszaj go i nie dopuszczaj do wrzenia.",
-                durationSeconds: poultrySimmerSeconds, timelineLabel: "Prowadź", bottomActionTitle: nil))
+                durationSeconds: poultrySimmerSeconds, timelineLabel: "Gotuj", bottomActionTitle: nil))
             items.append(LivePhase(kind: .removePoultry,
                 title: "Wyjmij drób",
                 shortText: "Powinieneś teraz delikatnie wyciągnąć drób z wywaru.",
@@ -412,8 +412,8 @@ struct CookingPhaseBuilder {
         }
 
         items.append(LivePhase(kind: .simmerToVegetablesOut,
-            title: "Prowadź wywar dalej",
-            shortText: "Warzywa powinny jeszcze przez chwilę oddawać smak, ale nie trzymaj ich zbyt długo.",
+            title: "Gotuj dalej bez drobiu",
+            shortText: "Warzywa oddają jeszcze smak — ale nie trzymaj ich zbyt długo.",
             detailText: "Na tym etapie wywar nadal pracuje spokojnie. Zbyt długie trzymanie warzyw daje słodszy, mniej precyzyjny profil.",
             durationSeconds: simmerAfterPoultrySeconds, timelineLabel: "Dalej", bottomActionTitle: nil))
 
@@ -425,9 +425,9 @@ struct CookingPhaseBuilder {
 
         if baseFinishBeforeLiverSeconds > 0 {
             items.append(LivePhase(kind: .finishBase,
-                title: "Dokończ bazę",
-                shortText: "Pozwól bazie mięsnej spokojnie pracować jeszcze przez wyliczony czas.",
-                detailText: "To etap domknięcia smaku bez warzyw. Nie podkręcaj ognia i nie mieszaj wywaru.",
+                title: "Gotuj ostatni etap bez warzyw",
+                shortText: "Ostatni etap na samym mięsie — bez warzyw, bez drobiu.",
+                detailText: "Wywar gotuje się już tylko na mięsie. Spokojne gotowanie bez żadnych zmian do końca etapu.",
                 durationSeconds: baseFinishBeforeLiverSeconds, timelineLabel: "Finisz", bottomActionTitle: nil))
         }
 
@@ -447,13 +447,13 @@ struct CookingPhaseBuilder {
         items.append(contentsOf: [
             LivePhase(kind: .beginRest,
                 title: "Wyłącz i odstaw",
-                shortText: "Kończy się gotowanie aktywne. Odstaw garnek i nie ruszaj wywaru.",
+                shortText: "Gotowanie skończone. Odstaw garnek i nie ruszaj wywaru.",
                 detailText: "Po wyłączeniu ognia osady powinny spokojnie opaść. Nie mieszaj i nie potrząsaj garnkiem.",
                 durationSeconds: nil, timelineLabel: "Wyłącz", bottomActionTitle: "Gotowe"),
             LivePhase(kind: .rest,
                 title: "Pozwól wywarowi odstać",
                 shortText: "Odstawienie przez około 20 minut poprawia klarowność.",
-                detailText: "To etap porządkowania klarowności. Po odstawieniu przecedzisz wywar spokojnie, bez pośpiechu.",
+                detailText: "Osad powoli opada na dno. Nie ruszaj garnka — po 20 minutach przecedzenie będzie znacznie łatwiejsze.",
                 durationSeconds: 20 * 60, timelineLabel: "20 min", bottomActionTitle: nil),
             LivePhase(kind: .strainAndSeason,
                 title: clarityMode == .paperFilter ? "Przefiltruj, przecedź i dopraw" : "Przecedź i dopraw",
