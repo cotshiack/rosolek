@@ -249,26 +249,7 @@ struct CookingPhaseBuilder {
     // Path C  !hasBeef               → Lekki (poultry-only) schedule
 
     private func stepsForBogaty() -> [UltraSpecTimelineStep] {
-        guard hasBeef else {
-            return UltraSpecTimelineCatalog.steps(for: .rosolLekki)
-        }
-
-        var steps = UltraSpecTimelineCatalog.steps(for: .rosolBogaty)
-
-        if !hasPoultry {
-            if let rpi = steps.firstIndex(where: { $0.stepID == "remove_poultry" }) {
-                var toRemove = IndexSet([rpi])
-                let next = rpi + 1
-                if next < steps.count && steps[next].stepID == "simmer_clear" {
-                    toRemove.insert(next)
-                }
-                steps = steps.enumerated()
-                    .filter { !toRemove.contains($0.offset) }
-                    .map { $0.element }
-            }
-        }
-
-        return steps
+        UltraSpecTimelineCatalog.steps(for: .rosolBogaty, hasBeef: hasBeef, hasPoultry: hasPoultry)
     }
 
     // MARK: - Ultra spec phases
@@ -305,6 +286,8 @@ struct CookingPhaseBuilder {
                 }
             } else if beefOnlyBogaty {
                 switch step.stepID {
+                case "stabilize_base":
+                    subtitle = "Wołowina od zimnej wody. Zbieraj tylko to, co samo wypływa."
                 case "simmer_clear":
                     subtitle = "Wołowina gotuje się spokojnie. Bez mieszania, bez wrzenia."
                 case "finish_clear":
