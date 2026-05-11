@@ -526,18 +526,32 @@ struct BrothResultView: View {
     }
 
     private var warningCards: [WarningCardModel] {
-        let structured = result.structuredWarnings
+        // In UltraSpec path waterReducedToFit is communicated via a Bool field rather than
+        // structuredWarnings; inject a synthetic card so the filter logic works uniformly.
+        var structured = result.structuredWarnings
+        let waterReductionInStructured = structured.contains(where: { $0.code == .waterReducedToFit })
+        if result.waterWasReducedToFit && !waterReductionInStructured {
+            structured = [BrothWarning(code: .waterReducedToFit, severity: .warn, params: [])] + structured
+        }
 
         if !structured.isEmpty {
             let hasWaterReduction = structured.contains(where: { $0.code == .waterReducedToFit })
+            let hasOverpower = structured.contains(where: { $0.code == .baseTooHighForWater })
 
-            let filtered: [BrothWarning]
+            var filtered = structured
+
+            // Water reduction supersedes undermeat: they contradict each other visually.
             if hasWaterReduction {
-                filtered = structured.filter { warning in
-                    warning.code != .undermeatLight && warning.code != .undermeatIntense
+                filtered = filtered.filter { $0.code != .undermeatLight && $0.code != .undermeatIntense }
+            }
+
+            // When overall density is already too high (OVERPOWER), the per-ingredient
+            // composition warnings (wings/beef/offal) are a symptom of the same cause
+            // and would clutter the view with redundant information.
+            if hasOverpower {
+                filtered = filtered.filter {
+                    $0.code != .wingsTooHighLight && $0.code != .heavyBeefProfile && $0.code != .offalDominantRisk
                 }
-            } else {
-                filtered = structured
             }
 
             var seenCodes = Set<BrothWarningCode>()
@@ -703,7 +717,7 @@ struct BrothResultView: View {
             }
         }
         .alert("Trwa już gotowanie", isPresented: $showActiveCookingConflictAlert) {
-            Button("Zachowaj obecne", role: .cancel) { }
+            Button("Zostaw tamto", role: .cancel) { }
             Button("Rozpocznij nowe", role: .destructive) {
                 startCooking(replacingExistingSession: true)
             }
@@ -1635,7 +1649,7 @@ extension BrothResultView {
         case .hardItemTooBig:
             return "Jedna z wag wygląda podejrzanie wysoko. Sprawdź, czy na pewno wpisujesz gramy."
         case .hardNoMeat:
-            return selectedKind == .fish ? "Dodaj bazę rybną. Bez ryb/owoców morza nie policzymy bulionu rybnego." : "Dodaj mięso. Bez mięsa nie ugotujesz rosołu."
+            return selectedKind == .fish ? "Dodaj bazę rybną. Bez ryb lub owoców morza aplikacja nie może policzyć proporcji." : "Dodaj przynajmniej jeden składnik bazy — bez mięsa aplikacja nie może policzyć proporcji."
         case .hardNotFit:
             return "Ten zestaw fizycznie nie mieści się w tym garnku. Zmniejsz ilość mięsa albo użyj większego naczynia."
         case .premiumBlocked:

@@ -575,10 +575,10 @@ struct IngredientSelectionView: View {
             switch failure.code {
             case .hardNoMeat:
                 return QuickInsight(
-                    systemImage: "tray",
+                    systemImage: selectedKind == .veggie ? "checkmark.circle" : "tray",
                     shortText: selectedKind == .veggie ? "Gotowe do wyliczeń" : "Dodaj bazę",
                     detailText: selectedKind == .veggie ? "W warzywnym koszyk liczymy automatycznie na kolejnym ekranie." : "Wybierz przynajmniej jeden składnik, żeby aplikacja mogła policzyć bulion.",
-                    tone: .danger
+                    tone: selectedKind == .veggie ? .neutral : .danger
                 )
             default:
                 return QuickInsight(
@@ -599,7 +599,7 @@ struct IngredientSelectionView: View {
             )
         }
 
-        if hasWarning(.waterReducedToFit) {
+        if previewResult.waterWasReducedToFit {
             return QuickInsight(
                 systemImage: "drop.triangle",
                 shortText: "Policzyliśmy mniej wody",
@@ -669,7 +669,7 @@ struct IngredientSelectionView: View {
         return QuickInsight(
             systemImage: "checkmark.circle",
             shortText: "Dobry balans",
-            detailText: "Zestaw wygląda sensownie i pasuje do wybranego bulionu.",
+            detailText: "Zestaw wygląda dobrze. Możesz przejść do obliczeń.",
             tone: .good
         )
     }
