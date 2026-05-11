@@ -54,6 +54,9 @@ enum UltraSpecCatalog {
         .init(id: "PORK_SPINE", name: "Kręgi wieprzowe", category: .pork, allowedVariants: [.ramenTonkotsu], bonesFlag: true, fatScore: 1.5, collagenScore: 2.1, tags: ["tonkotsu", "bones"], premiumOnly: false),
         
         .init(id: "OFFAL_CHICKEN_LIVER", name: "Wątróbka drobiowa", category: .offal, allowedVariants: [.rosolLekki, .rosolBogaty, .ramenShio, .wolowyCzysty, .wolowyMocny], bonesFlag: false, fatScore: 1.8, collagenScore: 0.5, tags: ["offal", "endOnly"], premiumOnly: true),
+        .init(id: "OFFAL_HEART", name: "Serca drobiowe", category: .offal, allowedVariants: [.rosolLekki, .rosolBogaty, .ramenShio, .wolowyCzysty, .wolowyMocny], bonesFlag: false, fatScore: 1.0, collagenScore: 0.4, tags: ["offal", "endOnly"], premiumOnly: false),
+        .init(id: "OFFAL_GIZZARD", name: "Żołądki drobiowe", category: .offal, allowedVariants: [.rosolLekki, .rosolBogaty], bonesFlag: false, fatScore: 0.6, collagenScore: 0.3, tags: ["offal", "endOnly"], premiumOnly: false),
+        .init(id: "POULTRY_FEET", name: "Łapki drobiowe", category: .poultry, allowedVariants: [.rosolLekki, .rosolBogaty, .ramenShio], bonesFlag: true, fatScore: 0.6, collagenScore: 3.2, tags: ["collagen"], premiumOnly: false),
         .init(id: "FISH_WHITE_BONES", name: "Ości białych ryb", category: .fish, allowedVariants: [.rybnyDelikatny, .rybnyIntensywny], bonesFlag: true, fatScore: 0.5, collagenScore: 0.6, tags: ["fishBase"], premiumOnly: false),
         .init(id: "FISH_HEADS", name: "Głowy białych ryb", category: .fish, allowedVariants: [.rybnyDelikatny, .rybnyIntensywny], bonesFlag: true, fatScore: 0.7, collagenScore: 0.9, tags: ["fishBase"], premiumOnly: false),
         .init(id: "SEAFOOD_SHRIMP_SHELLS", name: "Pancerze krewetek", category: .fish, allowedVariants: [.rybnyIntensywny], bonesFlag: false, fatScore: 0.4, collagenScore: 0.4, tags: ["umami"], premiumOnly: true),

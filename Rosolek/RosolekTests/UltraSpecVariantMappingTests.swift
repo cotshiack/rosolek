@@ -84,4 +84,26 @@ final class UltraSpecVariantMappingTests: XCTestCase {
         let unknown = "custom_local_ingredient_xyz"
         XCTAssertEqual(UltraSpecRequestBuilder.mapIngredientID(unknown), unknown)
     }
+
+    // MARK: - H-2 fix: offal and poultry feet mappings
+
+    func testSercaMapsToOffalHeart() {
+        XCTAssertEqual(UltraSpecRequestBuilder.mapIngredientID("serca"), "OFFAL_HEART")
+    }
+
+    func testZoladkiMapsToOffalGizzard() {
+        XCTAssertEqual(UltraSpecRequestBuilder.mapIngredientID("zoladki"), "OFFAL_GIZZARD")
+    }
+
+    func testWatrobkaMapsToOffalLiver() {
+        XCTAssertEqual(UltraSpecRequestBuilder.mapIngredientID("watrobka"), "OFFAL_CHICKEN_LIVER")
+    }
+
+    func testLapkiMapsToPoultryFeet() {
+        XCTAssertEqual(UltraSpecRequestBuilder.mapIngredientID("lapki"), "POULTRY_FEET")
+    }
+
+    func testSzyjaIndykaMapsToNeck() {
+        XCTAssertEqual(UltraSpecRequestBuilder.mapIngredientID("szyja_indyka"), "POULTRY_NECK")
+    }
 }
