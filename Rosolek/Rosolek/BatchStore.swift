@@ -4,7 +4,12 @@ import Combine
 final class BatchStore: ObservableObject {
     @Published private(set) var batches: [BatchRecord] = []
 
-    private let storageKey = "rosolek_batches_v1"
+    // Migration strategy: all BatchRecord fields use decodeIfPresent with fallbacks,
+    // so new optional fields are forward-compatible without bumping the key.
+    // For breaking changes (field removal or type changes): bump schemaVersion,
+    // add a new storageKey, and write a migration block in load() before decoding.
+    private static let schemaVersion = 1
+    private let storageKey = "rosolek_batches_v\(BatchStore.schemaVersion)"
 
     init() {
         load()
