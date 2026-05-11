@@ -31,6 +31,7 @@ struct BrothResultView: View {
     @State private var spiceOverrides: [String: Int] = [:]
     @State private var showMeatEditor = false
     @State private var meatOverrides: [String: Int] = [:]
+    @State private var frozenResult: BrothCalculationResult?
 
     init(
         mode: BrothMode,
@@ -97,6 +98,10 @@ struct BrothResultView: View {
     }
 
     private var result: BrothCalculationResult {
+        frozenResult ?? computeCurrentResult()
+    }
+
+    private func computeCurrentResult() -> BrothCalculationResult {
         switch mode {
         case .preset(let preset):
             return BrothCalculator.calculate(
@@ -707,12 +712,17 @@ struct BrothResultView: View {
         .onAppear {
             defaultClarityModeRawValue = clarityMode.rawValue
             defaultUseVinegar = useVinegar
+            if frozenResult == nil {
+                frozenResult = computeCurrentResult()
+            }
         }
         .onChange(of: clarityMode) { _, newValue in
             defaultClarityModeRawValue = newValue.rawValue
+            frozenResult = computeCurrentResult()
         }
         .onChange(of: useVinegar) { _, newValue in
             defaultUseVinegar = newValue
+            frozenResult = computeCurrentResult()
         }
 
     }
@@ -1567,9 +1577,7 @@ extension BrothResultView {
     }
 
     private func normalize(_ value: String) -> String {
-        value
-            .folding(options: .diacriticInsensitive, locale: .current)
-            .lowercased()
+        value.normalizedForMatching()
     }
 
     private func categorySortIndex(_ category: IngredientCategory) -> Int {
@@ -1820,8 +1828,7 @@ extension BrothResultView {
     }
 
     private func parseGrams(from text: String) -> Int {
-        let digits = text.filter { $0.isNumber }
-        return Int(digits) ?? 0
+        text.extractGrams()
     }
 
     private func numberString(_ value: Double) -> String {

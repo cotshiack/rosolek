@@ -23,17 +23,31 @@ enum UltraSpecTimelineCatalog {
         switch variant {
         case .rosolLekki:
             return [
-                .init(stepID: "prep", timeLabel: "0 min", title: "Przygotuj stanowisko", subtitle: "Garnek, sito i składniki.", minuteOffset: 0),
-                .init(stepID: "stabilize_base", timeLabel: "60 min", title: "Ustabilizuj bazę", subtitle: "Poniżej wrzenia.", minuteOffset: 60),
-                .init(stepID: "simmer_clear", timeLabel: "195 min", title: "Gotuj klarownie", subtitle: "Bez mieszania.", minuteOffset: 195),
-                .init(stepID: "strain_season", timeLabel: "315 min", title: "Przecedź i dopraw", subtitle: "Najpierw cedzenie, potem sól.", minuteOffset: 315)
+                .init(stepID: "prep",           timeLabel: "—",        title: "Przygotuj stanowisko",        subtitle: "Garnek, składniki, narzędzia i sito.",              minuteOffset: 0),
+                .init(stepID: "heat_up_clear",  timeLabel: "do temp.", title: "Podgrzewaj do temperatury",   subtitle: "Dąż do 88–90°C poniżej wrzenia.",                  minuteOffset: 0,   isManual: true),
+                .init(stepID: "stabilize_base", timeLabel: "60 min",   title: "Ustabilizuj bazę",            subtitle: "Gotuj bazę równo, bez nowych dodatków.",           minuteOffset: 60),
+                .init(stepID: "add_veg_spices", timeLabel: "2–3 min",  title: "Dodaj warzywa i przyprawy",   subtitle: "Dodaj z listy. Spadek temp. 1–3°C jest normalny.", minuteOffset: 60,  isManual: true),
+                .init(stepID: "simmer_clear",   timeLabel: "135 min",  title: "Prowadź spokojną pracę",      subtitle: "Bez mieszania, bez wrzenia.",                      minuteOffset: 195),
+                .init(stepID: "remove_poultry", timeLabel: "—",        title: "Wyjmij drób",                 subtitle: "Delikatnie, bez wyciskania nad płynem.",            minuteOffset: 195, isManual: true),
+                .init(stepID: "simmer_clear",   timeLabel: "20 min",   title: "Domknij po wyjęciu drobiu",   subtitle: "Krótki finisz na samej bazie.",                    minuteOffset: 215),
+                .init(stepID: "remove_veg",     timeLabel: "—",        title: "Wyjmij warzywa",              subtitle: "Bez wyciskania. Zostaw osad w garnku.",             minuteOffset: 215, isManual: true),
+                .init(stepID: "finish_clear",   timeLabel: "35 min",   title: "Dokończ bazę",                subtitle: "Wyrównaj smak na samej bazie, bez wrzenia.",       minuteOffset: 250),
+                .init(stepID: "rest_settle",    timeLabel: "20 min",   title: "Odstaw",                      subtitle: "Nie ruszaj garnka. Osad ma opaść.",                minuteOffset: 270),
+                .init(stepID: "strain_season",  timeLabel: "10–20 min",title: "Przecedź i dopraw",           subtitle: "Najpierw cedzenie, potem sól.",                    minuteOffset: 270, isManual: true)
             ]
         case .rosolBogaty:
             return [
-                .init(stepID: "prep", timeLabel: "0 min", title: "Przygotuj stanowisko", subtitle: "Garnek, sito i składniki.", minuteOffset: 0),
-                .init(stepID: "stabilize_base", timeLabel: "60 min", title: "Ustabilizuj bazę", subtitle: "Poniżej wrzenia.", minuteOffset: 60),
-                .init(stepID: "finish_clear", timeLabel: "240 min", title: "Domknij smak", subtitle: "Dłuższy finisz bez wrzenia.", minuteOffset: 240),
-                .init(stepID: "strain_season", timeLabel: "345 min", title: "Przecedź i dopraw", subtitle: "Najpierw cedzenie, potem sól.", minuteOffset: 345)
+                .init(stepID: "prep",           timeLabel: "—",        title: "Przygotuj stanowisko",        subtitle: "Garnek, składniki, narzędzia i sito.",              minuteOffset: 0),
+                .init(stepID: "heat_up_clear",  timeLabel: "do temp.", title: "Podgrzewaj do temperatury",   subtitle: "Dąż do 88–90°C poniżej wrzenia.",                  minuteOffset: 0,   isManual: true),
+                .init(stepID: "stabilize_base", timeLabel: "60 min",   title: "Ustabilizuj bazę",            subtitle: "Drób i wołowina od zimnej wody. Zbieraj tylko to, co samo wypływa.", minuteOffset: 60),
+                .init(stepID: "add_veg_spices", timeLabel: "2–3 min",  title: "Dodaj warzywa i przyprawy",   subtitle: "Dodaj z listy. Spadek temp. 1–3°C jest normalny.", minuteOffset: 60,  isManual: true),
+                .init(stepID: "simmer_clear",   timeLabel: "165 min",  title: "Drób i wołowina — wspólna baza", subtitle: "Drób i wołowina gotują się razem. Bez mieszania, bez wrzenia.", minuteOffset: 225),
+                .init(stepID: "remove_poultry", timeLabel: "—",        title: "Wyjmij drób",                 subtitle: "Drób jest gotowy. Wołowina gotuje się dalej.",     minuteOffset: 225, isManual: true),
+                .init(stepID: "simmer_clear",   timeLabel: "30 min",   title: "Wołowina dochodzi",           subtitle: "Wołowina gotuje się bez drobiu. Spokojnie i bez wrzenia.", minuteOffset: 255),
+                .init(stepID: "remove_veg",     timeLabel: "—",        title: "Wyjmij warzywa",              subtitle: "Bez wyciskania. Zostaw osad w garnku.",             minuteOffset: 255, isManual: true),
+                .init(stepID: "finish_clear",   timeLabel: "75 min",   title: "Wołowina kończy gotowanie",   subtitle: "Wołowina daje finisz. Bez wrzenia.",               minuteOffset: 330),
+                .init(stepID: "rest_settle",    timeLabel: "20 min",   title: "Odstaw",                      subtitle: "Nie ruszaj garnka. Osad ma opaść.",                minuteOffset: 350),
+                .init(stepID: "strain_season",  timeLabel: "10–20 min",title: "Przecedź i dopraw",           subtitle: "Najpierw cedzenie, potem sól.",                    minuteOffset: 350, isManual: true)
             ]
         case .ramenShio:
             return [

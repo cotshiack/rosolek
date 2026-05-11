@@ -73,7 +73,7 @@ enum BatchClarityFeedback: String, CaseIterable, BrothFeedbackOption {
 
 struct BatchFeedbackView: View {
     @EnvironmentObject private var batchStore: BatchStore
-    @AppStorage("returnToHomeTrigger") private var returnToHomeTrigger = 0
+    @EnvironmentObject private var router: AppRouter
     @Environment(\.dismiss) private var dismiss
     @FocusState private var notesFieldFocused: Bool
     @FocusState private var focusedField: FeedbackInputField?
@@ -432,7 +432,7 @@ struct BatchFeedbackView: View {
         if standaloneMode {
             dismiss()
         } else {
-            returnToHomeTrigger += 1
+            router.triggerReturnToHome()
         }
     }
 }

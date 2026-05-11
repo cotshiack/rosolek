@@ -5,7 +5,8 @@ struct SettingsView: View {
     @AppStorage("potSizeLiters") private var potSizeLiters = 7
     @AppStorage("hasThermometer") private var hasThermometer = true
     @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = true
-    @AppStorage("returnToHomeTrigger") private var returnToHomeTrigger = 0
+
+    @EnvironmentObject private var router: AppRouter
 
     @State private var activeEditor: EditableSetting?
 
@@ -73,7 +74,7 @@ struct SettingsView: View {
         .onAppear {
             resetDrafts()
         }
-        .onChange(of: customPotSize) { newValue in
+        .onChange(of: customPotSize) { _, newValue in
             let filtered = UserPreferencesConstants.filteredPotSizeInput(newValue)
             if filtered != newValue {
                 customPotSize = filtered
@@ -656,7 +657,7 @@ struct SettingsView: View {
         focusedField = nil
         activeEditor = nil
         hasCompletedOnboarding = false
-        returnToHomeTrigger += 1
+        router.triggerReturnToHome()
     }
 }
 

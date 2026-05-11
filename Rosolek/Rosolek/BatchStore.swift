@@ -4,7 +4,12 @@ import Combine
 final class BatchStore: ObservableObject {
     @Published private(set) var batches: [BatchRecord] = []
 
-    private let storageKey = "rosolek_batches_v1"
+    // Migration strategy: all BatchRecord fields use decodeIfPresent with fallbacks,
+    // so new optional fields are forward-compatible without bumping the key.
+    // For breaking changes (field removal or type changes): bump schemaVersion,
+    // add a new storageKey, and write a migration block in load() before decoding.
+    private static let schemaVersion = 1
+    private let storageKey = "rosolek_batches_v\(BatchStore.schemaVersion)"
 
     init() {
         load()
@@ -129,7 +134,7 @@ final class BatchStore: ObservableObject {
     ) {
         guard let index = batches.firstIndex(where: { $0.id == batchID }) else { return }
 
-        batches[index].overallRating = overallRating
+        batches[index].overallRating = min(10, max(1, overallRating))
         batches[index].strengthFeedbackRawValue = strengthFeedbackRawValue
         batches[index].fatFeedbackRawValue = fatFeedbackRawValue
         batches[index].clarityFeedbackRawValue = clarityFeedbackRawValue
@@ -194,9 +199,24 @@ final class BatchStore: ObservableObject {
             batches = try JSONDecoder().decode([BatchRecord].self, from: data)
             sortBatches()
         } catch {
-            print("Nie udało się wczytać batchy: \(error.localizedDescription)")
-            batches = []
+            print("BatchStore: decode całej tablicy nie powiódł się (\(error.localizedDescription)), próba per-element.")
+            batches = recoverBatchesFromCorruptedData(data)
+            sortBatches()
         }
+    }
+
+    private func recoverBatchesFromCorruptedData(_ data: Data) -> [BatchRecord] {
+        guard let rawArray = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]] else {
+            print("BatchStore: dane nie są tablicą JSON — historia niedostępna.")
+            return []
+        }
+        let decoder = JSONDecoder()
+        let recovered = rawArray.compactMap { dict -> BatchRecord? in
+            guard let elementData = try? JSONSerialization.data(withJSONObject: dict) else { return nil }
+            return try? decoder.decode(BatchRecord.self, from: elementData)
+        }
+        print("BatchStore: odzyskano \(recovered.count)/\(rawArray.count) rekordów.")
+        return recovered
     }
 
     private func sortBatches() {

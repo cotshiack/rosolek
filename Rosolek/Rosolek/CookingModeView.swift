@@ -5,51 +5,6 @@ import UIKit
 import UserNotifications
 import ActivityKit
 
-private enum TimelineStepState {
-    case done
-    case active
-    case next
-    case upcoming
-}
-
-private enum LivePhaseKind {
-    case prep
-    case heatUp
-    case stabilization
-    case addVegetables
-    case simmerToPoultryOut
-    case removePoultry
-    case simmerToVegetablesOut
-    case removeVegetables
-    case finishBase
-    case addLiver
-    case finishWithLiver
-    case beginRest
-    case rest
-    case strainAndSeason
-    case optionalClarityTip
-}
-
-private struct LivePhase: Identifiable {
-    let id = UUID()
-    var stepID: String? = nil
-    let kind: LivePhaseKind
-    let title: String
-    let shortText: String
-    let detailText: String
-    let durationSeconds: Int?
-    let timelineLabel: String
-    let bottomActionTitle: String?
-}
-
-private extension LivePhase {
-    func withStepID(_ stepID: String) -> LivePhase {
-        var copy = self
-        copy.stepID = stepID
-        return copy
-    }
-}
-
 private struct InstructionSheetContent: Identifiable {
     let id = UUID()
     let title: String
@@ -130,27 +85,7 @@ private struct PhaseSheetModel {
 }
 
 
-private enum LiveIngredientIconKind: Hashable {
-    case carrot
-    case celery
-    case parsleyRoot
-    case leek
-    case onion
-    case salt
-    case pepper
-    case bayLeaf
-    case allspice
-    case vinegar
-    case generic
-}
-
-private struct LiveIngredientReminderRowData: Hashable {
-    let icon: LiveIngredientIconKind
-    let title: String
-    let subtitle: String?
-    let value: String
-}
-
+// MARK: - CookingModeView
 struct CookingModeView: View {
     let batch: BatchRecord
     let result: BrothCalculationResult
@@ -179,8 +114,9 @@ struct CookingModeView: View {
     @State private var prepVinegarReady = false
 
     @State private var liveActivity: Activity<CookingActivityAttributes>?
+    @State private var timerCancellable: (any Cancellable)?
 
-    private let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
+    private let timerPublisher = Timer.publish(every: 1, on: .main, in: .common)
 
     private var liveControlsOverlayHeight: CGFloat { 238 }
     private var finishButtonOverlayHeight: CGFloat { 92 }
@@ -189,483 +125,25 @@ struct CookingModeView: View {
         batchStore.batch(for: batch.id) ?? batch
     }
 
-    private var ingredientSnapshots: [BatchIngredientSnapshot] {
-        currentBatch.selectedIngredientsSnapshot ?? []
+    // MARK: - Phase builder (domain logic delegated to CookingPhaseBuilder)
+
+    private var phaseBuilder: CookingPhaseBuilder {
+        CookingPhaseBuilder(batch: currentBatch, result: result, hasThermometer: hasThermometer)
     }
 
-    private var ingredientIDs: [String] {
-        if !ingredientSnapshots.isEmpty {
-            return ingredientSnapshots.map(\.ingredientID)
-        }
-        return currentBatch.selectedIngredientIDs ?? []
-    }
+    private var activeUltraVariant: UltraSpecVariantID? { phaseBuilder.activeUltraVariant }
+    private var isRamenUltraVariant: Bool { activeUltraVariant == .ramenShio || activeUltraVariant == .ramenTonkotsu }
+    private var isFishUltraVariant: Bool { activeUltraVariant == .rybnyDelikatny || activeUltraVariant == .rybnyIntensywny }
+    private var isGrandmaPreset: Bool { phaseBuilder.isGrandmaPreset }
+    private var isCollagenPoultryPreset: Bool { phaseBuilder.isCollagenPoultryPreset }
+    private var clarityMode: BrothClarityMode { phaseBuilder.clarityMode }
+    private var batchUsesVinegar: Bool { phaseBuilder.batchUsesVinegar }
+    private var hasPoultry: Bool { phaseBuilder.hasPoultry }
+    private var hasLiver: Bool { phaseBuilder.hasLiver }
+    private var vegetableReminderRows: [LiveIngredientReminderRowData] { phaseBuilder.vegetableReminderRows }
+    private var spiceReminderRows: [LiveIngredientReminderRowData] { phaseBuilder.spiceReminderRows }
 
-    private var brothProfile: BrothProfile {
-        currentBatch.brothProfile
-    }
-
-    private var activeUltraVariant: UltraSpecVariantID? {
-        guard currentBatch.modeRawValue == "custom" else { return nil }
-
-        if let rawKind = currentBatch.brothKindRawValue,
-           let kind = BrothKind(rawValue: rawKind) {
-            let styleName = currentBatch.selectedStyleName ?? currentBatch.styleRawValue
-            let styleKey = UltraSpecStyleKeyResolver.resolve(kind: kind, styleName: styleName)
-            return UltraSpecVariantResolver.resolve(kind: kind, styleKey: styleKey)
-        }
-
-        let legacyStyle = currentBatch.styleRawValue.lowercased()
-        if legacyStyle.contains("ramen_tonkotsu") || legacyStyle.contains("tonkotsu") {
-            return .ramenTonkotsu
-        }
-        if legacyStyle.contains("ramen") || legacyStyle.contains("shio") {
-            return .ramenShio
-        }
-        return nil
-    }
-
-    private var isRamenUltraVariant: Bool {
-        activeUltraVariant == .ramenShio || activeUltraVariant == .ramenTonkotsu
-    }
-
-    private var isFishUltraVariant: Bool {
-        activeUltraVariant == .rybnyDelikatny || activeUltraVariant == .rybnyIntensywny
-    }
-
-    private var activePreset: BrothPreset? {
-        guard currentBatch.modeRawValue == "preset",
-              let raw = currentBatch.presetRawValue else { return nil }
-        return BrothPreset(rawValue: raw)
-    }
-
-    private var isGrandmaPreset: Bool {
-        activePreset == .grandmaReady
-    }
-
-    private var isCollagenPoultryPreset: Bool {
-        activePreset == .collagenPoultryReady
-    }
-
-    private var clarityMode: BrothClarityMode {
-        currentBatch.clarityMode
-    }
-
-    private var batchUsesVinegar: Bool {
-        currentBatch.useVinegar
-    }
-
-    private var hasPoultry: Bool {
-        if !ingredientSnapshots.isEmpty {
-            return ingredientSnapshots.contains {
-                normalizeCookingID($0.categoryRawValue) == normalizeCookingID(IngredientCategory.poultry.rawValue)
-            }
-        }
-
-        return ingredientIDs.contains { id in
-            let normalized = normalizeCookingID(id)
-            return normalized.contains("kura")
-                || normalized.contains("kurcz")
-                || normalized.contains("indyk")
-                || normalized.contains("kacz")
-                || normalized.contains("ges")
-                || normalized.contains("gęś")
-                || normalized.contains("skrzyd")
-                || normalized.contains("szyj")
-                || normalized.contains("lapk")
-                || normalized.contains("korpus")
-        }
-    }
-
-    private var hasLiver: Bool {
-        if !ingredientSnapshots.isEmpty {
-            return ingredientSnapshots.contains {
-                normalizeCookingID($0.ingredientID).contains("watrob")
-            }
-        }
-
-        return ingredientIDs.contains { normalizeCookingID($0).contains("watrob") }
-    }
-
-    private var vegetableReminderRows: [LiveIngredientReminderRowData] {
-        result.vegetables.compactMap { item in
-            let grams = Int((item.amount.filter { $0.isNumber }))
-            if let grams, grams <= 0 { return nil }
-            return LiveIngredientReminderRowData(
-                icon: ingredientIconKind(for: item.name),
-                title: item.name,
-                subtitle: vegetableSubtitle(for: item),
-                value: item.amount
-            )
-        }
-    }
-
-    private var spiceReminderRows: [LiveIngredientReminderRowData] {
-        var rows: [LiveIngredientReminderRowData] = []
-
-        if !isGrandmaPreset, result.startSaltGrams > 0 {
-            rows.append(
-                LiveIngredientReminderRowData(
-                    icon: .salt,
-                    title: "Sól",
-                    subtitle: "Dodaj porcję startową na tym etapie.",
-                    value: "\(numberString(result.startSaltGrams)) g"
-                )
-            )
-        }
-
-        if result.peppercornCount > 0 {
-            rows.append(
-                LiveIngredientReminderRowData(
-                    icon: .pepper,
-                    title: "Pieprz czarny ziarnisty",
-                    subtitle: "Czysty aromat.",
-                    value: "\(result.peppercornCount) \(result.peppercornCount == 1 ? "ziarno" : "ziaren")"
-                )
-            )
-        }
-        if result.allspiceCount > 0 {
-            rows.append(
-                LiveIngredientReminderRowData(
-                    icon: .allspice,
-                    title: "Ziele angielskie",
-                    subtitle: "Głębia smaku.",
-                    value: "\(result.allspiceCount) \(result.allspiceCount == 1 ? "ziarno" : "ziaren")"
-                )
-            )
-        }
-        if result.bayLeafCount > 0 {
-            rows.append(
-                LiveIngredientReminderRowData(
-                    icon: .bayLeaf,
-                    title: "Liść laurowy",
-                    subtitle: "Tło aromatu.",
-                    value: result.bayLeafCount == 1 ? "1 liść" : "\(result.bayLeafCount) liście"
-                )
-            )
-        }
-
-        return rows
-    }
-
-    private var poultrySimmerSeconds: Int {
-        if isCollagenPoultryPreset { return hasPoultry ? 120 * 60 : 0 }
-        return hasPoultry ? 105 * 60 : 0
-    }
-
-    private var vegetablesTotalSeconds: Int {
-        if isCollagenPoultryPreset { return 120 * 60 }
-        return brothProfile == .cleaner ? 135 * 60 : 165 * 60
-    }
-
-    private var finishTotalSeconds: Int {
-        if isCollagenPoultryPreset { return 90 * 60 }
-        return brothProfile == .cleaner ? 35 * 60 : 75 * 60
-    }
-
-    private var simmerAfterPoultrySeconds: Int {
-        hasPoultry ? max(0, vegetablesTotalSeconds - poultrySimmerSeconds) : vegetablesTotalSeconds
-    }
-
-    private var liverFinishSeconds: Int {
-        hasLiver ? min(25 * 60, finishTotalSeconds) : 0
-    }
-
-    private var baseFinishBeforeLiverSeconds: Int {
-        hasLiver ? max(0, finishTotalSeconds - liverFinishSeconds) : finishTotalSeconds
-    }
-
-    private var phases: [LivePhase] {
-        if activeUltraVariant != nil {
-            return ultraSpecPhases
-        }
-
-        if isGrandmaPreset {
-            return [
-                LivePhase(
-                    kind: .prep,
-                    title: "Start od zimnej wody",
-                    shortText: "Włóż mięso, zalej zimną wodą i grzej prawie do wrzenia.",
-                    detailText: "Zbieraj szumowiny tylko z powierzchni i nie mieszaj wywaru.",
-                    durationSeconds: nil,
-                    timelineLabel: "Start",
-                    bottomActionTitle: nil
-                ),
-                LivePhase(
-                    kind: .heatUp,
-                    title: "Zmniejsz ogień",
-                    shortText: "Gdy wywar zaczyna pracować, ustaw minimalny ogień.",
-                    detailText: "Rosół ma lekko pyrkać przy brzegu, nie bulgotać.",
-                    durationSeconds: nil,
-                    timelineLabel: "Uspokój",
-                    bottomActionTitle: "Gotowe"
-                ),
-                LivePhase(
-                    kind: .stabilization,
-                    title: "Gotuj samo mięso",
-                    shortText: "Utrzymuj spokojną pracę przez 30 minut.",
-                    detailText: "To etap budowania mięsnej bazy przed dodaniem warzyw.",
-                    durationSeconds: 30 * 60,
-                    timelineLabel: "30 min",
-                    bottomActionTitle: nil
-                ),
-                LivePhase(
-                    kind: .addVegetables,
-                    title: "Dodaj warzywa i przyprawy",
-                    shortText: "Dodaj warzywa, cebulę opalaną i przyprawy (bez soli).",
-                    detailText: "Po dodaniu wróć do spokojnego pyrkania i kontynuuj 60–75 minut.",
-                    durationSeconds: nil,
-                    timelineLabel: "Dodaj",
-                    bottomActionTitle: "Dodałem"
-                ),
-                LivePhase(
-                    kind: .simmerToPoultryOut,
-                    title: "Prowadź rosół dalej",
-                    shortText: "Gotuj spokojnie przez 60–75 minut po dodaniu warzyw.",
-                    detailText: "Nie mieszaj i nie dopuszczaj do wrzenia.",
-                    durationSeconds: 70 * 60,
-                    timelineLabel: "70 min",
-                    bottomActionTitle: nil
-                ),
-                LivePhase(
-                    kind: .beginRest,
-                    title: "Wyłącz i odstaw",
-                    shortText: "Wyłącz ogień i odstaw rosół na 10 minut.",
-                    detailText: "Dzięki temu osad opadnie i łatwiej przecedzisz klarowny płyn.",
-                    durationSeconds: nil,
-                    timelineLabel: "Wyłącz",
-                    bottomActionTitle: "Gotowe"
-                ),
-                LivePhase(
-                    kind: .rest,
-                    title: "Odstawienie",
-                    shortText: "Pozwól wywarowi odstać przez 10 minut bez poruszania garnka.",
-                    detailText: "Nie mieszaj i nie przenoś garnka bez potrzeby.",
-                    durationSeconds: 10 * 60,
-                    timelineLabel: "10 min",
-                    bottomActionTitle: nil
-                ),
-                LivePhase(
-                    kind: .strainAndSeason,
-                    title: "Cedzenie i doprawianie",
-                    shortText: "Przecedź rosół i dopraw sól dopiero po cedzeniu.",
-                    detailText: "Przelewaj powoli przez sito i nie wyciskaj składników.",
-                    durationSeconds: nil,
-                    timelineLabel: "Cedzenie",
-                    bottomActionTitle: "Dalej"
-                ),
-                LivePhase(
-                    kind: .optionalClarityTip,
-                    title: "Opcjonalnie: klarowniejszy finisz",
-                    shortText: "Zostaw w garnku ostatnie 200–300 ml z osadem.",
-                    detailText: "To prosty sposób na klarowniejszy efekt bez dodatkowych działań.",
-                    durationSeconds: nil,
-                    timelineLabel: "Opcjonalnie",
-                    bottomActionTitle: "Zakończ"
-                )
-            ]
-        }
-
-        var items: [LivePhase] = [
-            LivePhase(
-                kind: .prep,
-                title: "Przygotuj garnek i składniki",
-                shortText: batchUsesVinegar
-                    ? "Przygotuj mięso, wodę, garnek, termometr i odmierzoną porcję octu."
-                    : "Przygotuj mięso, wodę, garnek i termometr.",
-                detailText: batchUsesVinegar
-                    ? "Na tym etapie przygotuj mięso, wodę, garnek, termometr oraz odmierzoną porcję octu jabłkowego. Zegar uruchamiasz dopiero wtedy, gdy wszystko jest już gotowe."
-                    : "Na tym etapie przygotuj mięso, wodę, garnek i termometr. Zegar uruchamiasz dopiero wtedy, gdy wszystko jest już gotowe.",
-                durationSeconds: nil,
-                timelineLabel: "Przygotuj",
-                bottomActionTitle: nil
-            ),
-            LivePhase(
-                kind: .heatUp,
-                title: "Podgrzewaj do spokojnej pracy",
-                shortText: hasThermometer
-                    ? "Grzej powoli, zbieraj szumowiny i przejdź dalej dopiero po stabilnym wejściu w zakres 88–90°C."
-                    : "Grzej powoli, zbieraj szumowiny i przejdź dalej dopiero wtedy, gdy wywar pracuje spokojnie, bez wrzenia.",
-                detailText: hasThermometer
-                    ? "To etap spokojnego dochodzenia wywaru do temperatury 88–90°C. Najwięcej szumowin zwykle pojawia się właśnie wtedy, gdy wywar przechodzi od zimnej wody do około 75–90°C."
-                    : "To etap spokojnego dochodzenia wywaru do delikatnej pracy. Szukaj lekkiego drżenia powierzchni i pojedynczych bąbli przy brzegu. Nie dopuszczaj do pełnego wrzenia.",
-                durationSeconds: nil,
-                timelineLabel: "Podgrzewaj",
-                bottomActionTitle: "Gotowe"
-            ),
-            LivePhase(
-                kind: .stabilization,
-                title: "Stabilizuj samo mięso",
-                shortText: isCollagenPoultryPreset
-                    ? "Przez pełne 75 minut utrzymuj spokojną temperaturę. Warzywa dodasz dopiero po tym etapie."
-                    : "Przez pełne 60 minut utrzymuj spokojną temperaturę. Warzywa dodasz dopiero po tym etapie.",
-                detailText: "To najważniejszy etap budowania czystej bazy mięsnej. Nie mieszaj wywaru. Zbieraj tylko to, co samo wypływa na powierzchnię.",
-                durationSeconds: (isCollagenPoultryPreset ? 75 : 60) * 60,
-                timelineLabel: isCollagenPoultryPreset ? "75 min" : "1 h",
-                bottomActionTitle: nil
-            ),
-            LivePhase(
-                kind: .addVegetables,
-                title: "Dodaj warzywa i przyprawy",
-                shortText: "Dodaj teraz wszystkie warzywa i przyprawy wyliczone dla tego wywaru.",
-                detailText: "Po zakończeniu stabilizacji dodajesz warzywa, opaloną cebulę oraz przyprawy. Temperatura może na chwilę spaść o 1–3°C. To normalne.",
-                durationSeconds: nil,
-                timelineLabel: "Dodaj",
-                bottomActionTitle: "Dodałem"
-            )
-        ]
-
-        if hasPoultry {
-            items.append(
-                LivePhase(
-                    kind: .simmerToPoultryOut,
-                    title: "Prowadź wywar z warzywami",
-                    shortText: "Utrzymuj spokojną temperaturę i przygotuj naczynie na wyjęty drób.",
-                    detailText: "Od tej chwili wywar ma pracować spokojnie. Nie mieszaj go i nie dopuszczaj do wrzenia.",
-                    durationSeconds: poultrySimmerSeconds,
-                    timelineLabel: "Prowadź",
-                    bottomActionTitle: nil
-                )
-            )
-
-            items.append(
-                LivePhase(
-                    kind: .removePoultry,
-                    title: "Wyjmij drób",
-                    shortText: "Powinieneś teraz delikatnie wyciągnąć drób z wywaru.",
-                    detailText: "Wyjmij drób szczypcami albo łyżką cedzakową. Nie wyciskaj mięsa nad wywarem i nie wzburzaj garnka bardziej niż to konieczne.",
-                    durationSeconds: nil,
-                    timelineLabel: "Wyjmij drób",
-                    bottomActionTitle: "Wyjąłem"
-                )
-            )
-        }
-
-        items.append(
-            LivePhase(
-                kind: .simmerToVegetablesOut,
-                title: "Prowadź wywar dalej",
-                shortText: "Warzywa powinny jeszcze przez chwilę oddawać smak, ale nie trzymaj ich zbyt długo.",
-                detailText: "Na tym etapie wywar nadal pracuje spokojnie. Zbyt długie trzymanie warzyw daje słodszy, mniej precyzyjny profil.",
-                durationSeconds: simmerAfterPoultrySeconds,
-                timelineLabel: "Dalej",
-                bottomActionTitle: nil
-            )
-        )
-
-        items.append(
-            LivePhase(
-                kind: .removeVegetables,
-                title: "Wyciągnij warzywa",
-                shortText: "Powinieneś teraz delikatnie wyciągnąć warzywa z wywaru.",
-                detailText: "Wyciągnij warzywa bez wyciskania i bez mieszania. Po tym etapie zostaje już sama baza mięsna.",
-                durationSeconds: nil,
-                timelineLabel: "Wyjmij warzywa",
-                bottomActionTitle: "Wyjąłem"
-            )
-        )
-
-        if baseFinishBeforeLiverSeconds > 0 {
-            items.append(
-                LivePhase(
-                    kind: .finishBase,
-                    title: "Dokończ bazę",
-                    shortText: "Pozwól bazie mięsnej spokojnie pracować jeszcze przez wyliczony czas.",
-                    detailText: "To etap domknięcia smaku bez warzyw. Nie podkręcaj ognia i nie mieszaj wywaru.",
-                    durationSeconds: baseFinishBeforeLiverSeconds,
-                    timelineLabel: "Finisz",
-                    bottomActionTitle: nil
-                )
-            )
-        }
-
-        if hasLiver {
-            items.append(
-                LivePhase(
-                    kind: .addLiver,
-                    title: "Dodaj wątróbkę",
-                    shortText: "Dodaj ją dopiero teraz. To krótki etap na sam koniec gotowania.",
-                    detailText: "Wątróbka gotowana zbyt długo daje metaliczny posmak i pogarsza klarowność wywaru. Dlatego dodajesz ją dopiero teraz.",
-                    durationSeconds: nil,
-                    timelineLabel: "Dodaj wątróbkę",
-                    bottomActionTitle: "Dodałem"
-                )
-            )
-
-            items.append(
-                LivePhase(
-                    kind: .finishWithLiver,
-                    title: "Dokończ wywar z wątróbką",
-                    shortText: "Utrzymuj spokojną temperaturę i nie dopuszczaj do wrzenia.",
-                    detailText: "To końcowy, krótki etap z wątróbką. Wywar ma pracować spokojnie do samego końca.",
-                    durationSeconds: liverFinishSeconds,
-                    timelineLabel: "Finisz",
-                    bottomActionTitle: nil
-                )
-            )
-        }
-
-        items.append(contentsOf: [
-            LivePhase(
-                kind: .beginRest,
-                title: "Wyłącz i odstaw",
-                shortText: "Kończy się gotowanie aktywne. Odstaw garnek i nie ruszaj wywaru.",
-                detailText: "Po wyłączeniu ognia osady powinny spokojnie opaść. Nie mieszaj i nie potrząsaj garnkiem.",
-                durationSeconds: nil,
-                timelineLabel: "Wyłącz",
-                bottomActionTitle: "Gotowe"
-            ),
-            LivePhase(
-                kind: .rest,
-                title: "Pozwól wywarowi odstać",
-                shortText: "Odstawienie przez około 20 minut poprawia klarowność.",
-                detailText: "To etap porządkowania klarowności. Po odstawieniu przecedzisz wywar spokojnie, bez pośpiechu.",
-                durationSeconds: 20 * 60,
-                timelineLabel: "20 min",
-                bottomActionTitle: nil
-            ),
-            LivePhase(
-                kind: .strainAndSeason,
-                title: clarityMode == .paperFilter ? "Przefiltruj, przecedź i dopraw" : "Przecedź i dopraw",
-                shortText: clarityMode == .paperFilter
-                    ? "Najpierw przefiltruj wywar, a dopiero potem skoryguj sól."
-                    : "Przecedź wywar i dopiero potem skoryguj sól.",
-                detailText: clarityMode == .paperFilter
-                    ? "Najpierw przecedź wywar wstępnie, a potem dokładnie przefiltruj go przez filtr papierowy albo bardzo gęsty filtr. Dopiero po tym spróbuj i skoryguj sól."
-                    : "Przecedź wywar bez wyciskania składników. Dopiero po przecedzeniu sprawdź smak i skoryguj sól.",
-                durationSeconds: nil,
-                timelineLabel: "Cedzenie",
-                bottomActionTitle: "Zakończ"
-            )
-        ])
-
-        return items
-    }
-
-    private var ultraSpecPhases: [LivePhase] {
-        guard let variant = activeUltraVariant else { return [] }
-        let steps = UltraSpecTimelineCatalog.steps(for: variant)
-        guard !steps.isEmpty else { return [] }
-
-        return steps.enumerated().map { index, step in
-            let durationSeconds: Int? = {
-                if index == 0 || step.isManual {
-                    return nil
-                }
-                let previousOffset = steps[index - 1].minuteOffset
-                return max(0, (step.minuteOffset - previousOffset) * 60)
-            }()
-
-            return LivePhase(
-                kind: livePhaseKind(forUltraStepID: step.stepID),
-                title: step.title,
-                shortText: step.subtitle,
-                detailText: UltraSpecStepLibrary.all[step.stepID]?.extendedHint ?? step.subtitle,
-                durationSeconds: durationSeconds,
-                timelineLabel: step.timeLabel,
-                bottomActionTitle: durationSeconds == nil ? "Dalej" : nil
-            ).withStepID(step.stepID)
-        }
-    }
+    private var phases: [LivePhase] { phaseBuilder.buildPhases() }
 
     private var currentPhase: LivePhase {
         phases[min(phaseIndex, phases.count - 1)]
@@ -755,28 +233,6 @@ struct CookingModeView: View {
         }
         if currentPhaseHasTimer { return "Pomiń" }
         return currentPhase.bottomActionTitle ?? "Dalej"
-    }
-
-    private func livePhaseKind(forUltraStepID stepID: String) -> LivePhaseKind {
-        switch stepID {
-        case "prep":
-            return .prep
-        case "heat_up_clear":
-            return .heatUp
-        case "strain_season":
-            return .strainAndSeason
-        case "add_veg_spices", "tonkotsu_aromatics_end":
-            return .addVegetables
-        case "simmer_clear":
-            return .simmerToVegetablesOut
-        case "stabilize_base", "tonkotsu_boil_emulsify", "finish_clear", "veg_simmer_limit", "fish_poach_limit":
-            return .stabilization
-        case "rest_settle":
-            return .rest
-        default:
-            assertionFailure("Unhandled ultra timeline stepID: \(stepID)")
-            return .stabilization
-        }
     }
 
     private var shouldShowIngredientReminderButton: Bool {
@@ -905,6 +361,8 @@ struct CookingModeView: View {
             Button("Zakończ gotowanie", role: .destructive) {
                 finalStepCompleted = true
                 isStageRunning = false
+                timerCancellable?.cancel()
+                timerCancellable = nil
                 CookingSession.clear()
                 CookingNotificationService.shared.cancelAll()
                 endLiveActivity()
@@ -919,6 +377,9 @@ struct CookingModeView: View {
             prepThermometerReady = !hasThermometer
             prepVinegarReady = !batchUsesVinegar
             restoreSessionIfNeeded()
+            if isStageRunning {
+                timerCancellable = timerPublisher.connect()
+            }
             attachToExistingLiveActivityIfNeeded()
             updateLiveActivity()
         }
@@ -936,8 +397,12 @@ struct CookingModeView: View {
                 updateLiveActivity()
             }
         }
-        .onReceive(timer) { _ in
+        .onReceive(timerPublisher) { _ in
             handleTick()
+        }
+        .onDisappear {
+            timerCancellable?.cancel()
+            timerCancellable = nil
         }
     }
     
@@ -1604,8 +1069,11 @@ struct CookingModeView: View {
 
         isStageRunning.toggle()
         if isStageRunning {
+            timerCancellable = timerPublisher.connect()
             schedulePhaseNotification()
         } else {
+            timerCancellable?.cancel()
+            timerCancellable = nil
             CookingNotificationService.shared.cancelAll()
         }
         updateLiveActivity()
@@ -1624,6 +1092,7 @@ struct CookingModeView: View {
             phaseElapsedSeconds = 0
             isStageRunning = true
         }
+        timerCancellable = timerPublisher.connect()
         schedulePhaseNotification()
         startLiveActivity()
         playStartSignal()
@@ -1725,48 +1194,6 @@ struct CookingModeView: View {
             return rest == 0 ? "\(hours) h" : "\(hours) h \(rest)"
         }
         return "\(minutes) min"
-    }
-
-    private func numberString(_ value: Double) -> String {
-        if value == floor(value) {
-            return String(Int(value))
-        }
-
-        let twoDecimals = String(format: "%.2f", value)
-        if twoDecimals.hasSuffix("0") {
-            return String(format: "%.1f", value).replacingOccurrences(of: ".", with: ",")
-        }
-
-        return twoDecimals.replacingOccurrences(of: ".", with: ",")
-    }
-
-    private func vegetableSubtitle(for item: VegetableAmount) -> String? {
-        let normalized = normalizeCookingID(item.name)
-
-        if normalized.contains("marchew") { return "Słodycz." }
-        if normalized.contains("seler") { return "Głębia smaku." }
-        if normalized.contains("pietruszka") { return "Świeższy finisz." }
-        if normalized.contains("por") { return "Łagodna cebulowość." }
-        if normalized.contains("cebula") { return item.note ?? "Opalana." }
-
-        return item.note
-    }
-
-    private func ingredientIconKind(for name: String) -> LiveIngredientIconKind {
-        let normalized = normalizeCookingID(name)
-
-        if normalized.contains("marchew") { return .carrot }
-        if normalized.contains("seler") { return .celery }
-        if normalized.contains("pietruszka") { return .parsleyRoot }
-        if normalized.contains("por") { return .leek }
-        if normalized.contains("cebula") { return .onion }
-        if normalized.contains("pieprz") { return .pepper }
-        if normalized.contains("laurow") { return .bayLeaf }
-        if normalized.contains("ziele") { return .allspice }
-        if normalized.contains("sól") || normalized.contains("sol") { return .salt }
-        if normalized.contains("ocet") { return .vinegar }
-
-        return .generic
     }
 
     private func liveActivityState() -> CookingActivityAttributes.ContentState {
@@ -1943,12 +1370,6 @@ struct CookingModeView: View {
         advanceElapsedThroughPhases(elapsed)
         saveSession(backgrounded: false)
     }
-}
-
-private func normalizeCookingID(_ value: String) -> String {
-    value
-        .folding(options: .diacriticInsensitive, locale: nil)
-        .lowercased()
 }
 
 private struct TemperatureMiniPill: View {

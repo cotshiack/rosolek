@@ -82,11 +82,35 @@ final class RosolekTests: XCTestCase {
         XCTAssertFalse(decoded.hasManualOverrides)
     }
 
-    func testPerformanceExample() throws {
-        // This is an example of a performance test case.
-        self.measure {
-            // Put the code you want to measure the time of here.
-        }
+    // MARK: - String.extractGrams (regression for S-2)
+
+    func testExtractGramsIntegerValue() {
+        XCTAssertEqual("300 g".extractGrams(), 300)
+    }
+
+    func testExtractGramsDecimalValueTruncates() {
+        // "12.5 g" should yield 12, not 125 (old bug: filter { $0.isNumber })
+        XCTAssertEqual("12.5 g".extractGrams(), 12)
+    }
+
+    func testExtractGramsCommaDecimalSeparator() {
+        XCTAssertEqual("12,5 g".extractGrams(), 12)
+    }
+
+    func testExtractGramsNoUnit() {
+        XCTAssertEqual("300".extractGrams(), 300)
+    }
+
+    func testExtractGramsSpaceThousandsSeparator() {
+        XCTAssertEqual("1 000 g".extractGrams(), 1000)
+    }
+
+    func testExtractGramsEmpty() {
+        XCTAssertEqual("".extractGrams(), 0)
+    }
+
+    func testExtractGramsZero() {
+        XCTAssertEqual("0 g".extractGrams(), 0)
     }
 
 }

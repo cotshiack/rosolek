@@ -8,6 +8,7 @@ enum HomeRouteIntent: Equatable {
 
 final class AppRouter: ObservableObject {
     @Published var pendingHomeRoute: HomeRouteIntent?
+    @Published var returnToHomeTrigger = 0
 
     func routeToActiveCooking(batchID: UUID? = nil) {
         pendingHomeRoute = .openActiveCooking(batchID: batchID)
@@ -16,10 +17,8 @@ final class AppRouter: ObservableObject {
     func consumeHomeRoute() {
         pendingHomeRoute = nil
     }
-}
 
-extension View {
-    func cascadesReturnHome() -> some View {
-        self
+    func triggerReturnToHome() {
+        returnToHomeTrigger += 1
     }
 }
