@@ -289,6 +289,19 @@ struct CookingModeView: View {
         return ingredientIDs.contains { normalizeCookingID($0).contains("watrob") }
     }
 
+    private var hasBeef: Bool {
+        if !ingredientSnapshots.isEmpty {
+            return ingredientSnapshots.contains {
+                normalizeCookingID($0.categoryRawValue) == normalizeCookingID(IngredientCategory.beef.rawValue)
+            }
+        }
+        return ingredientIDs.contains { id in
+            let n = normalizeCookingID(id)
+            return n.contains("prega") || n.contains("szponder") || n.contains("ogon")
+                || n.contains("wolowy") || n.contains("szpik") || n.contains("mostek")
+        }
+    }
+
     private var vegetableReminderRows: [LiveIngredientReminderRowData] {
         result.vegetables.compactMap { item in
             let grams = item.amount.extractGrams()
@@ -646,7 +659,10 @@ struct CookingModeView: View {
 
     private var ultraSpecPhases: [LivePhase] {
         guard let variant = activeUltraVariant else { return [] }
-        let steps = UltraSpecTimelineCatalog.steps(for: variant)
+        // Rosół Bogaty without beef: use the Lekki poultry-only schedule
+        // (the longer beef-specific stages — 165 min simmer, 30 min closing, 75 min finish — don't apply)
+        let effectiveVariant: UltraSpecVariantID = (variant == .rosolBogaty && !hasBeef) ? .rosolLekki : variant
+        let steps = UltraSpecTimelineCatalog.steps(for: effectiveVariant)
         guard !steps.isEmpty else { return [] }
 
         return steps.enumerated().map { index, step in
