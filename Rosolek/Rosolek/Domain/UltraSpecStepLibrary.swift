@@ -22,44 +22,42 @@ enum UltraSpecStepLibrary {
     static let heatUpClear = UltraSpecStepDetail(
         stepID: "heat_up_clear",
         title: "Podgrzewaj do temperatury pracy",
-        subtitle: "Dąż do pracy poniżej wrzenia.",
+        subtitle: "Grzej powoli, nie dopuść do wrzenia.",
         extendedHint: "Zbieraj pianę tylko z powierzchni. Wrzenie w klarownych bulionach pogarsza klarowność.",
         commonMistakes: "Doprowadzenie do wrzenia, mieszanie, agresywne zbieranie osadu.",
         recoveryAction: "Zmniejsz ogień i pozwól osadowi opaść, potem przecedź przez gazę."
     )
 
-
-
     static let stabilizeBase = UltraSpecStepDetail(
         stepID: "stabilize_base",
-        title: "Ustabilizuj bazę",
-        subtitle: "Utrzymuj temperaturę pracy.",
-        extendedHint: "To etap budowania podstawy smaku i klarowności. Nie dopuszczaj do intensywnego wrzenia.",
+        title: "Gotuj samo mięso",
+        subtitle: "Spokojne gotowanie, bez warzyw.",
+        extendedHint: "Mięso gotuje się w czystej wodzie bez żadnych dodatków. Nie mieszaj i nie dopuszczaj do wrzenia.",
         commonMistakes: "Skoki temperatury, mieszanie, zbyt mocny ogień.",
         recoveryAction: "Zmniejsz ogień i wróć do zakresu temperatury wariantu."
     )
 
     static let simmerClear = UltraSpecStepDetail(
         stepID: "simmer_clear",
-        title: "Gotuj klarownie",
-        subtitle: "Delikatna praca bez mieszania.",
-        extendedHint: "Pozwól osadom opaść i utrzymuj spokojny ruch powierzchni.",
+        title: "Gotuj spokojnie",
+        subtitle: "Bez mieszania, bez wrzenia.",
+        extendedHint: "Wywar powinien lekko drgać na powierzchni. Nie mieszaj — osad powoli opada na dno.",
         commonMistakes: "Wrzenie, mieszanie, przegrzewanie końcówki etapu.",
         recoveryAction: "Uspokój temperaturę i odstaw na chwilę przed dalszym etapem."
     )
 
     static let finishClear = UltraSpecStepDetail(
         stepID: "finish_clear",
-        title: "Domknij smak",
-        subtitle: "Końcowe wyrównanie profilu.",
-        extendedHint: "Pracuj bez wrzenia. To etap porządkowania smaku i klarowności.",
+        title: "Ostatni etap gotowania",
+        subtitle: "Spokojne gotowanie do końca, bez wrzenia.",
+        extendedHint: "Wywar zbiera ostatnie aromaty. Utrzymuj spokojne gotowanie i nie podkręcaj ognia.",
         commonMistakes: "Podkręcanie mocy na końcu, mieszanie po wyjęciu składników.",
         recoveryAction: "Wróć do spokojnej temperatury i przecedź przez gazę, jeśli trzeba."
     )
 
     static let tonkotsuAromaticsEnd = UltraSpecStepDetail(
         stepID: "tonkotsu_aromatics_end",
-        title: "Tonkotsu: aromaty na końcu",
+        title: "Dodaj aromaty na końcu",
         subtitle: "Krótki etap przed cedzeniem.",
         extendedHint: "Dodaj aromaty pod koniec, aby uniknąć goryczy od długiej obróbki.",
         commonMistakes: "Aromaty od początku gotowania, zbyt długi czas kontaktu.",
@@ -68,14 +66,12 @@ enum UltraSpecStepLibrary {
 
     static let vegSimmerLimit = UltraSpecStepDetail(
         stepID: "veg_simmer_limit",
-        title: "Warzywny: limit czasu",
-        subtitle: "Kontrolowana temperatura i czas.",
+        title: "Gotuj i pilnuj czasu",
+        subtitle: "Zbyt długie gotowanie psuje aromat warzyw.",
         extendedHint: "Długie gotowanie warzyw zwiększa słodycz i spłaszcza aromat.",
         commonMistakes: "Przeciąganie czasu, zbyt wysoka temperatura.",
         recoveryAction: "Zakończ wcześniej i dopraw finalnie już po cedzeniu."
     )
-
-
 
     static let restSettle = UltraSpecStepDetail(
         stepID: "rest_settle",
@@ -97,7 +93,7 @@ enum UltraSpecStepLibrary {
 
     static let fishPoachLimit = UltraSpecStepDetail(
         stepID: "fish_poach_limit",
-        title: "Rybny: gotuj krótko",
+        title: "Gotuj ryby krótko",
         subtitle: "Nie przekraczaj 30–40 min (zależnie od wariantu).",
         extendedHint: "Rybny jest wrażliwy na czas i temperaturę. Lepiej skończyć wcześniej niż przeciągnąć.",
         commonMistakes: "Zbyt długie gotowanie, wrzenie, za dużo warzyw.",
@@ -106,8 +102,8 @@ enum UltraSpecStepLibrary {
 
     static let tonkotsuBoil = UltraSpecStepDetail(
         stepID: "tonkotsu_boil_emulsify",
-        title: "Tonkotsu: mocne wrzenie",
-        subtitle: "Wrzenie jest celem, budujesz emulsję.",
+        title: "Gotuj na mocnym wrzeniu",
+        subtitle: "Wrzenie jest zamierzone — tak ma być.",
         extendedHint: "Kości muszą być stale przykryte. Dolewaj gorącą wodę małymi porcjami.",
         commonMistakes: "Za mało wody, zbyt słabe grzanie, odkryte kości.",
         recoveryAction: "Dolej gorącą wodę i zmniejsz ryzyko przywierania przez korektę mocy."
