@@ -50,7 +50,7 @@ struct CookingLiveActivityWidget: Widget {
                 }
                 DynamicIslandExpandedRegion(.trailing) {
                     VStack(alignment: .trailing, spacing: 2) {
-                        Text("Etap \(context.state.stepNumber)/\(context.state.totalSteps)")
+                        Text("Etap \(context.state.stepNumber + 1)/\(context.state.totalSteps + 1)")
                             .font(.system(size: 12, weight: .semibold))
                             .foregroundStyle(WidgetTheme.textSecondary)
                         if let endDate = context.state.stepEndDate, context.state.isRunning, endDate > .now {
@@ -88,6 +88,10 @@ struct CookingLiveActivityWidget: Widget {
                         .font(.system(size: 12, weight: .bold).monospacedDigit())
                         .foregroundStyle(WidgetTheme.textPrimary)
                         .frame(maxWidth: 50)
+                } else if context.state.isRunning {
+                    Image(systemName: "flame.fill")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundStyle(WidgetTheme.accent)
                 } else {
                     Image(systemName: "pause.fill")
                         .font(.system(size: 11, weight: .semibold))
@@ -123,7 +127,7 @@ private struct LockScreenView: View {
 
                 Spacer(minLength: 8)
 
-                Text("Etap \(state.stepNumber)/\(state.totalSteps)")
+                Text("Etap \(state.stepNumber + 1)/\(state.totalSteps + 1)")
                     .font(.system(size: 11, weight: .semibold))
                     .foregroundStyle(WidgetTheme.textSecondary)
             }
@@ -135,6 +139,10 @@ private struct LockScreenView: View {
                         .foregroundStyle(WidgetTheme.textPrimary)
                         .lineLimit(1)
                         .minimumScaleFactor(0.8)
+                } else if state.isRunning {
+                    Text("Gotuj")
+                        .font(.system(size: 24, weight: .bold))
+                        .foregroundStyle(WidgetTheme.accent)
                 } else {
                     Text("Pauza")
                         .font(.system(size: 24, weight: .bold))

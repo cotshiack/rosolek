@@ -108,7 +108,9 @@ struct CookingModeView: View {
     @State private var liveActivity: Activity<CookingActivityAttributes>?
     @State private var timerCancellable: (any Cancellable)?
 
-    private let timerPublisher = Timer.publish(every: 1, on: .main, in: .common)
+    // @State preserves publisher identity across re-renders; a plain `let`
+    // would create a new instance each render, causing onReceive to lose the connection.
+    @State private var timerPublisher = Timer.publish(every: 1, on: .main, in: .common)
 
     private var liveControlsOverlayHeight: CGFloat { 238 }
     private var finishButtonOverlayHeight: CGFloat { 92 }
@@ -385,6 +387,10 @@ struct CookingModeView: View {
                 updateLiveActivity()
             } else if newPhase == .active {
                 resumeFromBackground()
+                if isStageRunning {
+                    timerCancellable?.cancel()
+                    timerCancellable = timerPublisher.connect()
+                }
                 attachToExistingLiveActivityIfNeeded()
                 updateLiveActivity()
             }
