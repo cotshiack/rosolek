@@ -94,13 +94,19 @@ struct FloatingHomeMenuBar: View {
             let generator = UIImpactFeedbackGenerator(style: .medium)
             generator.impactOccurred()
         } label: {
-            Image("RosolekLogoMark")
-                .renderingMode(.template)
-                .resizable()
-                .scaledToFit()
-                .frame(width: 40, height: 40)
-                .rotationEffect(.degrees(logoSpin))
-                .foregroundStyle(isLiveActive ? AppTheme.textPrimary : AppTheme.textTertiary)
+            ZStack {
+                Image("RosolekLogoOuter")
+                    .renderingMode(.template)
+                    .resizable()
+                    .scaledToFit()
+                Image("RosolekLogoSpiral")
+                    .renderingMode(.template)
+                    .resizable()
+                    .scaledToFit()
+                    .rotationEffect(.degrees(logoSpin))
+            }
+            .frame(width: 40, height: 40)
+            .foregroundStyle(isLiveActive ? AppTheme.textPrimary : AppTheme.textTertiary)
                 .frame(width: 66, height: 66)
                 .background(
                     Circle()
