@@ -275,7 +275,7 @@ struct OnboardingFlowView: View {
                     .resizable()
                     .scaledToFill()
                     .frame(width: geo.size.width)
-                    .frame(width: geo.size.width, height: geo.size.height, alignment: .bottom)
+                    .frame(width: geo.size.width, height: geo.size.height - 40, alignment: .bottom)
                     .clipped()
                     .allowsHitTesting(false)
             }
@@ -293,7 +293,7 @@ struct OnboardingFlowView: View {
                     .foregroundStyle(dark)
                     .padding(.bottom, 14)
 
-                Text("Gotowy na\nprawdziwy\nbulion?")
+                Text("Jesteś gotowy na\nprawdziwy bulion?")
                     .font(.system(size: 36, weight: .bold))
                     .multilineTextAlignment(.center)
                     .foregroundStyle(dark)
