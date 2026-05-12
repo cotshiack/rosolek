@@ -93,8 +93,11 @@ struct FloatingHomeMenuBar: View {
             let generator = UIImpactFeedbackGenerator(style: .medium)
             generator.impactOccurred()
         } label: {
-            Image(systemName: HomeMenuTab.live.systemImage)
-                .font(.system(size: 24, weight: .bold))
+            Image("RosolekLogoMark")
+                .renderingMode(.template)
+                .resizable()
+                .scaledToFit()
+                .frame(width: 28, height: 28)
                 .foregroundStyle(isLiveActive ? AppTheme.textPrimary : AppTheme.textTertiary)
                 .frame(width: 66, height: 66)
                 .background(
