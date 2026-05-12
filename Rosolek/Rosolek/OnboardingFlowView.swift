@@ -261,14 +261,14 @@ struct OnboardingFlowView: View {
     }
 
     private func welcomeStep(in geo: GeometryProxy) -> some View {
-        let dark = Color(red: 0.110, green: 0.102, blue: 0.090)
+        let dark  = Color(red: 0.110, green: 0.102, blue: 0.090)
         let cream = Color(red: 0.975, green: 0.968, blue: 0.955)
 
         return ZStack(alignment: .top) {
-            // Cream background — blends with photo background
+            // Cream background — blends seamlessly with photo
             cream.ignoresSafeArea()
 
-            // Hero photo — full bleed, centered
+            // Hero photo — full bleed
             Image("OnboardingHeroRosolek")
                 .resizable()
                 .scaledToFill()
@@ -277,50 +277,49 @@ struct OnboardingFlowView: View {
                 .ignoresSafeArea()
                 .allowsHitTesting(false)
 
-            // Subtle top fade so status bar + text area stay clean
+            // Gradient: cream at top (text area) → transparent where ingredients begin
             LinearGradient(
                 stops: [
                     .init(color: cream,               location: 0.00),
-                    .init(color: cream,               location: 0.24),
-                    .init(color: cream.opacity(0.55), location: 0.40),
-                    .init(color: cream.opacity(0.0),  location: 0.58)
+                    .init(color: cream,               location: 0.30),
+                    .init(color: cream.opacity(0.75), location: 0.44),
+                    .init(color: cream.opacity(0.0),  location: 0.62)
                 ],
                 startPoint: .top,
                 endPoint: .bottom
             )
             .ignoresSafeArea()
 
-            // Content — logo + headline at the top
-            VStack(alignment: .leading, spacing: 0) {
-                Spacer().frame(height: geo.safeAreaInsets.top + 18)
+            // Content — centered logo + headline
+            VStack(alignment: .center, spacing: 0) {
+                Spacer().frame(height: geo.safeAreaInsets.top + 32)
 
-                // App logo mark
                 Image("RosolekLogoMark")
                     .renderingMode(.template)
                     .resizable()
                     .scaledToFit()
-                    .frame(width: 34, height: 34)
+                    .frame(width: 58, height: 58)
                     .foregroundStyle(dark)
-                    .padding(.bottom, 18)
+                    .padding(.bottom, 22)
 
-                VStack(alignment: .leading, spacing: 12) {
+                VStack(alignment: .center, spacing: 10) {
                     Text("Rosół, który\nzawsze wychodzi.")
                         .font(.system(size: 34, weight: .bold))
+                        .multilineTextAlignment(.center)
                         .foregroundStyle(dark)
                         .fixedSize(horizontal: false, vertical: true)
-                        .lineSpacing(2)
+                        .lineSpacing(3)
 
-                    Text("Precyzyjne proporcje, krok po kroku,\nbez zgadywania.")
+                    Text("Precyzyjne proporcje, krok po kroku.")
                         .font(.system(size: 16, weight: .medium))
-                        .foregroundStyle(dark.opacity(0.55))
-                        .fixedSize(horizontal: false, vertical: true)
-                        .lineSpacing(2)
+                        .multilineTextAlignment(.center)
+                        .foregroundStyle(dark.opacity(0.48))
                 }
 
                 Spacer(minLength: 0)
             }
             .padding(.horizontal, AppSpacing.screen)
-            .frame(maxWidth: .infinity, alignment: .topLeading)
+            .frame(maxWidth: .infinity, alignment: .top)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
