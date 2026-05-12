@@ -18,7 +18,7 @@ struct OnboardingFlowView: View {
     private let standardPotSizes = UserPreferencesConstants.standardPotSizes
 
     private var welcomeBackgroundColor: Color {
-        Color(red: 0.110, green: 0.102, blue: 0.090) // #1C1A17 — RMAccentDark
+        Color(red: 0.975, green: 0.968, blue: 0.955) // ciepły kremowy — pasuje do zdjęcia
     }
 
     var body: some View {
@@ -128,7 +128,7 @@ struct OnboardingFlowView: View {
                     .padding(.horizontal, 22)
                     .frame(maxWidth: .infinity)
                     .frame(height: 54)
-                    .background(Color(red: 0.788, green: 0.659, blue: 0.478)) // #C9A87A golden
+                    .background(Color(red: 0.988, green: 0.792, blue: 0.11)) // żółty #FCCB1C
                     .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
                 }
                 .buttonStyle(.plain)
@@ -262,83 +262,67 @@ struct OnboardingFlowView: View {
 
     private func welcomeStep(in geo: GeometryProxy) -> some View {
         let dark = Color(red: 0.110, green: 0.102, blue: 0.090)
+        let cream = Color(red: 0.975, green: 0.968, blue: 0.955)
 
-        return ZStack(alignment: .topLeading) {
-            // Hero photo — full bleed
+        return ZStack(alignment: .top) {
+            // Cream background — blends with photo background
+            cream.ignoresSafeArea()
+
+            // Hero photo — full bleed, centered
             Image("OnboardingHeroRosolek")
                 .resizable()
                 .scaledToFill()
-                .frame(width: geo.size.width, height: geo.size.height + geo.safeAreaInsets.bottom + 120)
+                .frame(width: geo.size.width, height: geo.size.height + geo.safeAreaInsets.bottom)
                 .clipped()
                 .ignoresSafeArea()
                 .allowsHitTesting(false)
 
-            // Dark gradient — left side protects text area, fades to photo on right
+            // Subtle top fade so status bar + text area stay clean
             LinearGradient(
                 stops: [
-                    .init(color: dark,                  location: 0.00),
-                    .init(color: dark,                  location: 0.38),
-                    .init(color: dark.opacity(0.72),    location: 0.55),
-                    .init(color: dark.opacity(0.20),    location: 0.78),
-                    .init(color: dark.opacity(0.0),     location: 1.00)
+                    .init(color: cream,               location: 0.00),
+                    .init(color: cream,               location: 0.24),
+                    .init(color: cream.opacity(0.55), location: 0.40),
+                    .init(color: cream.opacity(0.0),  location: 0.58)
                 ],
-                startPoint: .leading,
-                endPoint: .trailing
-            )
-            .ignoresSafeArea()
-
-            // Top gradient — status bar legibility
-            LinearGradient(
-                colors: [dark, dark.opacity(0)],
                 startPoint: .top,
                 endPoint: .bottom
             )
-            .frame(height: geo.safeAreaInsets.top + 72)
-            .frame(maxWidth: .infinity, alignment: .top)
-            .ignoresSafeArea(edges: .top)
+            .ignoresSafeArea()
 
-            // Content
+            // Content — logo + headline at the top
             VStack(alignment: .leading, spacing: 0) {
-                Spacer().frame(height: geo.safeAreaInsets.top + 22)
+                Spacer().frame(height: geo.safeAreaInsets.top + 18)
 
-                // App logo mark — small, top-left, contextual
+                // App logo mark
                 Image("RosolekLogoMark")
+                    .renderingMode(.template)
                     .resizable()
                     .scaledToFit()
-                    .frame(width: 36, height: 36)
-                    .padding(.bottom, 22)
+                    .frame(width: 34, height: 34)
+                    .foregroundStyle(dark)
+                    .padding(.bottom, 18)
 
-                VStack(alignment: .leading, spacing: 16) {
-                    Text("Awansuj na\nrosołowego eksperta")
-                        .font(.system(size: 32, weight: .bold))
-                        .foregroundStyle(Color.white)
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("Rosół, który\nzawsze wychodzi.")
+                        .font(.system(size: 34, weight: .bold))
+                        .foregroundStyle(dark)
                         .fixedSize(horizontal: false, vertical: true)
                         .lineSpacing(2)
 
-                    LinearGradient(
-                        colors: [
-                            Color(red: 0.99, green: 0.95, blue: 0.16),
-                            Color(red: 0.98, green: 0.64, blue: 0.11)
-                        ],
-                        startPoint: .leading,
-                        endPoint: .trailing
-                    )
-                    .frame(width: 118, height: 5)
-                    .clipShape(Capsule())
-
-                    Text("Złocisty, klarowny, pachnący — i tym razem naprawdę twój.")
-                        .font(.system(size: 18, weight: .medium))
-                        .foregroundStyle(Color.white.opacity(0.88))
-                        .lineSpacing(1)
+                    Text("Precyzyjne proporcje, krok po kroku,\nbez zgadywania.")
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundStyle(dark.opacity(0.55))
                         .fixedSize(horizontal: false, vertical: true)
+                        .lineSpacing(2)
                 }
-                .frame(maxWidth: geo.size.width * 0.56, alignment: .leading)
 
                 Spacer(minLength: 0)
             }
             .padding(.horizontal, AppSpacing.screen)
+            .frame(maxWidth: .infinity, alignment: .topLeading)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     private var potStep: some View {
