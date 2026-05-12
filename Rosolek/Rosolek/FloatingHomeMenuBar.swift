@@ -97,7 +97,7 @@ struct FloatingHomeMenuBar: View {
                 .renderingMode(.template)
                 .resizable()
                 .scaledToFit()
-                .frame(width: 28, height: 28)
+                .frame(width: 34, height: 34)
                 .foregroundStyle(isLiveActive ? AppTheme.textPrimary : AppTheme.textTertiary)
                 .frame(width: 66, height: 66)
                 .background(
