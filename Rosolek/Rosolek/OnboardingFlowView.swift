@@ -263,31 +263,21 @@ struct OnboardingFlowView: View {
     private func welcomeStep(in geo: GeometryProxy) -> some View {
         let dark  = Color(red: 0.110, green: 0.102, blue: 0.090)
         let cream = Color(red: 0.975, green: 0.968, blue: 0.955)
-        // 72% window + reduced offset → full illustration visible, pot less clipped by button
-        let imageHeight = geo.size.height * 0.72
 
         return ZStack(alignment: .top) {
             cream.ignoresSafeArea()
 
+            // Image is 2.16:1 portrait; at screen width → ~841pt tall vs ~790pt content height.
+            // Using full geo.size.height cuts only ~50pt of white bg at top — all ingredients visible.
             VStack(spacing: 0) {
                 Spacer(minLength: 0)
-                ZStack(alignment: .top) {
-                    Image("OnboardingHeroRosolek")
-                        .resizable()
-                        .scaledToFill()
-                        .frame(width: geo.size.width)
-                        .frame(width: geo.size.width, height: imageHeight, alignment: .bottom)
-                        .clipped()
-
-                    LinearGradient(
-                        colors: [cream, cream.opacity(0)],
-                        startPoint: .top,
-                        endPoint: .bottom
-                    )
-                    .frame(height: 36)
-                }
-                .offset(y: 6)
-                .allowsHitTesting(false)
+                Image("OnboardingHeroRosolek")
+                    .resizable()
+                    .scaledToFill()
+                    .frame(width: geo.size.width)
+                    .frame(width: geo.size.width, height: geo.size.height, alignment: .bottom)
+                    .clipped()
+                    .allowsHitTesting(false)
             }
             .ignoresSafeArea(edges: .bottom)
 
