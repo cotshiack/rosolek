@@ -24,6 +24,7 @@ struct FloatingHomeMenuBar: View {
     let onTabTap: (HomeMenuTab) -> Void
     let onLiveTap: () -> Void
     @State private var animatePulse = false
+    @State private var logoSpin: Double = 0
 
     var body: some View {
         ZStack {
@@ -97,7 +98,8 @@ struct FloatingHomeMenuBar: View {
                 .renderingMode(.template)
                 .resizable()
                 .scaledToFit()
-                .frame(width: 34, height: 34)
+                .frame(width: 40, height: 40)
+                .rotationEffect(.degrees(logoSpin))
                 .foregroundStyle(isLiveActive ? AppTheme.textPrimary : AppTheme.textTertiary)
                 .frame(width: 66, height: 66)
                 .background(
@@ -116,19 +118,29 @@ struct FloatingHomeMenuBar: View {
         .onAppear {
             animatePulse = false
             guard isLiveActive else { return }
-            withAnimation(.easeInOut(duration: 1.2).repeatForever(autoreverses: true)) {
-                animatePulse = true
-            }
+            startLiveAnimations()
         }
         .onChange(of: isLiveActive) { _, newValue in
             if newValue {
-                animatePulse = false
-                withAnimation(.easeInOut(duration: 1.2).repeatForever(autoreverses: true)) {
-                    animatePulse = true
-                }
+                startLiveAnimations()
             } else {
                 animatePulse = false
             }
+        }
+    }
+}
+
+// MARK: - Helpers
+
+private extension FloatingHomeMenuBar {
+    func startLiveAnimations() {
+        animatePulse = false
+        withAnimation(.easeInOut(duration: 1.2).repeatForever(autoreverses: true)) {
+            animatePulse = true
+        }
+        logoSpin = 0
+        withAnimation(.linear(duration: 6).repeatForever(autoreverses: false)) {
+            logoSpin = 360
         }
     }
 }
