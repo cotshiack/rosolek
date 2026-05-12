@@ -294,7 +294,7 @@ struct OnboardingFlowView: View {
                     .padding(.bottom, 14)
 
                 Text("Gotowy na\nprawdziwy\nbulion?")
-                    .font(.system(size: 40, weight: .bold))
+                    .font(.system(size: 36, weight: .bold))
                     .multilineTextAlignment(.center)
                     .foregroundStyle(dark)
                     .fixedSize(horizontal: false, vertical: true)
