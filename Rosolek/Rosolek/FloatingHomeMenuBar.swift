@@ -146,7 +146,7 @@ private extension FloatingHomeMenuBar {
         }
         logoSpin = 0
         withAnimation(.linear(duration: 6).repeatForever(autoreverses: false)) {
-            logoSpin = 360
+            logoSpin = -360
         }
     }
 }
