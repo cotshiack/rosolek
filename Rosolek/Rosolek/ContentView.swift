@@ -1362,8 +1362,11 @@ private struct ActiveCookingBannerLabel: View {
                         .fill(AppTheme.accent)
                         .frame(width: 38, height: 38)
 
-                    Image(systemName: "flame.fill")
-                        .font(.system(size: 15, weight: .semibold))
+                    Image("RosolekLogoMark")
+                        .renderingMode(.template)
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 20, height: 20)
                         .foregroundStyle(AppTheme.textPrimary)
                 }
                 .onAppear { isPulsing = true }
