@@ -263,71 +263,56 @@ struct OnboardingFlowView: View {
     private func welcomeStep(in geo: GeometryProxy) -> some View {
         let dark  = Color(red: 0.110, green: 0.102, blue: 0.090)
         let cream = Color(red: 0.975, green: 0.968, blue: 0.955)
+        // Image fills the bottom ~70% of screen; bottom-aligned crop shows pot, not empty top
+        let imageHeight = geo.size.height * 0.70
 
         return ZStack(alignment: .top) {
-            // Cream background — blends seamlessly with photo
+            // Solid cream — text area stays clean, no gradient
             cream.ignoresSafeArea()
 
-            // Hero photo — full bleed
-            Image("OnboardingHeroRosolek")
-                .resizable()
-                .scaledToFill()
-                .frame(width: geo.size.width, height: geo.size.height + geo.safeAreaInsets.bottom)
-                .clipped()
-                .ignoresSafeArea()
-                .allowsHitTesting(false)
+            // Hero photo — anchored to bottom, cropped from top to eliminate empty space
+            VStack(spacing: 0) {
+                Spacer(minLength: 0)
+                Image("OnboardingHeroRosolek")
+                    .resizable()
+                    .scaledToFill()
+                    .frame(width: geo.size.width)
+                    .frame(width: geo.size.width, height: imageHeight, alignment: .bottom)
+                    .clipped()
+                    .allowsHitTesting(false)
+            }
+            .ignoresSafeArea(edges: .bottom)
 
-            // Gradient: cream at top → transparent — wydłużony żeby chronić tekst i warzywa
-            LinearGradient(
-                stops: [
-                    .init(color: cream,               location: 0.00),
-                    .init(color: cream,               location: 0.34),
-                    .init(color: cream.opacity(0.80), location: 0.50),
-                    .init(color: cream.opacity(0.30), location: 0.64),
-                    .init(color: cream.opacity(0.0),  location: 0.74)
-                ],
-                startPoint: .top,
-                endPoint: .bottom
-            )
-            .ignoresSafeArea()
-
-            // Content — centered logo + headline
+            // Text content on solid cream at the top
             VStack(alignment: .center, spacing: 0) {
-                Spacer().frame(height: geo.safeAreaInsets.top + 12) // B: mniej pustej przestrzeni
+                Spacer().frame(height: geo.safeAreaInsets.top + 16)
 
                 Image("RosolekLogoMark")
                     .renderingMode(.template)
                     .resizable()
                     .scaledToFit()
-                    .frame(width: 58, height: 58)
+                    .frame(width: 54, height: 54)
                     .foregroundStyle(dark)
                     .padding(.bottom, 20)
 
-                VStack(alignment: .center, spacing: 12) {
-                    Text("Rosół, który\nzawsze wychodzi.")
-                        .font(.system(size: 34, weight: .bold))
-                        .multilineTextAlignment(.center)
-                        .foregroundStyle(dark)
-                        .fixedSize(horizontal: false, vertical: true)
-                        .lineSpacing(3)
+                Text("Gotowy na prawdziwy bulion?")
+                    .font(.system(size: 32, weight: .bold))
+                    .multilineTextAlignment(.center)
+                    .foregroundStyle(dark)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .lineSpacing(3)
 
-                    // E: złota kreska akcentująca pod tytułem
-                    LinearGradient(
-                        colors: [
-                            Color(red: 0.99, green: 0.95, blue: 0.16),
-                            Color(red: 0.98, green: 0.64, blue: 0.11)
-                        ],
-                        startPoint: .leading,
-                        endPoint: .trailing
-                    )
-                    .frame(width: 72, height: 4)
-                    .clipShape(Capsule())
-
-                    Text("Precyzyjne proporcje, krok po kroku.")
-                        .font(.system(size: 16, weight: .medium))
-                        .multilineTextAlignment(.center)
-                        .foregroundStyle(dark.opacity(0.65)) // C: lepsza czytelność
-                }
+                LinearGradient(
+                    colors: [
+                        Color(red: 0.99, green: 0.95, blue: 0.16),
+                        Color(red: 0.98, green: 0.64, blue: 0.11)
+                    ],
+                    startPoint: .leading,
+                    endPoint: .trailing
+                )
+                .frame(width: 72, height: 4)
+                .clipShape(Capsule())
+                .padding(.top, 14)
 
                 Spacer(minLength: 0)
             }
