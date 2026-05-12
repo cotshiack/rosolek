@@ -277,13 +277,14 @@ struct OnboardingFlowView: View {
                 .ignoresSafeArea()
                 .allowsHitTesting(false)
 
-            // Gradient: cream at top (text area) → transparent where ingredients begin
+            // Gradient: cream at top → transparent — wydłużony żeby chronić tekst i warzywa
             LinearGradient(
                 stops: [
                     .init(color: cream,               location: 0.00),
-                    .init(color: cream,               location: 0.30),
-                    .init(color: cream.opacity(0.75), location: 0.44),
-                    .init(color: cream.opacity(0.0),  location: 0.62)
+                    .init(color: cream,               location: 0.34),
+                    .init(color: cream.opacity(0.80), location: 0.50),
+                    .init(color: cream.opacity(0.30), location: 0.64),
+                    .init(color: cream.opacity(0.0),  location: 0.74)
                 ],
                 startPoint: .top,
                 endPoint: .bottom
@@ -292,7 +293,7 @@ struct OnboardingFlowView: View {
 
             // Content — centered logo + headline
             VStack(alignment: .center, spacing: 0) {
-                Spacer().frame(height: geo.safeAreaInsets.top + 32)
+                Spacer().frame(height: geo.safeAreaInsets.top + 12) // B: mniej pustej przestrzeni
 
                 Image("RosolekLogoMark")
                     .renderingMode(.template)
@@ -300,9 +301,9 @@ struct OnboardingFlowView: View {
                     .scaledToFit()
                     .frame(width: 58, height: 58)
                     .foregroundStyle(dark)
-                    .padding(.bottom, 22)
+                    .padding(.bottom, 20)
 
-                VStack(alignment: .center, spacing: 10) {
+                VStack(alignment: .center, spacing: 12) {
                     Text("Rosół, który\nzawsze wychodzi.")
                         .font(.system(size: 34, weight: .bold))
                         .multilineTextAlignment(.center)
@@ -310,10 +311,22 @@ struct OnboardingFlowView: View {
                         .fixedSize(horizontal: false, vertical: true)
                         .lineSpacing(3)
 
+                    // E: złota kreska akcentująca pod tytułem
+                    LinearGradient(
+                        colors: [
+                            Color(red: 0.99, green: 0.95, blue: 0.16),
+                            Color(red: 0.98, green: 0.64, blue: 0.11)
+                        ],
+                        startPoint: .leading,
+                        endPoint: .trailing
+                    )
+                    .frame(width: 72, height: 4)
+                    .clipShape(Capsule())
+
                     Text("Precyzyjne proporcje, krok po kroku.")
                         .font(.system(size: 16, weight: .medium))
                         .multilineTextAlignment(.center)
-                        .foregroundStyle(dark.opacity(0.48))
+                        .foregroundStyle(dark.opacity(0.65)) // C: lepsza czytelność
                 }
 
                 Spacer(minLength: 0)
