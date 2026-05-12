@@ -1366,7 +1366,7 @@ private struct ActiveCookingBannerLabel: View {
                         .renderingMode(.template)
                         .resizable()
                         .scaledToFit()
-                        .frame(width: 20, height: 20)
+                        .frame(width: 24, height: 24)
                         .foregroundStyle(AppTheme.textPrimary)
                 }
                 .onAppear { isPulsing = true }
