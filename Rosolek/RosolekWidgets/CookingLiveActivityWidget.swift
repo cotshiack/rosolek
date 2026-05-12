@@ -33,9 +33,10 @@ struct CookingLiveActivityWidget: Widget {
             DynamicIsland {
                 DynamicIslandExpandedRegion(.leading) {
                     HStack(spacing: 8) {
-                        Image(systemName: "flame.fill")
-                            .font(.system(size: 18, weight: .semibold))
-                            .foregroundStyle(WidgetTheme.accent)
+                        Image("RosolekLogoMark")
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 22, height: 22)
                         VStack(alignment: .leading, spacing: 2) {
                             Text("Gotowanie na żywo")
                                 .font(.system(size: 13, weight: .bold))
@@ -77,9 +78,10 @@ struct CookingLiveActivityWidget: Widget {
                     .padding(.top, 4)
                 }
             } compactLeading: {
-                Image(systemName: "flame.fill")
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundStyle(WidgetTheme.accent)
+                Image("RosolekLogoMark")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 16, height: 16)
             } compactTrailing: {
                 if let endDate = context.state.stepEndDate, context.state.isRunning, endDate > .now {
                     Text(timerInterval: Date.now...endDate, countsDown: true)
@@ -92,9 +94,10 @@ struct CookingLiveActivityWidget: Widget {
                         .foregroundStyle(WidgetTheme.textSecondary)
                 }
             } minimal: {
-                Image(systemName: "flame.fill")
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundStyle(WidgetTheme.accent)
+                Image("RosolekLogoMark")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 14, height: 14)
             }
             .widgetURL(cookingURL(for: context.attributes.batchID))
         }
@@ -109,8 +112,10 @@ private struct LockScreenView: View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(alignment: .center) {
                 HStack(spacing: 6) {
-                    Image(systemName: "flame.fill")
-                        .font(.system(size: 12, weight: .bold))
+                    Image("RosolekLogoMark")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 14, height: 14)
                     Text(state.isRunning ? "Gotowanie trwa" : "Gotowanie wstrzymane")
                         .font(.system(size: 12, weight: .bold))
                 }
