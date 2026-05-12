@@ -146,7 +146,7 @@ struct CookingPhaseBuilder {
         if !isGrandmaPreset, result.startSaltGrams > 0 {
             rows.append(LiveIngredientReminderRowData(
                 icon: .salt,
-                title: "Sół",
+                title: "Sól",
                 subtitle: "Dodaj porcję startową na tym etapie.",
                 value: "\(numberString(result.startSaltGrams)) g"
             ))
@@ -415,7 +415,9 @@ struct CookingPhaseBuilder {
             title: "Gotuj dalej bez drobiu",
             shortText: "Warzywa oddają jeszcze smak — ale nie trzymaj ich zbyt długo.",
             detailText: "Na tym etapie wywar nadal pracuje spokojnie. Zbyt długie trzymanie warzyw daje słodszy, mniej precyzyjny profil.",
-            durationSeconds: simmerAfterPoultrySeconds, timelineLabel: "Dalej", bottomActionTitle: nil))
+            durationSeconds: simmerAfterPoultrySeconds > 0 ? simmerAfterPoultrySeconds : nil,
+            timelineLabel: simmerAfterPoultrySeconds > 0 ? "Dalej" : "Wyjmij",
+            bottomActionTitle: simmerAfterPoultrySeconds > 0 ? nil : "Gotowe"))
 
         items.append(LivePhase(kind: .removeVegetables,
             title: "Wyciągnij warzywa",
