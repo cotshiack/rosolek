@@ -263,12 +263,12 @@ struct OnboardingFlowView: View {
     private func welcomeStep(in geo: GeometryProxy) -> some View {
         let dark  = Color(red: 0.110, green: 0.102, blue: 0.090)
         let cream = Color(red: 0.975, green: 0.968, blue: 0.955)
-        let imageHeight = geo.size.height * 0.70
+        // 72% window + reduced offset → full illustration visible, pot less clipped by button
+        let imageHeight = geo.size.height * 0.72
 
         return ZStack(alignment: .top) {
             cream.ignoresSafeArea()
 
-            // Hero photo — shifted 12 pt down; gradient softens the hard top edge
             VStack(spacing: 0) {
                 Spacer(minLength: 0)
                 ZStack(alignment: .top) {
@@ -286,14 +286,14 @@ struct OnboardingFlowView: View {
                     )
                     .frame(height: 36)
                 }
-                .offset(y: 12)
+                .offset(y: 6)
                 .allowsHitTesting(false)
             }
             .ignoresSafeArea(edges: .bottom)
 
-            // Text content — logo and headline pushed higher
             VStack(alignment: .center, spacing: 0) {
-                Spacer().frame(height: geo.safeAreaInsets.top + 6)
+                // Fixed top gap — removes the excess space caused by safeAreaInsets double-counting
+                Spacer().frame(height: 20)
 
                 Image("RosolekLogoMark")
                     .renderingMode(.template)
@@ -301,7 +301,7 @@ struct OnboardingFlowView: View {
                     .scaledToFit()
                     .frame(width: 70, height: 70)
                     .foregroundStyle(dark)
-                    .padding(.bottom, 20)
+                    .padding(.bottom, 14)
 
                 Text("Gotowy na\nprawdziwy\nbulion?")
                     .font(.system(size: 40, weight: .bold))
@@ -318,7 +318,7 @@ struct OnboardingFlowView: View {
                     startPoint: .leading,
                     endPoint: .trailing
                 )
-                .frame(width: 72, height: 4)
+                .frame(width: 128, height: 4)
                 .clipShape(Capsule())
                 .padding(.top, 14)
 
