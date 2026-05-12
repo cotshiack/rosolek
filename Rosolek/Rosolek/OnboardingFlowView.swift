@@ -293,7 +293,7 @@ struct OnboardingFlowView: View {
                     .foregroundStyle(dark)
                     .padding(.bottom, 14)
 
-                Text("Zróbmy razem\nnaprawdę dobry bulion")
+                Text("Zróbmy razem\ndobry bulion")
                     .font(.system(size: 36, weight: .bold))
                     .multilineTextAlignment(.center)
                     .foregroundStyle(dark)
