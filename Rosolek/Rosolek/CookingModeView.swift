@@ -106,11 +106,7 @@ struct CookingModeView: View {
     @State private var prepVinegarReady = false
 
     @State private var liveActivity: Activity<CookingActivityAttributes>?
-    @State private var timerCancellable: (any Cancellable)?
-
-    // @State preserves publisher identity across re-renders; a plain `let`
-    // would create a new instance each render, causing onReceive to lose the connection.
-    @State private var timerPublisher = Timer.publish(every: 1, on: .main, in: .common)
+    @State private var timerPublisher = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
 
     private var liveControlsOverlayHeight: CGFloat { 238 }
     private var finishButtonOverlayHeight: CGFloat { 92 }
@@ -355,8 +351,6 @@ struct CookingModeView: View {
             Button("Zakończ gotowanie") {
                 finalStepCompleted = true
                 isStageRunning = false
-                timerCancellable?.cancel()
-                timerCancellable = nil
                 CookingSession.clear()
                 CookingNotificationService.shared.cancelAll()
                 endLiveActivity()
@@ -371,9 +365,6 @@ struct CookingModeView: View {
             prepThermometerReady = !hasThermometer
             prepVinegarReady = !batchUsesVinegar
             restoreSessionIfNeeded()
-            if isStageRunning {
-                timerCancellable = timerPublisher.connect()
-            }
             attachToExistingLiveActivityIfNeeded()
             updateLiveActivity()
         }
@@ -387,20 +378,12 @@ struct CookingModeView: View {
                 updateLiveActivity()
             } else if newPhase == .active {
                 resumeFromBackground()
-                if isStageRunning {
-                    timerCancellable?.cancel()
-                    timerCancellable = timerPublisher.connect()
-                }
                 attachToExistingLiveActivityIfNeeded()
                 updateLiveActivity()
             }
         }
         .onReceive(timerPublisher) { _ in
             handleTick()
-        }
-        .onDisappear {
-            timerCancellable?.cancel()
-            timerCancellable = nil
         }
     }
     
@@ -1042,8 +1025,6 @@ struct CookingModeView: View {
                 playTimedStageFinishedSignal()
                 if phaseIndex >= phases.count - 1 {
                     isStageRunning = false
-                    timerCancellable?.cancel()
-                    timerCancellable = nil
                     showFinishAlert = true
                 } else {
                     advanceToNextPhase()
@@ -1073,11 +1054,8 @@ struct CookingModeView: View {
 
         isStageRunning.toggle()
         if isStageRunning {
-            timerCancellable = timerPublisher.connect()
             schedulePhaseNotification()
         } else {
-            timerCancellable?.cancel()
-            timerCancellable = nil
             CookingNotificationService.shared.cancelAll()
         }
         updateLiveActivity()
@@ -1096,7 +1074,6 @@ struct CookingModeView: View {
             phaseElapsedSeconds = 0
             isStageRunning = true
         }
-        timerCancellable = timerPublisher.connect()
         schedulePhaseNotification()
         startLiveActivity()
         playStartSignal()
