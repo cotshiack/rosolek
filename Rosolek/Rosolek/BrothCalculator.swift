@@ -396,10 +396,7 @@ enum BrothCalculator {
             estimatedYieldLiters: clarityAdjustedYield.yieldLiters,
             startSaltGrams: startSaltGrams,
             finalSaltGrams: roundedToOneDecimal(finalSaltGrams),
-            appleCiderVinegarMl: vinegarAmountForPreset(
-                profile: .cleaner,
-                useVinegar: request.useVinegar
-            ),
+            appleCiderVinegarMl: 0,
             peppercornCount: peppercornCount,
             allspiceCount: allspiceCount,
             bayLeafCount: bayLeafCount,
