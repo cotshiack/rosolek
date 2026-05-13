@@ -52,8 +52,10 @@ struct CookingPhaseBuilder {
         if !ingredientSnapshots.isEmpty {
             return ingredientSnapshots.contains { snap in
                 let cat = normalizeCookingID(snap.categoryRawValue)
+                let name = normalizeCookingID(snap.ingredientName)
                 return cat == "wolowina" || cat == "beef"
                     || snap.ingredientID.lowercased().hasPrefix("beef_")
+                    || name.contains("wolowin")
             }
         }
         return ingredientIDs.contains { id in

@@ -1749,10 +1749,17 @@ extension BrothResultView {
             }()
 
             return effectiveResult.meatParts.enumerated().map { index, part in
-                BatchIngredientSnapshot(
+                let categoryForPart: IngredientCategory = {
+                    let lower = part.name.lowercased()
+                    if lower.contains("wołowin") || lower.contains("wolowin") { return .beef }
+                    if lower.contains("wieprz") || lower.contains("pork") { return .pork }
+                    if lower.contains("podroby") || lower.contains("wątrob") || lower.contains("watrob") { return .offal }
+                    return fallbackCategory
+                }()
+                return BatchIngredientSnapshot(
                     ingredientID: "preset_base_\(index)",
                     ingredientName: part.name,
-                    categoryRawValue: fallbackCategory.rawValue,
+                    categoryRawValue: categoryForPart.rawValue,
                     grams: part.grams
                 )
             }

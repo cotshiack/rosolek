@@ -207,29 +207,49 @@ struct LastBatchDetailView: View {
     private func ingredientsSection(_ batch: BatchRecord) -> some View {
         let entries = ingredientEntries(for: batch)
         let hasSnapshot = batch.selectedIngredientsSnapshot?.isEmpty == false
+        let hasLegacyIDs = !(batch.selectedIngredientIDs ?? []).isEmpty
         let hasSpices = !(batch.spiceOverrides ?? [:]).isEmpty
 
         return Group {
-            if hasSnapshot || hasSpices {
+            if hasSnapshot || hasLegacyIDs || hasSpices {
                 VStack(alignment: .leading, spacing: 10) {
                     AppSectionLabel(text: "Użyte składniki")
 
                     AppCard {
                         VStack(alignment: .leading, spacing: 14) {
-                            if !hasSnapshot {
-                                Text("Brak pełnego zapisu listy składników (stara wersja aplikacji).")
-                                    .font(.system(size: 14, weight: .medium))
-                                    .foregroundStyle(AppTheme.textSecondary)
+                            if hasSnapshot {
+                                ingredientGroupCard(title: "Baza", entries: entries.base, totalSuffix: "g")
+                                ingredientGroupCard(title: "Warzywa", entries: entries.vegetables, totalSuffix: "g")
+                            } else if hasLegacyIDs {
+                                legacyBaseCard(batch)
                             }
-
-                            ingredientGroupCard(title: "Baza", entries: entries.base, totalSuffix: "g")
-                            ingredientGroupCard(title: "Warzywa", entries: entries.vegetables, totalSuffix: "g")
                             spiceGroupCard(batch)
                         }
                     }
                     .appSoftShadow()
                 }
             }
+        }
+    }
+
+    @ViewBuilder
+    private func legacyBaseCard(_ batch: BatchRecord) -> some View {
+        let ids = batch.selectedIngredientIDs ?? []
+        if !ids.isEmpty {
+            VStack(alignment: .leading, spacing: 8) {
+                categoryHeader(title: "Baza", value: batch.weightDisplayText)
+                Divider().overlay(AppTheme.border)
+                VStack(alignment: .leading, spacing: 6) {
+                    ForEach(ids, id: \.self) { id in
+                        ingredientValueRow(title: prettyBaseName(id, id: id), value: "—")
+                    }
+                }
+                Text("Szczegółowy zapis nie jest dostępny — ta partia była zapisana przed aktualizacją.")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundStyle(AppTheme.textSecondary)
+                    .padding(.top, 2)
+            }
+            .padding(.vertical, 4)
         }
     }
 

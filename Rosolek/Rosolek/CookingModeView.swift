@@ -13,6 +13,7 @@ private struct InstructionSheetContent: Identifiable {
     let clarityMode: BrothClarityMode
     let useVinegar: Bool
     let hasPoultry: Bool
+    let hasBeef: Bool
     let hasLiver: Bool
     let isGrandmaStyle: Bool
     let isCollagenPoultryPreset: Bool
@@ -106,11 +107,7 @@ struct CookingModeView: View {
     @State private var prepVinegarReady = false
 
     @State private var liveActivity: Activity<CookingActivityAttributes>?
-    @State private var timerCancellable: (any Cancellable)?
-
-    // @State preserves publisher identity across re-renders; a plain `let`
-    // would create a new instance each render, causing onReceive to lose the connection.
-    @State private var timerPublisher = Timer.publish(every: 1, on: .main, in: .common)
+    @State private var timerPublisher = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
 
     private var liveControlsOverlayHeight: CGFloat { 238 }
     private var finishButtonOverlayHeight: CGFloat { 92 }
@@ -133,6 +130,7 @@ struct CookingModeView: View {
     private var clarityMode: BrothClarityMode { phaseBuilder.clarityMode }
     private var batchUsesVinegar: Bool { phaseBuilder.batchUsesVinegar }
     private var hasPoultry: Bool { phaseBuilder.hasPoultry }
+    private var hasBeef: Bool { phaseBuilder.hasBeef }
     private var hasLiver: Bool { phaseBuilder.hasLiver }
     private var vegetableReminderRows: [LiveIngredientReminderRowData] { phaseBuilder.vegetableReminderRows }
     private var spiceReminderRows: [LiveIngredientReminderRowData] { phaseBuilder.spiceReminderRows }
@@ -355,8 +353,6 @@ struct CookingModeView: View {
             Button("Zakończ gotowanie") {
                 finalStepCompleted = true
                 isStageRunning = false
-                timerCancellable?.cancel()
-                timerCancellable = nil
                 CookingSession.clear()
                 CookingNotificationService.shared.cancelAll()
                 endLiveActivity()
@@ -371,9 +367,6 @@ struct CookingModeView: View {
             prepThermometerReady = !hasThermometer
             prepVinegarReady = !batchUsesVinegar
             restoreSessionIfNeeded()
-            if isStageRunning {
-                timerCancellable = timerPublisher.connect()
-            }
             attachToExistingLiveActivityIfNeeded()
             updateLiveActivity()
         }
@@ -397,10 +390,6 @@ struct CookingModeView: View {
         }
         .onReceive(timerPublisher) { _ in
             handleTick()
-        }
-        .onDisappear {
-            timerCancellable?.cancel()
-            timerCancellable = nil
         }
     }
     
@@ -754,6 +743,7 @@ struct CookingModeView: View {
                 clarityMode: clarityMode,
                 useVinegar: batchUsesVinegar,
                 hasPoultry: hasPoultry,
+                hasBeef: hasBeef,
                 hasLiver: hasLiver,
                 isGrandmaStyle: isGrandmaPreset,
                 isCollagenPoultryPreset: isCollagenPoultryPreset,
@@ -1042,8 +1032,6 @@ struct CookingModeView: View {
                 playTimedStageFinishedSignal()
                 if phaseIndex >= phases.count - 1 {
                     isStageRunning = false
-                    timerCancellable?.cancel()
-                    timerCancellable = nil
                     showFinishAlert = true
                 } else {
                     advanceToNextPhase()
@@ -1073,11 +1061,8 @@ struct CookingModeView: View {
 
         isStageRunning.toggle()
         if isStageRunning {
-            timerCancellable = timerPublisher.connect()
             schedulePhaseNotification()
         } else {
-            timerCancellable?.cancel()
-            timerCancellable = nil
             CookingNotificationService.shared.cancelAll()
         }
         updateLiveActivity()
@@ -1096,7 +1081,6 @@ struct CookingModeView: View {
             phaseElapsedSeconds = 0
             isStageRunning = true
         }
-        timerCancellable = timerPublisher.connect()
         schedulePhaseNotification()
         startLiveActivity()
         playStartSignal()
@@ -2832,7 +2816,9 @@ private struct PhaseDetailsSheet: View {
         case .removePoultry:
             return PhaseSheetModel(
                 eyebrow: "Drób wychodzi pierwszy",
-                intro: "Drób wyjmuje się wcześniej niż wołowinę. Zbyt długie gotowanie może wnieść przegotowaną nutę i podnieść tłustość.",
+                intro: content.hasBeef
+                    ? "Drób wyjmuje się wcześniej niż wołowinę. Zbyt długie gotowanie może wnieść przegotowaną nutę i podnieść tłustość."
+                    : "Czas wyjąć drób — wywar będzie gotował się dalej bez niego. Zbyt długie gotowanie drobiu może wnieść przegotowaną nutę i podnieść tłustość.",
                 sections: [
                     PhaseSheetSection(
                         title: "Jak wyjmować",
