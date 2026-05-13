@@ -108,7 +108,9 @@ struct CookingModeView: View {
     @State private var liveActivity: Activity<CookingActivityAttributes>?
     @State private var timerCancellable: (any Cancellable)?
 
-    private let timerPublisher = Timer.publish(every: 1, on: .main, in: .common)
+    // @State preserves publisher identity across re-renders; a plain `let`
+    // would create a new instance each render, causing onReceive to lose the connection.
+    @State private var timerPublisher = Timer.publish(every: 1, on: .main, in: .common)
 
     private var liveControlsOverlayHeight: CGFloat { 238 }
     private var finishButtonOverlayHeight: CGFloat { 92 }
@@ -385,6 +387,10 @@ struct CookingModeView: View {
                 updateLiveActivity()
             } else if newPhase == .active {
                 resumeFromBackground()
+                if isStageRunning {
+                    timerCancellable?.cancel()
+                    timerCancellable = timerPublisher.connect()
+                }
                 attachToExistingLiveActivityIfNeeded()
                 updateLiveActivity()
             }
@@ -769,14 +775,18 @@ struct CookingModeView: View {
     }
 
     private func openIngredientsReminderSheet() {
+        let subtitle: String
+        if currentPhase.stepID == "tonkotsu_aromatics_end" {
+            subtitle = "Dodaj cebulę, por, imbir i czosnek w ilościach z listy. To krótki etap przed cedzeniem."
+        } else if currentPhase.stepID == "add_veg_spices" && activeUltraVariant == .ramenShio {
+            subtitle = "Dodaj aromaty z listy dla shio (cebula, imbir, czosnek, opcjonalnie dymka)."
+        } else {
+            subtitle = "Sprawdź dokładnie, co i ile powinieneś teraz dodać."
+        }
         activeSheet = .ingredients(
             IngredientsReminderSheetContent(
                 title: currentPhase.stepID == "tonkotsu_aromatics_end" ? "Aromaty końcowe — dodaj teraz" : "Lista składników do dodania",
-                subtitle: currentPhase.stepID == "tonkotsu_aromatics_end"
-                    ? "Dodaj cebulę, por, imbir i czosnek w ilościach z listy. To krótki etap przed cedzeniem."
-                    : currentPhase.stepID == "add_veg_spices"
-                        ? "Dodaj aromaty z listy dla shio (cebula, imbir, czosnek, opcjonalnie dymka)."
-                    : "Sprawdź dokładnie, co i ile powinieneś teraz dodać.",
+                subtitle: subtitle,
                 vegetableRows: vegetableReminderRows,
                 spiceRows: spiceReminderRows
             )
@@ -878,7 +888,7 @@ struct CookingModeView: View {
                 "Grzej powoli i zbieraj szumowiny.",
                 "Nie mieszaj wywaru i nie dopuszczaj do wrzenia.",
                 hasThermometer
-                    ? "Przejdź dalej dopiero po stabilnym wejściu w zakres \(isFishUltraVariant ? "80–85°C" : "88–90°C")."
+                    ? "Przejdź dalej dopiero po stabilnym wejściu w zakres \(result.temperatureMin)–\(result.temperatureMax)°C."
                     : "Przejdź dalej dopiero wtedy, gdy wywar pracuje spokojnie, bez wrzenia."
             ]
 
@@ -1028,9 +1038,16 @@ struct CookingModeView: View {
             phaseElapsedSeconds += 1
 
             if phaseElapsedSeconds >= currentPhaseTotalSeconds {
-                phaseElapsedSeconds = 0
+                phaseElapsedSeconds = currentPhaseTotalSeconds
                 playTimedStageFinishedSignal()
-                advanceToNextPhase()
+                if phaseIndex >= phases.count - 1 {
+                    isStageRunning = false
+                    timerCancellable?.cancel()
+                    timerCancellable = nil
+                    showFinishAlert = true
+                } else {
+                    advanceToNextPhase()
+                }
             }
         }
     }
@@ -1176,7 +1193,7 @@ struct CookingModeView: View {
         if minutes >= 60 {
             let hours = minutes / 60
             let rest = minutes % 60
-            return rest == 0 ? "\(hours) h" : "\(hours) h \(rest)"
+            return rest == 0 ? "\(hours) h" : "\(hours) h \(rest) min"
         }
         return "\(minutes) min"
     }
