@@ -52,8 +52,10 @@ struct CookingPhaseBuilder {
         if !ingredientSnapshots.isEmpty {
             return ingredientSnapshots.contains { snap in
                 let cat = normalizeCookingID(snap.categoryRawValue)
+                let name = normalizeCookingID(snap.ingredientName)
                 return cat == "wolowina" || cat == "beef"
                     || snap.ingredientID.lowercased().hasPrefix("beef_")
+                    || name.contains("wolowin")
             }
         }
         return ingredientIDs.contains { id in
@@ -421,15 +423,23 @@ struct CookingPhaseBuilder {
 
         items.append(LivePhase(kind: .removeVegetables,
             title: "Wyciągnij warzywa",
-            shortText: "Powinieneś teraz delikatnie wyciągnąć warzywa z wywaru.",
-            detailText: "Wyciągnij warzywa bez wyciskania i bez mieszania. Po tym etapie zostaje już sama baza mięsna.",
+            shortText: hasBeef
+                ? "Wyjmij warzywa — w garnku zostaje wołowina, która potrzebuje jeszcze czasu."
+                : "Powinieneś teraz delikatnie wyciągnąć warzywa z wywaru.",
+            detailText: hasBeef
+                ? "Wyciągnij warzywa bez wyciskania i bez mieszania. Po tym etapie zostaje wołowina — ona dochodzi powoli do końca."
+                : "Wyciągnij warzywa bez wyciskania i bez mieszania. Po tym etapie zostaje już sama baza mięsna.",
             durationSeconds: nil, timelineLabel: "Wyjmij warzywa", bottomActionTitle: "Wyjąłem"))
 
         if baseFinishBeforeLiverSeconds > 0 {
             items.append(LivePhase(kind: .finishBase,
-                title: "Gotuj ostatni etap bez warzyw",
-                shortText: "Ostatni etap na samym mięsie — bez warzyw, bez drobiu.",
-                detailText: "Wywar gotuje się już tylko na mięsie. Spokojne gotowanie bez żadnych zmian do końca etapu.",
+                title: hasBeef ? "Wołowina dochodzi do końca" : "Gotuj ostatni etap bez warzyw",
+                shortText: hasBeef
+                    ? "Ostatni etap — wołowina wykańcza się spokojnie bez drobiu i warzyw."
+                    : "Ostatni etap na samym mięsie — bez warzyw, bez drobiu.",
+                detailText: hasBeef
+                    ? "Wywar gotuje się na samej wołowinie. Utrzymuj spokojną temperaturę — bez wrzenia, bez mieszania."
+                    : "Wywar gotuje się już tylko na mięsie. Spokojne gotowanie bez żadnych zmian do końca etapu.",
                 durationSeconds: baseFinishBeforeLiverSeconds, timelineLabel: "Finisz", bottomActionTitle: nil))
         }
 

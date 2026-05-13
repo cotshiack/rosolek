@@ -13,6 +13,7 @@ private struct InstructionSheetContent: Identifiable {
     let clarityMode: BrothClarityMode
     let useVinegar: Bool
     let hasPoultry: Bool
+    let hasBeef: Bool
     let hasLiver: Bool
     let isGrandmaStyle: Bool
     let isCollagenPoultryPreset: Bool
@@ -129,6 +130,7 @@ struct CookingModeView: View {
     private var clarityMode: BrothClarityMode { phaseBuilder.clarityMode }
     private var batchUsesVinegar: Bool { phaseBuilder.batchUsesVinegar }
     private var hasPoultry: Bool { phaseBuilder.hasPoultry }
+    private var hasBeef: Bool { phaseBuilder.hasBeef }
     private var hasLiver: Bool { phaseBuilder.hasLiver }
     private var vegetableReminderRows: [LiveIngredientReminderRowData] { phaseBuilder.vegetableReminderRows }
     private var spiceReminderRows: [LiveIngredientReminderRowData] { phaseBuilder.spiceReminderRows }
@@ -737,6 +739,7 @@ struct CookingModeView: View {
                 clarityMode: clarityMode,
                 useVinegar: batchUsesVinegar,
                 hasPoultry: hasPoultry,
+                hasBeef: hasBeef,
                 hasLiver: hasLiver,
                 isGrandmaStyle: isGrandmaPreset,
                 isCollagenPoultryPreset: isCollagenPoultryPreset,
@@ -2809,7 +2812,9 @@ private struct PhaseDetailsSheet: View {
         case .removePoultry:
             return PhaseSheetModel(
                 eyebrow: "Drób wychodzi pierwszy",
-                intro: "Drób wyjmuje się wcześniej niż wołowinę. Zbyt długie gotowanie może wnieść przegotowaną nutę i podnieść tłustość.",
+                intro: content.hasBeef
+                    ? "Drób wyjmuje się wcześniej niż wołowinę. Zbyt długie gotowanie może wnieść przegotowaną nutę i podnieść tłustość."
+                    : "Czas wyjąć drób — wywar będzie gotował się dalej bez niego. Zbyt długie gotowanie drobiu może wnieść przegotowaną nutę i podnieść tłustość.",
                 sections: [
                     PhaseSheetSection(
                         title: "Jak wyjmować",
