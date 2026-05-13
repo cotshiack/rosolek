@@ -513,15 +513,15 @@ struct CookingPhaseBuilder {
                 : "Wyciągnij warzywa bez wyciskania i bez mieszania. Po tym etapie zostaje już sama baza mięsna.",
             durationSeconds: nil, timelineLabel: "Wyjmij warzywa", bottomActionTitle: "Wyjąłem"))
 
-        if baseFinishBeforeLiverSeconds > 0 && (hasBeef || hasLiver) {
+        if baseFinishBeforeLiverSeconds > 0 {
             items.append(LivePhase(kind: .finishBase,
-                title: hasBeef ? "Wołowina dochodzi do końca" : "Gotuj ostatni etap bez warzyw",
+                title: "Dokończ bazę",
                 shortText: hasBeef
-                    ? "Ostatni etap — wołowina wykańcza się spokojnie bez drobiu i warzyw."
-                    : "Ostatni etap na samym mięsie — bez warzyw, bez drobiu.",
+                    ? "To etap budowania dłuższego finiszu. Wołowina dochodzi spokojnie do końca."
+                    : "Domknij smak na samej bazie, bez wrzenia.",
                 detailText: hasBeef
-                    ? "Wywar gotuje się na samej wołowinie. Utrzymuj spokojną temperaturę — bez wrzenia, bez mieszania."
-                    : "Wywar gotuje się już tylko na mięsie. Spokojne gotowanie bez żadnych zmian do końca etapu.",
+                    ? "Wywar gotuje się na samej wołowinie. To etap wyrównania smaku — utrzymuj spokojną temperaturę, bez wrzenia i bez mieszania."
+                    : "To etap wyrównania smaku i uspokojenia wywaru. Utrzymuj temperaturę pracy i nie mieszaj. Drobne cząstki mają czas opaść, a aromat staje się bardziej spójny.",
                 durationSeconds: baseFinishBeforeLiverSeconds, timelineLabel: "Finisz", bottomActionTitle: nil))
         }
 
