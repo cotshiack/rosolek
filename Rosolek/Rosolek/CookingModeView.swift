@@ -380,10 +380,6 @@ struct CookingModeView: View {
                 updateLiveActivity()
             } else if newPhase == .active {
                 resumeFromBackground()
-                if isStageRunning {
-                    timerCancellable?.cancel()
-                    timerCancellable = timerPublisher.connect()
-                }
                 attachToExistingLiveActivityIfNeeded()
                 updateLiveActivity()
             }
