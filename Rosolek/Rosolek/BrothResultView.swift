@@ -860,6 +860,7 @@ struct BrothResultView: View {
                                 .font(.system(size: 13, weight: .medium))
                                 .foregroundStyle(AppTheme.textSecondary)
                                 .fixedSize(horizontal: false, vertical: true)
+                                .animation(.easeInOut(duration: 0.22), value: isFiltered)
                         }
                     }
 
@@ -890,6 +891,7 @@ struct BrothResultView: View {
                                 .font(.system(size: 13, weight: .medium))
                                 .foregroundStyle(AppTheme.textSecondary)
                                 .fixedSize(horizontal: false, vertical: true)
+                                .animation(.easeInOut(duration: 0.22), value: useVinegar)
                         }
                     }
                 }
@@ -924,6 +926,7 @@ struct BrothResultView: View {
                     : "To jest gotowy zestaw z przepisu.",
                 onEdit: { showMeatEditor = true }
             )
+            .animation(.spring(response: 0.3, dampingFraction: 0.8), value: meatOverrides)
 
             AppCard {
                 VStack(alignment: .leading, spacing: 12) {
@@ -949,6 +952,7 @@ struct BrothResultView: View {
                             }
                         }
                     }
+                    .animation(.spring(response: 0.3, dampingFraction: 0.8), value: vegetableOverrides)
                 }
             }
             .appSoftShadow()
@@ -1283,8 +1287,13 @@ extension BrothResultView {
                         text: warning.text,
                         severity: warning.severity
                     )
+                    .transition(.asymmetric(
+                        insertion: .move(edge: .top).combined(with: .opacity),
+                        removal: .opacity
+                    ))
                 }
             }
+            .animation(.spring(response: 0.4, dampingFraction: 0.85), value: warningCards.count)
         }
     }
 

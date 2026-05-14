@@ -460,6 +460,7 @@ struct CookingModeView: View {
                     openTemperature: openTemperatureSheet,
                     openDetails: { openPhaseSheet(for: phaseIndex) }
                 )
+                .animation(.spring(response: 0.35, dampingFraction: 0.85), value: phaseIndex)
 
                 VStack(alignment: .leading, spacing: 10) {
                     Text(currentPhase.title)
@@ -472,6 +473,11 @@ struct CookingModeView: View {
                         .foregroundStyle(AppTheme.textSecondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
+                .id(phaseIndex)
+                .transition(.asymmetric(
+                    insertion: .move(edge: .trailing).combined(with: .opacity),
+                    removal: .move(edge: .leading).combined(with: .opacity)
+                ))
 
                 if shouldShowIngredientReminderButton {
                     IngredientReminderTriggerCard {
@@ -615,6 +621,7 @@ struct CookingModeView: View {
                     .tint(currentPhaseHasTimer ? AppTheme.accent : AppTheme.borderStrong.opacity(0.7))
                     .opacity(currentPhaseHasTimer ? 1.0 : 0.5)
                     .scaleEffect(y: 1.35, anchor: .center)
+                    .animation(.linear(duration: 1), value: currentPhaseProgress)
 
                 HStack(spacing: 10) {
                     TimerMetricTile(
@@ -1840,6 +1847,8 @@ private struct StageTimerCapsule: View {
                 .monospacedDigit()
                 .lineLimit(1)
                 .minimumScaleFactor(0.9)
+                .contentTransition(.numericText(countsDown: true))
+                .animation(.linear(duration: 1), value: value)
         }
         .padding(.horizontal, 12)
         .frame(height: 46)
@@ -1890,6 +1899,8 @@ private struct TimerMetricTile: View {
                 .monospacedDigit()
                 .lineLimit(1)
                 .minimumScaleFactor(0.82)
+                .contentTransition(.numericText())
+                .animation(.linear(duration: 1), value: value)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, 14)
