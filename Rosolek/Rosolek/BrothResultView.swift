@@ -502,7 +502,7 @@ struct BrothResultView: View {
         if usesUserSelections {
             return effectiveSelections.reduce(0) { $0 + $1.grams }
         }
-        return result.meatParts.reduce(0) { $0 + $1.grams }
+        return result.meatParts.reduce(0) { $0 + (meatOverrides[$1.name] ?? $1.grams) }
     }
 
     private var displayedBaseTotalWeight: Int {
@@ -1756,7 +1756,7 @@ extension BrothResultView {
                 }
             }()
 
-            return effectiveResult.meatParts.enumerated().map { index, part in
+            return effectiveResult.meatParts.map { part in
                 let categoryForPart: IngredientCategory = {
                     let lower = part.name.lowercased()
                     if lower.contains("wołowin") || lower.contains("wolowin") { return .beef }
@@ -1765,10 +1765,10 @@ extension BrothResultView {
                     return fallbackCategory
                 }()
                 return BatchIngredientSnapshot(
-                    ingredientID: "preset_base_\(index)",
+                    ingredientID: part.name,
                     ingredientName: part.name,
                     categoryRawValue: categoryForPart.rawValue,
-                    grams: part.grams
+                    grams: meatOverrides[part.name] ?? part.grams
                 )
             }
         }()
