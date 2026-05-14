@@ -159,9 +159,9 @@ struct HistoryView: View {
     }
 
     private func statTile(value: String, label: String) -> some View {
-        VStack(spacing: 3) {
+        VStack(spacing: 2) {
             Text(value)
-                .font(.system(size: 22, weight: .bold))
+                .font(.system(size: 18, weight: .bold))
                 .foregroundStyle(AppTheme.textPrimary)
                 .minimumScaleFactor(0.7)
                 .lineLimit(1)
@@ -172,7 +172,7 @@ struct HistoryView: View {
                 .minimumScaleFactor(0.8)
         }
         .frame(maxWidth: .infinity)
-        .padding(.vertical, 10)
+        .padding(.vertical, 8)
     }
 
     private var statDivider: some View {
