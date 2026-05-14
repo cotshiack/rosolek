@@ -921,9 +921,10 @@ struct BrothResultView: View {
                 title: selectedKind == .veggie ? "Baza" : (selectedKind == .fish ? "Baza rybna" : "Mięso"),
                 totalWeight: gramsString(displayedBaseTotalWeight),
                 rows: meatRows,
-                description: usesUserSelections
-                    ? "To jest dokładnie Twój zestaw."
-                    : "To jest gotowy zestaw z przepisu.",
+                description: {
+                    if !meatOverrides.isEmpty { return "Zmodyfikowany zestaw" }
+                    return usesUserSelections ? "To jest dokładnie Twój zestaw." : "To jest gotowy zestaw z przepisu."
+                }(),
                 onEdit: { showMeatEditor = true }
             )
             .animation(.spring(response: 0.3, dampingFraction: 0.8), value: meatOverrides)

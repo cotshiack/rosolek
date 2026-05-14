@@ -3,6 +3,7 @@ import SwiftUI
 struct LastBatchDetailView: View {
     @EnvironmentObject private var batchStore: BatchStore
     @Environment(\.dismiss) private var dismiss
+    @AppStorage("potSizeLiters") private var potSizeLiters = 7
 
     let batchID: UUID
 
@@ -277,18 +278,7 @@ struct LastBatchDetailView: View {
             if let replayIngredientIDs = batch.selectedIngredientIDs, !replayIngredientIDs.isEmpty {
                 VStack(alignment: .leading, spacing: 8) {
                     NavigationLink {
-                        BrothResultView(
-                            mode: .custom(batch.brothProfile),
-                            totalWeight: batch.totalWeightGrams,
-                            selectedIngredientCount: replayIngredientIDs.count,
-                            selectedIDs: replayIngredientIDs,
-                            initialSelections: replaySelections(from: batch),
-                            meatOverrides: batch.meatOverrides,
-                            vegetableOverrides: batch.vegetableOverrides,
-                            spiceOverrides: batch.spiceOverrides,
-                            selectedKind: replayBrothKind(from: batch),
-                            selectedStyleName: batch.selectedStyleName
-                        )
+                        replayDestination(for: batch, ingredientIDs: replayIngredientIDs)
                     } label: {
                         AppPrimaryButtonLabel(title: "Ugotuj jeszcze raz")
                     }
@@ -617,6 +607,36 @@ struct LastBatchDetailView: View {
             Text(value)
                 .font(.system(size: 14, weight: .semibold))
                 .foregroundStyle(AppTheme.textPrimary)
+        }
+    }
+
+    @ViewBuilder
+    private func replayDestination(for batch: BatchRecord, ingredientIDs: [String]) -> some View {
+        if batch.modeRawValue == "preset",
+           let rawPreset = batch.presetRawValue,
+           let preset = BrothPreset(rawValue: rawPreset) {
+            BrothResultView(
+                mode: .preset(preset),
+                totalWeight: batch.totalWeightGrams,
+                selectedIngredientCount: preset.defaultSelectedIDs.count,
+                selectedIDs: preset.defaultSelectedIDs,
+                meatOverrides: batch.meatOverrides,
+                vegetableOverrides: batch.vegetableOverrides,
+                spiceOverrides: batch.spiceOverrides
+            )
+        } else {
+            BrothResultView(
+                mode: .custom(batch.brothProfile),
+                totalWeight: batch.totalWeightGrams,
+                selectedIngredientCount: ingredientIDs.count,
+                selectedIDs: ingredientIDs,
+                initialSelections: replaySelections(from: batch),
+                meatOverrides: batch.meatOverrides,
+                vegetableOverrides: batch.vegetableOverrides,
+                spiceOverrides: batch.spiceOverrides,
+                selectedKind: replayBrothKind(from: batch),
+                selectedStyleName: batch.selectedStyleName
+            )
         }
     }
 
