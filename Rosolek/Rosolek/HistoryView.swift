@@ -98,9 +98,13 @@ struct HistoryView: View {
         batchStore.batches.reduce(0) { $0 + $1.activeCookingMinutes } / 60
     }
 
+    private var totalYieldLiters: Double {
+        batchStore.batches.reduce(0.0) { $0 + ($1.actualYieldLiters ?? $1.estimatedYieldLiters) }
+    }
+
     private var headerSection: some View {
         Section {
-            VStack(alignment: .leading, spacing: 10) {
+            VStack(alignment: .leading, spacing: 14) {
                 Text("Wszystkie zapisane\ngotowania")
                     .font(.system(size: 34, weight: .bold))
                     .foregroundStyle(AppTheme.textPrimary)
@@ -110,19 +114,8 @@ struct HistoryView: View {
                     .foregroundStyle(AppTheme.textSecondary)
                     .fixedSize(horizontal: false, vertical: true)
 
-                HStack(spacing: 12) {
-                    historyStatChip(
-                        value: "\(batchStore.batches.count)",
-                        label: batchStore.batches.count == 1 ? "partia" : "partii"
-                    )
-                    if totalCookingHours > 0 {
-                        historyStatChip(
-                            value: "\(totalCookingHours)",
-                            label: totalCookingHours == 1 ? "godzina" : "godz. gotowania"
-                        )
-                    }
-                }
-                .padding(.top, 2)
+                statsCard
+                    .padding(.top, 2)
             }
             .padding(.horizontal, AppSpacing.screen)
             .padding(.top, 10)
@@ -133,23 +126,60 @@ struct HistoryView: View {
         }
     }
 
-    private func historyStatChip(value: String, label: String) -> some View {
-        HStack(spacing: 4) {
-            Text(value)
-                .font(.system(size: 13, weight: .bold))
-                .foregroundStyle(AppTheme.textPrimary)
-            Text(label)
-                .font(.system(size: 13, weight: .medium))
-                .foregroundStyle(AppTheme.textSecondary)
+    private var statsCard: some View {
+        HStack(spacing: 0) {
+            statTile(
+                value: "\(batchStore.batches.count)",
+                label: batchStore.batches.count == 1 ? "partia" : "partii"
+            )
+
+            statDivider
+
+            statTile(
+                value: totalCookingHours > 0 ? "\(totalCookingHours)" : "—",
+                label: totalCookingHours == 1 ? "godzina" : "godz. gotowania"
+            )
+
+            statDivider
+
+            statTile(
+                value: totalYieldLiters > 0
+                    ? String(format: totalYieldLiters >= 100 ? "%.0f l" : "%.1f l", totalYieldLiters)
+                    : "—",
+                label: "bulionu"
+            )
         }
-        .padding(.horizontal, 10)
-        .frame(height: 28)
-        .background(AppTheme.surfaceSoft)
+        .frame(maxWidth: .infinity)
+        .background(AppTheme.surface)
         .overlay(
-            Capsule()
+            RoundedRectangle(cornerRadius: AppRadius.card, style: .continuous)
                 .stroke(AppTheme.border, lineWidth: 1)
         )
-        .clipShape(Capsule())
+        .clipShape(RoundedRectangle(cornerRadius: AppRadius.card, style: .continuous))
+    }
+
+    private func statTile(value: String, label: String) -> some View {
+        VStack(spacing: 3) {
+            Text(value)
+                .font(.system(size: 22, weight: .bold))
+                .foregroundStyle(AppTheme.textPrimary)
+                .minimumScaleFactor(0.7)
+                .lineLimit(1)
+            Text(label)
+                .font(.system(size: 11, weight: .medium))
+                .foregroundStyle(AppTheme.textSecondary)
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 14)
+    }
+
+    private var statDivider: some View {
+        Rectangle()
+            .fill(AppTheme.border)
+            .frame(width: 1)
+            .padding(.vertical, 10)
     }
 
     private var emptyState: some View {
