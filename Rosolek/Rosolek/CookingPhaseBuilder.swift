@@ -51,11 +51,14 @@ struct CookingPhaseBuilder {
     var hasBeef: Bool {
         if !ingredientSnapshots.isEmpty {
             return ingredientSnapshots.contains { snap in
+                // IngredientCategory.beef.rawValue = "Wołowina" — ł is not a Unicode diacritic,
+                // so folding(diacriticInsensitive) leaves it intact; compare via enum to be safe.
+                if IngredientCategory(rawValue: snap.categoryRawValue) == .beef { return true }
                 let cat = normalizeCookingID(snap.categoryRawValue)
-                let name = normalizeCookingID(snap.ingredientName)
+                let name = snap.ingredientName.lowercased()
                 return cat == "wolowina" || cat == "beef"
                     || snap.ingredientID.lowercased().hasPrefix("beef_")
-                    || name.contains("wolowin")
+                    || name.contains("wołowin") || name.contains("wolowin")
             }
         }
         return ingredientIDs.contains { id in
