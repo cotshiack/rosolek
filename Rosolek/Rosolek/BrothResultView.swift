@@ -1943,6 +1943,7 @@ private struct BinaryChoiceOptionButton: View {
                         .stroke(isSelected ? AppTheme.accent : AppTheme.border, lineWidth: 1)
                 )
                 .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                .animation(.spring(response: 0.25, dampingFraction: 0.75), value: isSelected)
         }
         .buttonStyle(.plain)
     }
@@ -1964,6 +1965,7 @@ private struct RefinementChoiceChip: View {
                     .stroke(isSelected ? AppTheme.accent : AppTheme.border, lineWidth: 1)
             )
             .clipShape(Capsule())
+            .animation(.spring(response: 0.25, dampingFraction: 0.75), value: isSelected)
     }
 }
 

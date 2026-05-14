@@ -1632,6 +1632,7 @@ private struct ChecklistRow: View {
                             .transition(.scale(scale: 0.4).combined(with: .opacity))
                     }
                 }
+                .animation(.spring(response: 0.3, dampingFraction: 0.6), value: isOn)
 
                 Text(title)
                     .font(.system(size: 15, weight: .semibold))
