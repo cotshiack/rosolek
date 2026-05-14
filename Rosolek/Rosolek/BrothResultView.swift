@@ -400,7 +400,7 @@ struct BrothResultView: View {
             allspiceCount: allspiceCount,
             bayLeafCount: bayLeafCount,
             vegetables: updatedVegetables,
-            meatParts: effectiveSelections.map { MeatAmount(name: $0.name, grams: $0.grams, note: nil) },
+            meatParts: baseResult.meatParts,
             timeline: baseResult.timeline,
             warnings: baseResult.warnings,
             structuredWarnings: baseResult.structuredWarnings,
@@ -499,7 +499,10 @@ struct BrothResultView: View {
     }
 
     private var effectiveTotalWeight: Int {
-        effectiveSelections.reduce(0) { $0 + $1.grams }
+        if usesUserSelections {
+            return effectiveSelections.reduce(0) { $0 + $1.grams }
+        }
+        return result.meatParts.reduce(0) { $0 + $1.grams }
     }
 
     private var displayedBaseTotalWeight: Int {
