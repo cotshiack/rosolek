@@ -103,12 +103,15 @@ struct CookingPhaseBuilder {
 
     var poultrySimmerSeconds: Int {
         if isCollagenPoultryPreset { return hasPoultry ? 120 * 60 : 0 }
-        return hasPoultry ? 105 * 60 : 0
+        if !hasPoultry { return 0 }
+        // spec: Lekki simmer z drobiem = 135 min, Bogaty = 165 min
+        return brothProfile == .cleaner ? 135 * 60 : 165 * 60
     }
 
     var vegetablesTotalSeconds: Int {
         if isCollagenPoultryPreset { return 120 * 60 }
-        return brothProfile == .cleaner ? 135 * 60 : 165 * 60
+        // spec: Lekki = 135 + 20 = 155 min, Bogaty = 165 + 30 = 195 min
+        return brothProfile == .cleaner ? 155 * 60 : 195 * 60
     }
 
     var finishTotalSeconds: Int {
@@ -336,7 +339,7 @@ struct CookingPhaseBuilder {
                 shortText: "Dodaj warzywa, cebulę opalaną i przyprawy (bez soli).",
                 detailText: "Po dodaniu wróć do spokojnego pyrkania i kontynuuj 60–75 minut.",
                 durationSeconds: nil, timelineLabel: "Dodaj", bottomActionTitle: "Dodałem"),
-            LivePhase(kind: .simmerToPoultryOut,
+            LivePhase(kind: .simmerToVegetablesOut,
                 title: "Prowadź rosół dalej",
                 shortText: "Gotuj spokojnie przez 60–75 minut po dodaniu warzyw.",
                 detailText: "Nie mieszaj i nie dopuszczaj do wrzenia.",
@@ -517,7 +520,7 @@ struct CookingPhaseBuilder {
             items.append(LivePhase(kind: .finishBase,
                 title: "Dokończ bazę",
                 shortText: hasBeef
-                    ? "To etap budowania dłuższego finiszu. Wołowina dochodzi spokojnie do końca."
+                    ? "To etap budowania dłuższego finiszu. Nie doprowadzaj do wrzenia."
                     : "Domknij smak na samej bazie, bez wrzenia.",
                 detailText: hasBeef
                     ? "Wywar gotuje się na samej wołowinie. To etap wyrównania smaku — utrzymuj spokojną temperaturę, bez wrzenia i bez mieszania."
