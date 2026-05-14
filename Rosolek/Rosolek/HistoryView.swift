@@ -94,6 +94,10 @@ struct HistoryView: View {
         .animation(.spring(response: 0.45, dampingFraction: 0.88), value: batchStore.batches.count)
     }
 
+    private var totalCookingHours: Int {
+        batchStore.batches.reduce(0) { $0 + $1.activeCookingMinutes } / 60
+    }
+
     private var headerSection: some View {
         Section {
             VStack(alignment: .leading, spacing: 10) {
@@ -105,6 +109,20 @@ struct HistoryView: View {
                     .font(.system(size: 15, weight: .medium))
                     .foregroundStyle(AppTheme.textSecondary)
                     .fixedSize(horizontal: false, vertical: true)
+
+                HStack(spacing: 12) {
+                    historyStatChip(
+                        value: "\(batchStore.batches.count)",
+                        label: batchStore.batches.count == 1 ? "partia" : "partii"
+                    )
+                    if totalCookingHours > 0 {
+                        historyStatChip(
+                            value: "\(totalCookingHours)",
+                            label: totalCookingHours == 1 ? "godzina" : "godz. gotowania"
+                        )
+                    }
+                }
+                .padding(.top, 2)
             }
             .padding(.horizontal, AppSpacing.screen)
             .padding(.top, 10)
@@ -113,6 +131,25 @@ struct HistoryView: View {
             .listRowSeparator(.hidden)
             .listRowBackground(AppTheme.background)
         }
+    }
+
+    private func historyStatChip(value: String, label: String) -> some View {
+        HStack(spacing: 4) {
+            Text(value)
+                .font(.system(size: 13, weight: .bold))
+                .foregroundStyle(AppTheme.textPrimary)
+            Text(label)
+                .font(.system(size: 13, weight: .medium))
+                .foregroundStyle(AppTheme.textSecondary)
+        }
+        .padding(.horizontal, 10)
+        .frame(height: 28)
+        .background(AppTheme.surfaceSoft)
+        .overlay(
+            Capsule()
+                .stroke(AppTheme.border, lineWidth: 1)
+        )
+        .clipShape(Capsule())
     }
 
     private var emptyState: some View {

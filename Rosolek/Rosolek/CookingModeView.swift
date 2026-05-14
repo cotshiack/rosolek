@@ -1105,10 +1105,10 @@ struct CookingModeView: View {
         }
 
         playManualAdvanceSignal()
-        advanceToNextPhase()
+        advanceToNextPhase(haptic: currentPhaseHasTimer ? .warning : .success)
     }
 
-    private func advanceToNextPhase() {
+    private func advanceToNextPhase(haptic: UINotificationFeedbackGenerator.FeedbackType = .warning) {
         guard phaseIndex < phases.count - 1 else { return }
 
         withAnimation(.easeInOut(duration: 0.25)) {
@@ -1117,7 +1117,7 @@ struct CookingModeView: View {
         }
         schedulePhaseNotification()
         updateLiveActivity()
-        UINotificationFeedbackGenerator().notificationOccurred(.warning)
+        UINotificationFeedbackGenerator().notificationOccurred(haptic)
     }
 
     private func goToPreviousStep() {
