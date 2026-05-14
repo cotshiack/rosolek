@@ -58,6 +58,10 @@ struct HistoryView: View {
                     .listRowInsets(EdgeInsets())
                     .listRowSeparator(.hidden)
                     .listRowBackground(AppTheme.background)
+                    .transition(.asymmetric(
+                        insertion: .move(edge: .top).combined(with: .opacity),
+                        removal: .move(edge: .trailing).combined(with: .opacity)
+                    ))
                     .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                         Button(role: .destructive) {
                             batchToDelete = batch
@@ -87,6 +91,7 @@ struct HistoryView: View {
         .listStyle(.plain)
         .scrollContentBackground(.hidden)
         .background(AppTheme.background)
+        .animation(.spring(response: 0.45, dampingFraction: 0.88), value: batchStore.batches.count)
     }
 
     private var headerSection: some View {
