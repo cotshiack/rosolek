@@ -153,10 +153,10 @@ struct HistoryView: View {
             )
         }
         .frame(maxWidth: .infinity)
-        .background(AppTheme.accentSoft)
+        .background(AppTheme.surface)
         .overlay(
             RoundedRectangle(cornerRadius: AppRadius.card, style: .continuous)
-                .stroke(AppTheme.accent.opacity(0.25), lineWidth: 1)
+                .stroke(AppTheme.accent.opacity(0.5), lineWidth: 1.5)
         )
         .clipShape(RoundedRectangle(cornerRadius: AppRadius.card, style: .continuous))
     }
