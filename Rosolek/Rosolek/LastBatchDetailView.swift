@@ -29,6 +29,7 @@ struct LastBatchDetailView: View {
                     }
                     .padding(AppSpacing.screen)
                     .padding(.bottom, 40)
+                    .animation(.spring(response: 0.45, dampingFraction: 0.88), value: batch.id)
                 }
                 .background(AppTheme.background)
                 .navigationTitle("Szczegóły")
