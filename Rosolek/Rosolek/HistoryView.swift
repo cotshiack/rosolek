@@ -129,6 +129,7 @@ struct HistoryView: View {
     private var statsCard: some View {
         HStack(spacing: 0) {
             statTile(
+                icon: "fork.knife",
                 value: "\(batchStore.batches.count)",
                 label: batchStore.batches.count == 1 ? "partia" : "partii"
             )
@@ -136,13 +137,15 @@ struct HistoryView: View {
             statDivider
 
             statTile(
+                icon: "clock.fill",
                 value: totalCookingHours > 0 ? "\(totalCookingHours)" : "—",
-                label: totalCookingHours == 1 ? "godzina" : "godz. gotowania"
+                label: "godz. gotowania"
             )
 
             statDivider
 
             statTile(
+                icon: "drop.fill",
                 value: totalYieldLiters > 0
                     ? String(format: totalYieldLiters >= 100 ? "%.0f l" : "%.1f l", totalYieldLiters)
                     : "—",
@@ -150,34 +153,39 @@ struct HistoryView: View {
             )
         }
         .frame(maxWidth: .infinity)
-        .background(AppTheme.surface)
+        .background(AppTheme.accentSoft)
         .overlay(
             RoundedRectangle(cornerRadius: AppRadius.card, style: .continuous)
-                .stroke(AppTheme.border, lineWidth: 1)
+                .stroke(AppTheme.accent.opacity(0.25), lineWidth: 1)
         )
         .clipShape(RoundedRectangle(cornerRadius: AppRadius.card, style: .continuous))
     }
 
-    private func statTile(value: String, label: String) -> some View {
-        VStack(spacing: 2) {
+    private func statTile(icon: String, value: String, label: String) -> some View {
+        VStack(spacing: 4) {
+            Image(systemName: icon)
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundStyle(AppTheme.accent)
+
             Text(value)
-                .font(.system(size: 18, weight: .bold))
+                .font(.system(size: 19, weight: .bold))
                 .foregroundStyle(AppTheme.textPrimary)
                 .minimumScaleFactor(0.7)
                 .lineLimit(1)
+
             Text(label)
-                .font(.system(size: 11, weight: .medium))
+                .font(.system(size: 10, weight: .medium))
                 .foregroundStyle(AppTheme.textSecondary)
                 .lineLimit(1)
                 .minimumScaleFactor(0.8)
         }
         .frame(maxWidth: .infinity)
-        .padding(.vertical, 8)
+        .padding(.vertical, 12)
     }
 
     private var statDivider: some View {
         Rectangle()
-            .fill(AppTheme.border)
+            .fill(AppTheme.accent.opacity(0.18))
             .frame(width: 1)
             .padding(.vertical, 10)
     }
