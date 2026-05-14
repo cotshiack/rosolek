@@ -516,7 +516,7 @@ struct CookingPhaseBuilder {
                 : "Wyciągnij warzywa bez wyciskania i bez mieszania. Po tym etapie zostaje już sama baza mięsna.",
             durationSeconds: nil, timelineLabel: "Wyjmij warzywa", bottomActionTitle: "Wyjąłem"))
 
-        if baseFinishBeforeLiverSeconds > 0 {
+        if baseFinishBeforeLiverSeconds > 0 && (hasBeef || hasLiver) {
             items.append(LivePhase(kind: .finishBase,
                 title: "Dokończ bazę",
                 shortText: hasBeef
