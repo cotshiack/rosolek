@@ -172,7 +172,7 @@ struct HistoryView: View {
                 .minimumScaleFactor(0.8)
         }
         .frame(maxWidth: .infinity)
-        .padding(.vertical, 14)
+        .padding(.vertical, 10)
     }
 
     private var statDivider: some View {
