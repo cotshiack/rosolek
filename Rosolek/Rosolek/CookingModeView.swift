@@ -107,7 +107,13 @@ struct CookingModeView: View {
     @State private var prepVinegarReady = false
 
     @State private var liveActivity: Activity<CookingActivityAttributes>?
-    @State private var timerPublisher = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
+
+    private let timerPublisher = Timer.publish(every: 1, on: .main, in: .common)
+    @State private var timerConnection: AnyCancellable? = nil
+    @State private var phaseStartDate: Date? = nil
+
+    @State private var _cachedPhaseBuilder: CookingPhaseBuilder? = nil
+    @State private var _cachedPhases: [LivePhase] = []
 
     private var liveControlsOverlayHeight: CGFloat { 238 }
     private var finishButtonOverlayHeight: CGFloat { 92 }
@@ -119,7 +125,7 @@ struct CookingModeView: View {
     // MARK: - Phase builder (domain logic delegated to CookingPhaseBuilder)
 
     private var phaseBuilder: CookingPhaseBuilder {
-        CookingPhaseBuilder(batch: currentBatch, result: result, hasThermometer: hasThermometer)
+        _cachedPhaseBuilder ?? CookingPhaseBuilder(batch: currentBatch, result: result, hasThermometer: hasThermometer)
     }
 
     private var activeUltraVariant: UltraSpecVariantID? { phaseBuilder.activeUltraVariant }
@@ -135,7 +141,17 @@ struct CookingModeView: View {
     private var vegetableReminderRows: [LiveIngredientReminderRowData] { phaseBuilder.vegetableReminderRows }
     private var spiceReminderRows: [LiveIngredientReminderRowData] { phaseBuilder.spiceReminderRows }
 
-    private var phases: [LivePhase] { phaseBuilder.buildPhases() }
+    private var phases: [LivePhase] {
+        _cachedPhases.isEmpty
+            ? CookingPhaseBuilder(batch: currentBatch, result: result, hasThermometer: hasThermometer).buildPhases()
+            : _cachedPhases
+    }
+
+    private func rebuildPhaseCache() {
+        let builder = CookingPhaseBuilder(batch: currentBatch, result: result, hasThermometer: hasThermometer)
+        _cachedPhaseBuilder = builder
+        _cachedPhases = builder.buildPhases()
+    }
 
     private var currentPhase: LivePhase {
         phases[min(phaseIndex, phases.count - 1)]
@@ -353,6 +369,7 @@ struct CookingModeView: View {
             Button("Zakończ gotowanie") {
                 finalStepCompleted = true
                 isStageRunning = false
+                stopTimer()
                 CookingSession.clear()
                 CookingNotificationService.shared.cancelAll()
                 endLiveActivity()
@@ -364,15 +381,20 @@ struct CookingModeView: View {
         }
         .onAppear {
             UIApplication.shared.isIdleTimerDisabled = true
+            rebuildPhaseCache()
             prepThermometerReady = !hasThermometer
             prepVinegarReady = !batchUsesVinegar
             restoreSessionIfNeeded()
+            if sessionStarted && isStageRunning {
+                startTimer()
+            }
             attachToExistingLiveActivityIfNeeded()
             updateLiveActivity()
         }
         .onDisappear {
             UIApplication.shared.isIdleTimerDisabled = false
             saveSession(backgrounded: isStageRunning)
+            stopTimer()
         }
         .onChange(of: scenePhase) { _, newPhase in
             if newPhase == .background {
@@ -383,6 +405,9 @@ struct CookingModeView: View {
                 attachToExistingLiveActivityIfNeeded()
                 updateLiveActivity()
             }
+        }
+        .onChange(of: currentBatch.id) { _, _ in
+            rebuildPhaseCache()
         }
         .onReceive(timerPublisher) { _ in
             handleTick()
@@ -1027,11 +1052,10 @@ struct CookingModeView: View {
 
         processElapsedSeconds += 1
 
-        if currentPhaseHasTimer {
-            phaseElapsedSeconds += 1
+        if currentPhaseHasTimer, let start = phaseStartDate {
+            phaseElapsedSeconds = min(Int(Date().timeIntervalSince(start)), currentPhaseTotalSeconds)
 
             if phaseElapsedSeconds >= currentPhaseTotalSeconds {
-                phaseElapsedSeconds = currentPhaseTotalSeconds
                 playTimedStageFinishedSignal()
                 if phaseIndex >= phases.count - 1 {
                     isStageRunning = false
@@ -1085,6 +1109,8 @@ struct CookingModeView: View {
             phaseElapsedSeconds = 0
             isStageRunning = true
         }
+        phaseStartDate = Date()
+        startTimer()
         schedulePhaseNotification()
         startLiveActivity()
         playStartSignal()
@@ -1116,6 +1142,7 @@ struct CookingModeView: View {
             phaseIndex += 1
             phaseElapsedSeconds = 0
         }
+        phaseStartDate = Date()
         schedulePhaseNotification()
         updateLiveActivity()
         UINotificationFeedbackGenerator().notificationOccurred(haptic)
@@ -1127,11 +1154,24 @@ struct CookingModeView: View {
         withAnimation(.easeInOut(duration: 0.25)) {
             phaseIndex -= 1
             phaseElapsedSeconds = 0
+
         }
+        phaseStartDate = Date()
         schedulePhaseNotification()
         updateLiveActivity()
         UIImpactFeedbackGenerator(style: .light).impactOccurred()
         playTapSignal()
+    }
+
+    private func startTimer() {
+        guard timerConnection == nil else { return }
+        let connection = timerPublisher.connect()
+        timerConnection = AnyCancellable { connection.cancel() }
+    }
+
+    private func stopTimer() {
+        timerConnection?.cancel()
+        timerConnection = nil
     }
 
     private func playStartSignal() {
@@ -1271,6 +1311,9 @@ struct CookingModeView: View {
             let remaining = max(0, Int(stepEndDate.timeIntervalSinceNow))
             phaseElapsedSeconds = max(0, currentDuration - remaining)
         }
+        if state.isRunning {
+            phaseStartDate = Date().addingTimeInterval(-Double(phaseElapsedSeconds))
+        }
     }
 
     private func saveSession(backgrounded: Bool) {
@@ -1301,7 +1344,11 @@ struct CookingModeView: View {
         var remaining = elapsed
         processElapsedSeconds += elapsed
         while remaining > 0 && phaseIndex < phases.count - 1 {
-            guard currentPhaseHasTimer else { break }
+            if !currentPhaseHasTimer {
+                phaseIndex += 1
+                phaseElapsedSeconds = 0
+                continue
+            }
             let timeLeft = currentPhaseTotalSeconds - phaseElapsedSeconds
             if remaining >= timeLeft {
                 remaining -= timeLeft
@@ -1344,6 +1391,10 @@ struct CookingModeView: View {
                 advanceElapsedThroughPhases(elapsed)
             }
         }
+
+        if isStageRunning {
+            phaseStartDate = Date().addingTimeInterval(-Double(phaseElapsedSeconds))
+        }
     }
 
     private func resumeFromBackground() {
@@ -1358,6 +1409,7 @@ struct CookingModeView: View {
         guard elapsed > 0 else { return }
 
         advanceElapsedThroughPhases(elapsed)
+        phaseStartDate = Date().addingTimeInterval(-Double(phaseElapsedSeconds))
         saveSession(backgrounded: false)
     }
 }

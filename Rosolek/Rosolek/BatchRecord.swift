@@ -224,7 +224,8 @@ struct BatchRecord: Identifiable, Codable, Hashable {
         self.modeRawValue = try container.decodeIfPresent(String.self, forKey: .modeRawValue) ?? fallbackModeRawValue
         self.presetRawValue = try container.decodeIfPresent(String.self, forKey: .presetRawValue)
         self.profileRawValue = try container.decodeIfPresent(String.self, forKey: .profileRawValue) ?? fallbackProfileRawValue
-        self.brothKindRawValue = try container.decodeIfPresent(String.self, forKey: .brothKindRawValue)
+        let rawBrothKind = try container.decodeIfPresent(String.self, forKey: .brothKindRawValue)
+        self.brothKindRawValue = Self.migrateBrothKindRawValue(rawBrothKind)
         self.selectedStyleName = try container.decodeIfPresent(String.self, forKey: .selectedStyleName)
         self.clarityModeRawValue = try container.decodeIfPresent(String.self, forKey: .clarityModeRawValue) ?? BrothClarityMode.normal.rawValue
         self.useVinegar = try container.decodeIfPresent(Bool.self, forKey: .useVinegar) ?? false
@@ -510,6 +511,17 @@ extension BatchRecord {
             return .poultryBeefReady
         default:
             return nil
+        }
+    }
+
+    private static func migrateBrothKindRawValue(_ raw: String?) -> String? {
+        switch raw {
+        case "Rosół":    return "rosol"
+        case "Ramen":    return "ramen"
+        case "Wołowy":   return "wolowy"
+        case "Warzywny": return "warzywny"
+        case "Rybny":    return "rybny"
+        default:         return raw
         }
     }
 

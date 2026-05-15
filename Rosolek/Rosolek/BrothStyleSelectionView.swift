@@ -10,13 +10,23 @@ enum BrothStyle: String, CaseIterable, Identifiable {
 }
 
 enum BrothKind: String, CaseIterable, Identifiable {
-    case rosol = "Rosół"
-    case ramen = "Ramen"
-    case beef = "Wołowy"
-    case veggie = "Warzywny"
-    case fish = "Rybny"
+    case rosol = "rosol"
+    case ramen = "ramen"
+    case beef = "wolowy"
+    case veggie = "warzywny"
+    case fish = "rybny"
 
     var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .rosol: return "Rosół"
+        case .ramen: return "Ramen"
+        case .beef: return "Wołowy"
+        case .veggie: return "Warzywny"
+        case .fish: return "Rybny"
+        }
+    }
 
     var subtitle: String {
         switch self {
@@ -173,7 +183,7 @@ private struct BrothKindCard: View {
                         BrothKindIllustration(kind: kind)
 
                         VStack(alignment: .leading, spacing: 3) {
-                            Text(kind.rawValue)
+                            Text(kind.title)
                                 .font(.system(size: 21, weight: .bold))
                                 .foregroundStyle(AppTheme.textPrimary)
 
