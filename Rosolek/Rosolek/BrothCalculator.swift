@@ -2015,9 +2015,15 @@ private func warningText(for warning: BrothWarning) -> String {
     case .waterReducedToFit:
         return "Dla tego zestawu i tego garnka klasyczna ilość wody byłaby za duża, więc policzyliśmy jej mniej. Rosół wyjdzie trochę mocniejszy i będzie go mniej."
     case .baseTooLowForWater:
-        return "Baza jest lekka względem ilości wody. Dla pełniejszego efektu dodaj więcej bazy albo zmniejsz wodę."
+        return "Baza jest lekka względem ilości wody. Dodaj więcej bazy dla pełniejszego efektu."
     case .baseTooHighForWater:
-        return "Baza jest bardzo gęsta względem ilości wody. Bulion może wyjść ciężki — rozważ dodanie wody."
+        return "Baza jest bardzo gęsta względem ilości wody. Bulion może wyjść ciężki — zmniejsz bazę."
+    case .baseTooLittleForPot:
+        return "Za mało bazy jak na pojemność tego garnka. Bulion wyjdzie mało intensywny."
+    case .vegTooMuch:
+        return "Warzywa przekraczają zalecany limit na litr wody. Bulion może wyjść zbyt słodki i mniej klarowny."
+    case .vegSweetRisk:
+        return "Udział marchewki jest za wysoki dla tego wariantu. Zmniejsz marchew i zwiększ seler lub pietruszkę."
     }
 }
 
