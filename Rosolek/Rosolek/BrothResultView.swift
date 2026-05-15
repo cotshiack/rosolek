@@ -230,6 +230,9 @@ struct BrothResultView: View {
         case .hardNoBase:
             failureCode = .hardNoMeat
             message = "Brak bazy dla tego bulionu. Dodaj składniki bazowe."
+        case .hardTooMuchMeat:
+            failureCode = .hardTooMuchMeat
+            message = "Łączna waga mięsa przekracza 10 kg. Sprawdź wpisane gramy."
         }
 
         return BrothCalculationResult(
