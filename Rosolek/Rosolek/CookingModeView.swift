@@ -1409,6 +1409,7 @@ struct CookingModeView: View {
         advanceElapsedThroughPhases(elapsed)
         phaseStartDate = Date().addingTimeInterval(-Double(phaseElapsedSeconds))
         saveSession(backgrounded: false)
+        startTimer()
     }
 }
 
