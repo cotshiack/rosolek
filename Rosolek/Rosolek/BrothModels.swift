@@ -229,6 +229,13 @@ enum BrothPreset: String, CaseIterable, Identifiable, Hashable {
         }
     }
 
+    var ultraVariant: UltraSpecVariantID? {
+        switch self {
+        case .fishReady: return .rybnyDelikatny
+        default:         return nil
+        }
+    }
+
     var legacyStyle: BrothStyle {
         profile.legacyStyle
     }

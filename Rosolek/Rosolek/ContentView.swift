@@ -3,7 +3,7 @@ import UIKit
 
 struct ContentView: View {
     @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
-    @AppStorage("userFirstName") private var userFirstName = "Paweł"
+    @AppStorage("userFirstName") private var userFirstName = ""
     @AppStorage("potSizeLiters") private var potSizeLiters = 7
     @AppStorage("hasThermometer") private var hasThermometer = true
 
@@ -37,7 +37,7 @@ private struct HomeView: View {
     @EnvironmentObject private var batchStore: BatchStore
     @EnvironmentObject private var router: AppRouter
 
-    @AppStorage("userFirstName") private var userFirstName = "Paweł"
+    @AppStorage("userFirstName") private var userFirstName = ""
     @AppStorage("potSizeLiters") private var potSizeLiters = 7
     @AppStorage("hasThermometer") private var hasThermometer = true
 
@@ -55,7 +55,7 @@ private struct HomeView: View {
 
     private var displayName: String {
         let trimmed = userFirstName.trimmingCharacters(in: .whitespacesAndNewlines)
-        return trimmed.isEmpty ? "Paweł" : trimmed
+        return trimmed.isEmpty ? "Kucharz" : trimmed
     }
 
     private var filteredPresetItems: [HomePresetItem] {

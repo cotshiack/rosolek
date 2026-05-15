@@ -402,6 +402,8 @@ extension BatchRecord {
             return "Preset"
         case "custom":
             return "Własny"
+        case "legacy":
+            return "Klasyczny"
         default:
             return "Batch"
         }
@@ -465,7 +467,7 @@ extension BatchRecord {
 
     private static let historyDateFormatter: DateFormatter = {
         let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "pl_PL")
+        formatter.locale = Locale.autoupdatingCurrent
         formatter.dateFormat = "d MMM yyyy, HH:mm"
         return formatter
     }()

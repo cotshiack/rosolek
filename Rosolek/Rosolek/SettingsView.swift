@@ -1,9 +1,10 @@
 import SwiftUI
 
 struct SettingsView: View {
-    @AppStorage("userFirstName") private var userFirstName = "Paweł"
+    @AppStorage("userFirstName") private var userFirstName = ""
     @AppStorage("potSizeLiters") private var potSizeLiters = 7
     @AppStorage("hasThermometer") private var hasThermometer = true
+    @AppStorage("defaultUseVinegar") private var defaultUseVinegar = false
     @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = true
 
     @EnvironmentObject private var router: AppRouter
@@ -13,6 +14,7 @@ struct SettingsView: View {
     @State private var draftName = ""
     @State private var draftPotSize = 7
     @State private var draftHasThermometer = true
+    @State private var draftUseVinegar = false
     @State private var isCustomPotSelected = false
     @State private var customPotSize = ""
     @State private var showDiscardToast = false
@@ -25,6 +27,7 @@ struct SettingsView: View {
         case name
         case pot
         case thermometer
+        case vinegar
     }
 
     private enum Field {
@@ -147,6 +150,21 @@ struct SettingsView: View {
 
                 if activeEditor == .thermometer {
                     inlineThermometerEditor
+                }
+
+                divider
+
+                settingsRow(
+                    icon: "drop.halffull",
+                    title: "Ocet jabłkowy",
+                    value: vinegarLabel,
+                    isEditing: activeEditor == .vinegar
+                ) {
+                    toggleEditor(.vinegar)
+                }
+
+                if activeEditor == .vinegar {
+                    inlineVinegarEditor
                 }
 
                 divider
@@ -515,6 +533,10 @@ struct SettingsView: View {
         hasThermometer ? "Mam termometr" : "Nie mam termometru"
     }
 
+    private var vinegarLabel: String {
+        defaultUseVinegar ? "Domyślnie z octem" : "Domyślnie bez octu"
+    }
+
     private var canSaveName: Bool {
         !draftName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
@@ -594,7 +616,8 @@ struct SettingsView: View {
     private var hasUnsavedChanges: Bool {
         draftName.trimmingCharacters(in: .whitespacesAndNewlines) != userFirstName ||
         draftPotSize != potSizeLiters ||
-        draftHasThermometer != hasThermometer
+        draftHasThermometer != hasThermometer ||
+        draftUseVinegar != defaultUseVinegar
     }
 
     private func cancelEditing() {
@@ -614,6 +637,7 @@ struct SettingsView: View {
         draftName = userFirstName
         draftPotSize = potSizeLiters
         draftHasThermometer = hasThermometer
+        draftUseVinegar = defaultUseVinegar
 
         if standardPotSizes.contains(potSizeLiters) {
             isCustomPotSelected = false
@@ -649,6 +673,40 @@ struct SettingsView: View {
 
     private func saveThermometer() {
         hasThermometer = draftHasThermometer
+        focusedField = nil
+        activeEditor = nil
+    }
+
+    private var inlineVinegarEditor: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            compactSelectRow(
+                title: "Domyślnie bez octu",
+                subtitle: "Przepisy bez octu jabłkowego (można dodać ręcznie przy gotowaniu).",
+                isSelected: !draftUseVinegar
+            ) {
+                draftUseVinegar = false
+            }
+
+            compactSelectRow(
+                title: "Domyślnie z octem",
+                subtitle: "Odrobina octu jabłkowego na starcie — pomaga wyciągnąć minerały z kości.",
+                isSelected: draftUseVinegar
+            ) {
+                draftUseVinegar = true
+            }
+
+            inlineActions(
+                onCancel: cancelEditing,
+                onSave: saveVinegar,
+                canSave: true
+            )
+        }
+        .padding(.horizontal, 16)
+        .padding(.bottom, 16)
+    }
+
+    private func saveVinegar() {
+        defaultUseVinegar = draftUseVinegar
         focusedField = nil
         activeEditor = nil
     }

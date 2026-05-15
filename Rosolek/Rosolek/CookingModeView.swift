@@ -98,7 +98,7 @@ struct CookingModeView: View {
     @State private var finalStepCompleted = false
     @State private var showFinishAlert = false
     @State private var activeSheet: LiveSheet?
-    @State private var isTimelineExpanded = false
+    @SceneStorage("cookingMode.isTimelineExpanded") private var isTimelineExpanded = false
 
     @State private var prepMeatReady = false
     @State private var prepWaterReady = false
@@ -1189,7 +1189,7 @@ struct CookingModeView: View {
     }
 
     private func playFinishSignal() {
-        AudioServicesPlaySystemSound(1005)
+        AudioServicesPlaySystemSound(1009)
     }
 
     private func countdownString(_ seconds: Int) -> String {

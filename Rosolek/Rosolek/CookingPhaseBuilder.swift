@@ -25,6 +25,8 @@ struct CookingPhaseBuilder {
                 normalizeCookingID($0.categoryRawValue) == normalizeCookingID(IngredientCategory.poultry.rawValue)
             }
         }
+        // Legacy path: substring detection on raw IDs, used when selectedIngredientsSnapshot is nil.
+        // New batches always provide a snapshot; this path exists only for pre-snapshot history records.
         return ingredientIDs.contains { id in
             let normalized = normalizeCookingID(id)
             return normalized.contains("kura")
@@ -73,7 +75,7 @@ struct CookingPhaseBuilder {
     // MARK: - Batch context
 
     var activeUltraVariant: UltraSpecVariantID? {
-        if activePreset == .fishReady { return .rybnyDelikatny }
+        if let presetVariant = activePreset?.ultraVariant { return presetVariant }
         guard batch.modeRawValue == "custom" else { return nil }
         if let rawKind = batch.brothKindRawValue,
            let kind = BrothKind(rawValue: rawKind) {

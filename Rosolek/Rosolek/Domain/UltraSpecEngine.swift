@@ -61,6 +61,7 @@ enum UltraSpecEngine {
 
         guard request.potCapacityL >= 0.25 else { throw UltraSpecEngineError.hardPotTooSmall }
         guard request.potCapacityL <= 30 else { throw UltraSpecEngineError.hardPotTooBig }
+        guard totalAnimalG <= 10_000 else { throw UltraSpecEngineError.hardTooMuchMeat }
 
         let animalRequired: Bool = {
             switch request.variant {
@@ -127,7 +128,7 @@ enum UltraSpecEngine {
             if vegGL > thresholds.vegetableCapGL {
                 warnings.append("VEG_TOO_MUCH")
             }
-            if let limit = thresholds.wingsMaxShare, poultryG > 0, (Double(wingsG) / Double(poultryG)) > limit {
+            if let limit = thresholds.wingsMaxShare, totalAnimalG > 0, (Double(wingsG) / Double(totalAnimalG)) > limit {
                 warnings.append("WINGS_TOO_HIGH")
             }
             if let limit = thresholds.beefMaxShare, totalAnimalG > 0, (Double(beefG) / Double(totalAnimalG)) > limit {
@@ -188,4 +189,5 @@ enum UltraSpecEngineError: Error, Equatable {
     case hardPotTooBig
     case hardNotFit
     case hardNoBase
+    case hardTooMuchMeat
 }
