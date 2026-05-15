@@ -127,7 +127,7 @@ enum UltraSpecEngine {
             if !warnings.contains("UNDERPOWER"),
                let minPerPot = thresholds.minMeatPerPotGL,
                Double(totalAnimalG) / request.potCapacityL < minPerPot {
-                warnings.append("UNDERPOWER")
+                warnings.append("UNDERPOWER_FOR_POT")
             }
             if densityGL > thresholds.density.maxGL {
                 warnings.append("OVERPOWER")

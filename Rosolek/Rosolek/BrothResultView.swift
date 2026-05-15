@@ -159,11 +159,10 @@ struct BrothResultView: View {
 
         let filteredWarnings = ultra.warningMessages
 
-        var warningTexts = filteredWarnings.map {
-            if let suggestion = $0.suggestion?.text, !suggestion.isEmpty {
-                return "\($0.title): \($0.message) \(suggestion)"
-            }
-            return "\($0.title): \($0.message)"
+        var warningTexts = filteredWarnings.map { msg -> String in
+            var text = "\(msg.title): \(msg.message)"
+            if !msg.fixNow.isEmpty { text += " \(msg.fixNow)" }
+            return text
         }
         let structured: [BrothWarning] = filteredWarnings.map {
             BrothWarning(code: mapWarningCode($0.code), severity: mapSeverity($0.severity), params: [])
@@ -280,8 +279,9 @@ struct BrothResultView: View {
     private func mapWarningCode(_ code: UltraSpecWarningCode) -> BrothWarningCode {
         switch code {
         case .underpower: return .baseTooLowForWater
+        case .underpowerForPot: return .baseTooLittleForPot
         case .overpower: return .baseTooHighForWater
-        case .vegTooMuch: return .singleIngredientRisk
+        case .vegTooMuch: return .vegTooMuch
         case .paperFilterLowerIntensity: return .paperFilterLowerIntensity
         case .hardPotTooSmall: return .hardPotTooSmall
         case .hardPotTooBig: return .hardPotTooBig
@@ -289,7 +289,7 @@ struct BrothResultView: View {
         case .wingsTooHigh: return .wingsTooHighLight
         case .beefTooHigh: return .heavyBeefProfile
         case .offalTooHigh: return .offalDominantRisk
-        case .vegSweetRisk: return .singleIngredientRisk
+        case .vegSweetRisk: return .vegSweetRisk
         }
     }
 
@@ -548,7 +548,7 @@ struct BrothResultView: View {
 
             // Water reduction supersedes undermeat: they contradict each other visually.
             if hasWaterReduction {
-                filtered = filtered.filter { $0.code != .undermeatLight && $0.code != .undermeatIntense }
+                filtered = filtered.filter { $0.code != .undermeatLight && $0.code != .undermeatIntense && $0.code != .baseTooLowForWater && $0.code != .baseTooLittleForPot }
             }
 
             // When overall density is already too high (OVERPOWER), the per-ingredient
@@ -1683,7 +1683,19 @@ extension BrothResultView {
                 ? "Ten garnek pozwala na większy wsad warzywny. Aplikacja dopasowała wodę i dodatki do aktualnej ilości, ale jeśli chcesz mocniejszy profil, możesz zwiększyć gramaturę warzyw."
                 : (selectedKind == .fish ? "Wybrałeś mało bazy rybnej jak na ten garnek. Aplikacja dopasuje wodę i dodatki, ale dla mocniejszego profilu możesz dodać trochę ryb lub owoców morza." : "Wybrałeś mniej mięsa, niż spokojnie pomieści ten garnek. Aplikacja dopasuje wodę i dodatki do tej ilości, ale jeśli chcesz mocniejszy rosół, możesz dodać jeszcze trochę mięsa.")
         case .baseTooLowForWater:
-            return selectedKind == .veggie ? "Baza jest dość lekka względem ilości wody. Jeśli chcesz pełniejszy efekt, zwiększ koszyk warzyw lub zmniejsz wodę." : (selectedKind == .fish ? "Baza rybna jest lekka względem ilości wody. Dla pełniejszego bulionu zwiększ ryby/owoce morza albo zmniejsz wodę." : "Baza jest lekka względem ilości wody. Dla pełniejszego efektu dodaj więcej bazy lub zmniejsz wodę.")
+            if selectedKind == .veggie {
+                return "Baza jest dość lekka względem ilości wody. Zwiększ koszyk warzyw dla pełniejszego efektu."
+            } else if selectedKind == .fish {
+                return "Baza rybna jest lekka względem ilości wody. Dodaj więcej ryb lub owoców morza dla pełniejszego bulionu."
+            } else {
+                return "Baza jest lekka względem ilości wody. Dodaj więcej bazy dla pełniejszego efektu."
+            }
+        case .baseTooLittleForPot:
+            return "Za mało bazy jak na pojemność tego garnka. Bulion wyjdzie mało intensywny."
+        case .vegTooMuch:
+            return "Warzywa przekraczają zalecany limit na litr wody. Bulion może wyjść zbyt słodki i mniej klarowny."
+        case .vegSweetRisk:
+            return "Udział marchewki jest za wysoki dla tego wariantu. Zmniejsz marchew i zwiększ seler lub pietruszkę."
         case .overmeatLight:
             return "Jak na czystszy profil mięsa jest bardzo dużo. Wywar może wyjść zbyt ciężki."
         case .undermeatIntense:

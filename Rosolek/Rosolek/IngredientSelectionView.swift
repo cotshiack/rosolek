@@ -473,8 +473,9 @@ struct IngredientSelectionView: View {
     private func mapWarningCodeForPreview(_ code: UltraSpecWarningCode) -> BrothWarningCode {
         switch code {
         case .underpower: return .baseTooLowForWater
+        case .underpowerForPot: return .baseTooLittleForPot
         case .overpower: return .baseTooHighForWater
-        case .vegTooMuch: return .singleIngredientRisk
+        case .vegTooMuch: return .vegTooMuch
         case .paperFilterLowerIntensity: return .paperFilterLowerIntensity
         case .hardPotTooSmall: return .hardPotTooSmall
         case .hardPotTooBig: return .hardPotTooBig
@@ -482,7 +483,7 @@ struct IngredientSelectionView: View {
         case .wingsTooHigh: return .wingsTooHighLight
         case .beefTooHigh: return .heavyBeefProfile
         case .offalTooHigh: return .offalDominantRisk
-        case .vegSweetRisk: return .singleIngredientRisk
+        case .vegSweetRisk: return .vegSweetRisk
         }
     }
 
@@ -599,6 +600,38 @@ struct IngredientSelectionView: View {
             )
         }
 
+        // Pot-based underpower — most actionable: quantity is way too small for the pot
+        if hasWarning(.baseTooLittleForPot) {
+            return QuickInsight(
+                systemImage: "exclamationmark.circle",
+                shortText: "Za mało na ten garnek",
+                detailText: messageForWarningCode(.baseTooLittleForPot),
+                tone: .warning
+            )
+        }
+
+        // Composition warnings — check before waterWasReducedToFit so the root cause
+        // (e.g. too much wings/beef) isn't hidden behind the symptom (water was reduced)
+        let hasCompositionWarning = hasWarning(.overfatLight) || hasWarning(.heavyBeefProfile) || hasWarning(.marrowTooHigh) || hasWarning(.wingsTooHighLight)
+        if hasCompositionWarning {
+            let detail: String
+            if hasWarning(.overfatLight) {
+                detail = messageForWarningCode(.overfatLight)
+            } else if hasWarning(.marrowTooHigh) {
+                detail = messageForWarningCode(.marrowTooHigh)
+            } else if hasWarning(.wingsTooHighLight) {
+                detail = messageForWarningCode(.wingsTooHighLight)
+            } else {
+                detail = messageForWarningCode(.heavyBeefProfile)
+            }
+            return QuickInsight(
+                systemImage: "drop.fill",
+                shortText: "Cięższy profil",
+                detailText: detail,
+                tone: .warning
+            )
+        }
+
         if previewResult.waterWasReducedToFit {
             return QuickInsight(
                 systemImage: "drop.triangle",
@@ -620,30 +653,16 @@ struct IngredientSelectionView: View {
         }
 
         if (activeUltraVariant != nil && hasWarning(.baseTooHighForWater)) || (activeUltraVariant == nil && (hasWarning(.overmeatLight) || hasWarning(.overmeatIntense))) {
+            let shortText: String
+            if hasWarning(.overmeatIntense) { shortText = "Za dużo mięsa" }
+            else if hasWarning(.overmeatLight) { shortText = "Cięższy profil" }
+            else { shortText = "Cięższy wsad" }
             return QuickInsight(
                 systemImage: "arrow.up.circle",
-                shortText: "Cięższy wsad",
+                shortText: shortText,
                 detailText: hasWarning(.overmeatLight)
                     ? messageForWarningCode(.overmeatLight)
                     : (activeUltraVariant != nil ? messageForWarningCode(.baseTooHighForWater) : messageForWarningCode(.overmeatIntense)),
-                tone: .warning
-            )
-        }
-
-        if hasWarning(.overfatLight) || hasWarning(.heavyBeefProfile) || hasWarning(.marrowTooHigh) {
-            let detail: String
-            if hasWarning(.overfatLight) {
-                detail = messageForWarningCode(.overfatLight)
-            } else if hasWarning(.marrowTooHigh) {
-                detail = messageForWarningCode(.marrowTooHigh)
-            } else {
-                detail = messageForWarningCode(.heavyBeefProfile)
-            }
-
-            return QuickInsight(
-                systemImage: "drop.fill",
-                shortText: "Cięższy profil",
-                detailText: detail,
                 tone: .warning
             )
         }
@@ -653,7 +672,7 @@ struct IngredientSelectionView: View {
                 systemImage: "bolt.slash",
                 shortText: "Mało kolagenu",
                 detailText: messageForWarningCode(.lowGelatinIntense),
-                tone: .neutral
+                tone: .warning
             )
         }
 
@@ -707,7 +726,19 @@ struct IngredientSelectionView: View {
         case .undermeatLight:
             return "Wybrałeś mniej mięsa niż zwykle mieści ten garnek. Aplikacja przeliczy bulion do tej ilości, ale jeśli chcesz ugotować większą porcję, możesz dodać jeszcze trochę mięsa."
         case .baseTooLowForWater:
-            return selectedKind == .fish ? "Baza rybna jest lekka względem ilości wody. Dla pełniejszego bulionu zwiększ ryby/owoce morza albo zmniejsz wodę." : (selectedKind == .veggie ? "Koszyk warzyw jest lekki względem ilości wody. Dla pełniejszego smaku zwiększ warzywa albo zmniejsz wodę." : "Baza jest lekka względem ilości wody. Dla pełniejszego smaku dodaj więcej bazy albo zmniejsz wodę.")
+            if selectedKind == .fish {
+                return "Baza rybna jest lekka względem ilości wody. Dodaj więcej ryb lub owoców morza dla pełniejszego bulionu."
+            } else if selectedKind == .veggie {
+                return "Koszyk warzyw jest lekki względem ilości wody. Zwiększ warzywa dla pełniejszego smaku."
+            } else {
+                return "Baza jest lekka względem ilości wody. Dodaj więcej bazy dla pełniejszego smaku — ilość wody jest wyliczana automatycznie."
+            }
+        case .baseTooLittleForPot:
+            return "Za mało bazy jak na pojemność tego garnka. Dodaj więcej składników — woda i warzywa dopasują się automatycznie."
+        case .vegTooMuch:
+            return "Warzywa przekraczają zalecany limit na litr wody. Bulion może wyjść zbyt słodki i mniej klarowny."
+        case .vegSweetRisk:
+            return "Marchewka dominuje koszyk warzywny. Zwiększ seler lub pietruszkę, żeby zrównoważyć słodycz."
         case .overmeatLight:
             return "Jak na czystszy profil mięsa jest już sporo. Bulion może wyjść cięższy niż zwykle."
         case .undermeatIntense:

@@ -80,6 +80,9 @@ enum BrothWarningCode: String, Hashable {
     case waterReducedToFit
     case baseTooLowForWater
     case baseTooHighForWater
+    case baseTooLittleForPot
+    case vegTooMuch
+    case vegSweetRisk
 }
 
 struct BrothWarningParameter: Hashable {
