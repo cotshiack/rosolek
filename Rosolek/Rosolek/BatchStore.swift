@@ -158,6 +158,13 @@ final class BatchStore: ObservableObject {
         save()
     }
 
+    func markBatchCompleted(batchID: UUID) {
+        guard let index = batches.firstIndex(where: { $0.id == batchID }) else { return }
+        guard batches[index].cookingOutcome != .interruptedByNewCooking else { return }
+        batches[index].cookingOutcomeRawValue = CookingOutcome.completed.rawValue
+        save()
+    }
+
     func markBatchInterruptedByNewCooking(batchID: UUID, at date: Date = Date()) {
         guard let index = batches.firstIndex(where: { $0.id == batchID }) else { return }
 

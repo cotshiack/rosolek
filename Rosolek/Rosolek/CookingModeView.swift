@@ -370,6 +370,7 @@ struct CookingModeView: View {
                 finalStepCompleted = true
                 isStageRunning = false
                 stopTimer()
+                batchStore.markBatchCompleted(batchID: batch.id)
                 CookingSession.clear()
                 CookingNotificationService.shared.cancelAll()
                 endLiveActivity()

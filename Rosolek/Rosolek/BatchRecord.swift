@@ -1,4 +1,5 @@
 import Foundation
+import os
 
 enum CookingOutcome: String, Codable {
     case unknown
@@ -120,7 +121,7 @@ struct BatchRecord: Identifiable, Codable, Hashable {
         vegetableOverrides: [String: Int]? = nil,
         spiceOverrides: [String: Int]? = nil,
         customTitle: String? = nil,
-        cookingOutcomeRawValue: String = CookingOutcome.completed.rawValue,
+        cookingOutcomeRawValue: String = CookingOutcome.unknown.rawValue,
         interruptedAt: Date? = nil,
         overallRating: Int? = nil,
         strengthFeedbackRawValue: String? = nil,
@@ -573,13 +574,21 @@ extension BatchRecord {
                 )
             }
             let mode = clarityMode
-            if let ultra = try? UltraSpecBridge.calculateFromCurrentFlow(
-                kind: kind,
-                styleName: selectedStyleName,
-                potCapacityL: Double(pot),
-                selections: selections,
-                clarityMode: mode
-            ) {
+            let ultra: UltraSpecCalculationResult?
+            do {
+                ultra = try UltraSpecBridge.calculateFromCurrentFlow(
+                    kind: kind,
+                    styleName: selectedStyleName,
+                    potCapacityL: Double(pot),
+                    selections: selections,
+                    clarityMode: mode
+                )
+            } catch {
+                os_log(.error, "UltraSpec engine failed for batch %{public}@: %{public}@",
+                       id.uuidString, String(describing: error))
+                ultra = nil
+            }
+            if let ultra {
                 let key = UltraSpecStyleKeyResolver.resolve(kind: kind, styleName: selectedStyleName)
                 let variant = UltraSpecVariantResolver.resolve(kind: kind, styleKey: key)
                 return UltraSpecBridge.makeBrothResult(
