@@ -615,7 +615,7 @@ struct IngredientSelectionView: View {
                 detailText: hasWarning(.undermeatLight)
                     ? messageForWarningCode(.undermeatLight)
                     : (activeUltraVariant != nil ? messageForWarningCode(.baseTooLowForWater) : messageForWarningCode(.undermeatIntense)),
-                tone: .neutral
+                tone: .warning
             )
         }
 

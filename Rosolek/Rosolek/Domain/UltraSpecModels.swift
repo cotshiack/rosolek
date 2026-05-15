@@ -53,6 +53,10 @@ struct UltraSpecWarningThresholds: Hashable {
     let collagenMin: Double?
     let vegetableCapGL: Double
     let carrotMaxShare: Double?
+    // Minimum grams of animal base per liter of pot capacity.
+    // Density check alone cannot detect "too little" when waterFactor is fixed,
+    // because density stays constant regardless of total meat amount.
+    let minMeatPerPotGL: Double?
 }
 
 struct UltraSpecVegetableBasketItem: Hashable {

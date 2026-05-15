@@ -50,6 +50,11 @@ enum UltraSpecWarnings {
                 let deltaMeat = Int((thresholds.density.minGL * waterStartL - Double(totalAnimalG)).rounded(.up))
                 let deltaWater = max(0, waterStartL - (Double(totalAnimalG) / thresholds.density.minGL))
                 warnings.append(.init(code: .underpower, severity: .warn, title: "Bulion może wyjść zbyt delikatny", message: "Baza jest zbyt mała względem ilości wody dla wybranego wariantu.", fixNow: "Dodaj więcej bazy albo zmniejsz ilość wody.", suggestion: .init(text: "Dodaj około \(max(0, deltaMeat)) g bazy albo zmniejsz wodę o \(format(deltaWater)) L.", deltaMeatG: max(0, deltaMeat), deltaWaterL: deltaWater, deltaVegetablesG: nil)))
+            } else if let minPerPot = thresholds.minMeatPerPotGL,
+                      Double(totalAnimalG) / request.potCapacityL < minPerPot {
+                let minGrams = Int((minPerPot * request.potCapacityL).rounded(.up))
+                let deltaMeat = max(0, minGrams - totalAnimalG)
+                warnings.append(.init(code: .underpower, severity: .warn, title: "Za mało bazy na ten garnek", message: "Przy garnku \(Int(request.potCapacityL)) L potrzebujesz więcej składników, żeby bulion miał dobry smak i właściwą intensywność.", fixNow: "Dodaj więcej bazy — minimum to około \(minGrams) g dla garnka \(Int(request.potCapacityL)) L.", suggestion: .init(text: "Dodaj około \(deltaMeat) g bazy.", deltaMeatG: deltaMeat, deltaWaterL: nil, deltaVegetablesG: nil)))
             }
 
             if densityGL > thresholds.density.maxGL {

@@ -121,6 +121,14 @@ enum UltraSpecEngine {
             if densityGL < thresholds.density.minGL {
                 warnings.append("UNDERPOWER")
             }
+            // Density alone can't detect "too little" when waterFactor is fixed:
+            // waterStartL ∝ totalAnimalG, so densityGL = constant regardless of quantity.
+            // This absolute check catches the case of tiny amounts in a large pot.
+            if !warnings.contains("UNDERPOWER"),
+               let minPerPot = thresholds.minMeatPerPotGL,
+               Double(totalAnimalG) / request.potCapacityL < minPerPot {
+                warnings.append("UNDERPOWER")
+            }
             if densityGL > thresholds.density.maxGL {
                 warnings.append("OVERPOWER")
             }

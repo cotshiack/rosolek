@@ -75,16 +75,16 @@ enum UltraSpecCatalog {
 
 extension UltraSpecCatalog {
     static let warningThresholds: [UltraSpecVariantID: UltraSpecWarningThresholds] = [
-        .rosolLekki: .init(density: .init(minGL: 140, maxGL: 230), wingsMaxShare: 0.25, beefMaxShare: nil, offalMaxShare: 0.12, fatWarn: 1.6, boneMin: 0.60, collagenMin: nil, vegetableCapGL: 350, carrotMaxShare: nil),
-        .rosolBogaty: .init(density: .init(minGL: 240, maxGL: 420), wingsMaxShare: nil, beefMaxShare: 0.55, offalMaxShare: 0.12, fatWarn: 2.0, boneMin: 0.35, collagenMin: 1.2, vegetableCapGL: 350, carrotMaxShare: nil),
-        .ramenShio: .init(density: .init(minGL: 180, maxGL: 350), wingsMaxShare: nil, beefMaxShare: 0.55, offalMaxShare: 0.12, fatWarn: 2.0, boneMin: nil, collagenMin: nil, vegetableCapGL: 350, carrotMaxShare: nil),
-        .ramenTonkotsu: .init(density: .init(minGL: 450, maxGL: 1200), wingsMaxShare: nil, beefMaxShare: nil, offalMaxShare: nil, fatWarn: nil, boneMin: nil, collagenMin: nil, vegetableCapGL: 350, carrotMaxShare: nil),
-        .wolowyCzysty: .init(density: .init(minGL: 260, maxGL: 520), wingsMaxShare: nil, beefMaxShare: nil, offalMaxShare: 0.12, fatWarn: 2.0, boneMin: nil, collagenMin: nil, vegetableCapGL: 350, carrotMaxShare: nil),
-        .wolowyMocny: .init(density: .init(minGL: 380, maxGL: 700), wingsMaxShare: nil, beefMaxShare: nil, offalMaxShare: 0.12, fatWarn: 2.2, boneMin: nil, collagenMin: nil, vegetableCapGL: 350, carrotMaxShare: nil),
-        .warzywnyJasny: .init(density: .init(minGL: 220, maxGL: 320), wingsMaxShare: nil, beefMaxShare: nil, offalMaxShare: nil, fatWarn: nil, boneMin: nil, collagenMin: nil, vegetableCapGL: 420, carrotMaxShare: 0.25),
-        .warzywnyUmami: .init(density: .init(minGL: 260, maxGL: 380), wingsMaxShare: nil, beefMaxShare: nil, offalMaxShare: nil, fatWarn: nil, boneMin: nil, collagenMin: nil, vegetableCapGL: 420, carrotMaxShare: 0.30),
-        .rybnyDelikatny: .init(density: .init(minGL: 250, maxGL: 380), wingsMaxShare: nil, beefMaxShare: nil, offalMaxShare: nil, fatWarn: nil, boneMin: nil, collagenMin: nil, vegetableCapGL: 120, carrotMaxShare: 0.15),
-        .rybnyIntensywny: .init(density: .init(minGL: 320, maxGL: 480), wingsMaxShare: nil, beefMaxShare: nil, offalMaxShare: nil, fatWarn: nil, boneMin: nil, collagenMin: nil, vegetableCapGL: 120, carrotMaxShare: 0.15)
+        .rosolLekki:    .init(density: .init(minGL: 140, maxGL: 230), wingsMaxShare: 0.25, beefMaxShare: nil,  offalMaxShare: 0.12, fatWarn: 1.6, boneMin: 0.60, collagenMin: nil, vegetableCapGL: 350, carrotMaxShare: nil,  minMeatPerPotGL: 50),
+        .rosolBogaty:   .init(density: .init(minGL: 240, maxGL: 420), wingsMaxShare: nil,  beefMaxShare: 0.55, offalMaxShare: 0.12, fatWarn: 2.0, boneMin: 0.35, collagenMin: 1.2, vegetableCapGL: 350, carrotMaxShare: nil,  minMeatPerPotGL: 70),
+        .ramenShio:     .init(density: .init(minGL: 180, maxGL: 350), wingsMaxShare: nil,  beefMaxShare: 0.55, offalMaxShare: 0.12, fatWarn: 2.0, boneMin: nil,  collagenMin: nil, vegetableCapGL: 350, carrotMaxShare: nil,  minMeatPerPotGL: 60),
+        .ramenTonkotsu: .init(density: .init(minGL: 450, maxGL: 1200), wingsMaxShare: nil, beefMaxShare: nil,  offalMaxShare: nil,  fatWarn: nil, boneMin: nil,  collagenMin: nil, vegetableCapGL: 350, carrotMaxShare: nil,  minMeatPerPotGL: 150),
+        .wolowyCzysty:  .init(density: .init(minGL: 260, maxGL: 520), wingsMaxShare: nil,  beefMaxShare: nil,  offalMaxShare: 0.12, fatWarn: 2.0, boneMin: nil,  collagenMin: nil, vegetableCapGL: 350, carrotMaxShare: nil,  minMeatPerPotGL: 80),
+        .wolowyMocny:   .init(density: .init(minGL: 380, maxGL: 700), wingsMaxShare: nil,  beefMaxShare: nil,  offalMaxShare: 0.12, fatWarn: 2.2, boneMin: nil,  collagenMin: nil, vegetableCapGL: 350, carrotMaxShare: nil,  minMeatPerPotGL: 120),
+        .warzywnyJasny: .init(density: .init(minGL: 220, maxGL: 320), wingsMaxShare: nil,  beefMaxShare: nil,  offalMaxShare: nil,  fatWarn: nil, boneMin: nil,  collagenMin: nil, vegetableCapGL: 420, carrotMaxShare: 0.25, minMeatPerPotGL: nil),
+        .warzywnyUmami: .init(density: .init(minGL: 260, maxGL: 380), wingsMaxShare: nil,  beefMaxShare: nil,  offalMaxShare: nil,  fatWarn: nil, boneMin: nil,  collagenMin: nil, vegetableCapGL: 420, carrotMaxShare: 0.30, minMeatPerPotGL: nil),
+        .rybnyDelikatny:  .init(density: .init(minGL: 250, maxGL: 380), wingsMaxShare: nil, beefMaxShare: nil, offalMaxShare: nil, fatWarn: nil, boneMin: nil, collagenMin: nil, vegetableCapGL: 120, carrotMaxShare: 0.15, minMeatPerPotGL: nil),
+        .rybnyIntensywny: .init(density: .init(minGL: 320, maxGL: 480), wingsMaxShare: nil, beefMaxShare: nil, offalMaxShare: nil, fatWarn: nil, boneMin: nil, collagenMin: nil, vegetableCapGL: 120, carrotMaxShare: 0.15, minMeatPerPotGL: nil)
     ]
 
     static let vegetableBaskets: [UltraSpecVariantID: [UltraSpecVegetableBasketItem]] = [
