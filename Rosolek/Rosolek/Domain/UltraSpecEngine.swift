@@ -45,6 +45,7 @@ enum UltraSpecEngine {
         let ingredientMap = Dictionary(uniqueKeysWithValues: UltraSpecCatalog.ingredients.map { ($0.id, $0) })
         let resolvedItems: [(UltraSpecIngredient, Int)] = request.items.compactMap { item in
             guard let ingredient = ingredientMap[item.ingredientID] else { return nil }
+            guard ingredient.allowedVariants.contains(request.variant) else { return nil }
             return (ingredient, item.grams)
         }
 

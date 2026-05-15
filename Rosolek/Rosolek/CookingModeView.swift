@@ -1050,7 +1050,8 @@ struct CookingModeView: View {
         }
         CookingNotificationService.shared.schedulePhaseEnd(
             stepTitle: currentPhase.title,
-            inSeconds: currentPhaseRemainingSeconds
+            inSeconds: currentPhaseRemainingSeconds,
+            brothKindTitle: currentBatch.defaultTitle
         )
     }
 

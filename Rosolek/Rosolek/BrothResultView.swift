@@ -1838,6 +1838,7 @@ extension BrothResultView {
             activeCookingMinutes: effectiveResult.totalMinutes,
             warningCount: warningCards.count,
             hasThermometer: hasThermometer,
+            potSizeLitersAtCooking: potSizeLiters,
             selectedIngredientIDs: ingredientIDs,
             selectedIngredientsSnapshot: ingredientSnapshots,
             meatOverrides: meatOverrides.isEmpty ? nil : meatOverrides,

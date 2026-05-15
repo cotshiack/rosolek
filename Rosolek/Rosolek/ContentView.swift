@@ -152,7 +152,7 @@ private struct HomeView: View {
             if let deepLinkBatch {
                 CookingModeView(
                     batch: deepLinkBatch,
-                    result: deepLinkBatch.calculationResult(potSizeLiters: potSizeLiters),
+                    result: deepLinkBatch.calculationResult(),
                     totalWeightGrams: deepLinkBatch.totalWeightGrams,
                     selectedIngredientCount: deepLinkBatch.selectedIngredientCount,
                     hasThermometer: deepLinkBatch.hasThermometer
@@ -203,7 +203,7 @@ private struct HomeView: View {
     private var activeCookingBanner: some View {
         if let session = activeCookingSession,
            let batch = batchStore.batch(for: session.batchID) {
-            let result = batch.calculationResult(potSizeLiters: potSizeLiters)
+            let result = batch.calculationResult()
 
             NavigationLink {
                 CookingModeView(

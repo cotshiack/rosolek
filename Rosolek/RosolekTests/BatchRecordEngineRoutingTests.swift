@@ -30,10 +30,11 @@ final class BatchRecordEngineRoutingTests: XCTestCase {
             totalMinutes: 480,
             warningCount: 0,
             hasThermometer: true,
+            potSizeLitersAtCooking: 7,
             selectedIngredientsSnapshot: snapshot
         )
 
-        let result = batch.calculationResult(potSizeLiters: 7)
+        let result = batch.calculationResult()
 
         // Tonkotsu UltraSpec config: totalMinutes = 480, temp min = 95.
         // BrothCalculator would never produce temp 95 for this combination.
@@ -55,10 +56,11 @@ final class BatchRecordEngineRoutingTests: XCTestCase {
             totalMinutes: 300,
             warningCount: 0,
             hasThermometer: true,
+            potSizeLitersAtCooking: 7,
             selectedIngredientIDs: ["kura"]
         )
 
-        let result = batch.calculationResult(potSizeLiters: 7)
+        let result = batch.calculationResult()
 
         // BrothCalculator produces finite, positive values for a simple poultry batch.
         XCTAssertGreaterThan(result.waterLiters, 0)
@@ -83,10 +85,11 @@ final class BatchRecordEngineRoutingTests: XCTestCase {
             totalMinutes: 315,
             warningCount: 0,
             hasThermometer: true,
+            potSizeLitersAtCooking: 7,
             selectedIngredientsSnapshot: snapshot
         )
 
-        let result = batch.calculationResult(potSizeLiters: 7)
+        let result = batch.calculationResult()
 
         XCTAssertGreaterThan(result.waterLiters, 0)
         XCTAssertGreaterThan(result.totalMinutes, 0)
