@@ -19,7 +19,6 @@ struct UltraSpecIngredient: Hashable, Identifiable {
     let fatScore: Double
     let collagenScore: Double
     let tags: Set<String>
-    let premiumOnly: Bool
 }
 
 enum UltraSpecCatalog {
@@ -37,55 +36,55 @@ enum UltraSpecCatalog {
     ]
 
     static let ingredients: [UltraSpecIngredient] = [
-        .init(id: "POULTRY_OLD_HEN", name: "Kura stara", category: .poultry, allowedVariants: [.rosolLekki, .rosolBogaty, .ramenShio], bonesFlag: true, fatScore: 1.2, collagenScore: 2.4, tags: ["collagen", "classic"], premiumOnly: false),
-        .init(id: "POULTRY_CARCASS", name: "Korpus kurczaka", category: .poultry, allowedVariants: [.rosolLekki, .rosolBogaty, .ramenShio], bonesFlag: true, fatScore: 1.0, collagenScore: 2.0, tags: ["bones"], premiumOnly: false),
-        .init(id: "POULTRY_NECK", name: "Szyje kurczaka", category: .poultry, allowedVariants: [.rosolLekki, .rosolBogaty, .ramenShio], bonesFlag: true, fatScore: 0.8, collagenScore: 2.3, tags: ["collagen"], premiumOnly: false),
-        .init(id: "POULTRY_WINGS", name: "Skrzydła", category: .poultry, allowedVariants: [.rosolLekki, .rosolBogaty, .ramenShio], bonesFlag: false, fatScore: 2.2, collagenScore: 1.1, tags: ["wingLike", "fat"], premiumOnly: false),
-        .init(id: "POULTRY_THIGHS", name: "Udka", category: .poultry, allowedVariants: [.rosolLekki, .rosolBogaty, .ramenShio], bonesFlag: false, fatScore: 2.4, collagenScore: 1.0, tags: ["fat"], premiumOnly: false),
-        .init(id: "POULTRY_SOUP_MIX", name: "Porcja rosołowa drobiowa", category: .poultry, allowedVariants: [.rosolLekki, .rosolBogaty], bonesFlag: true, fatScore: 1.6, collagenScore: 1.8, tags: ["mixed"], premiumOnly: false),
-        .init(id: "BEEF_SHANK", name: "Pręga", category: .beef, allowedVariants: [.rosolBogaty, .wolowyCzysty, .wolowyMocny, .ramenShio], bonesFlag: false, fatScore: 1.2, collagenScore: 1.6, tags: ["classic"], premiumOnly: false),
-        .init(id: "BEEF_SHORT_RIB", name: "Szponder", category: .beef, allowedVariants: [.rosolBogaty, .wolowyCzysty, .wolowyMocny, .ramenShio], bonesFlag: false, fatScore: 1.7, collagenScore: 1.4, tags: ["classic"], premiumOnly: false),
-        .init(id: "BEEF_OXTAIL", name: "Ogon wołowy", category: .beef, allowedVariants: [.rosolBogaty, .wolowyCzysty, .wolowyMocny], bonesFlag: true, fatScore: 1.3, collagenScore: 2.6, tags: ["collagen"], premiumOnly: false),
-        .init(id: "BEEF_JOINT_BONES", name: "Kości stawowe wołowe", category: .beef, allowedVariants: [.rosolBogaty, .wolowyCzysty, .wolowyMocny], bonesFlag: true, fatScore: 0.9, collagenScore: 2.2, tags: ["bones"], premiumOnly: false),
-        .init(id: "BEEF_MARROW_BONES", name: "Kości szpikowe", category: .beef, allowedVariants: [.rosolBogaty, .wolowyCzysty, .wolowyMocny], bonesFlag: true, fatScore: 2.1, collagenScore: 1.4, tags: ["fat"], premiumOnly: false),
-        .init(id: "BEEF_BRISKET", name: "Mostek", category: .beef, allowedVariants: [.rosolBogaty, .wolowyMocny], bonesFlag: false, fatScore: 2.0, collagenScore: 1.1, tags: ["fat"], premiumOnly: false),
-        .init(id: "PORK_JOINT_BONES", name: "Kości wieprzowe stawowe", category: .pork, allowedVariants: [.ramenTonkotsu], bonesFlag: true, fatScore: 1.6, collagenScore: 2.2, tags: ["tonkotsu", "bones"], premiumOnly: false),
-        .init(id: "PORK_TROTTERS", name: "Łapki wieprzowe", category: .pork, allowedVariants: [.ramenTonkotsu], bonesFlag: true, fatScore: 1.2, collagenScore: 2.4, tags: ["tonkotsu", "collagen"], premiumOnly: false),
-        .init(id: "PORK_SPINE", name: "Kręgi wieprzowe", category: .pork, allowedVariants: [.ramenTonkotsu], bonesFlag: true, fatScore: 1.5, collagenScore: 2.1, tags: ["tonkotsu", "bones"], premiumOnly: false),
+        .init(id: "POULTRY_OLD_HEN", name: "Kura stara", category: .poultry, allowedVariants: [.rosolLekki, .rosolBogaty, .ramenShio], bonesFlag: true, fatScore: 1.2, collagenScore: 2.4, tags: ["collagen", "classic"]),
+        .init(id: "POULTRY_CARCASS", name: "Korpus kurczaka", category: .poultry, allowedVariants: [.rosolLekki, .rosolBogaty, .ramenShio], bonesFlag: true, fatScore: 1.0, collagenScore: 2.0, tags: ["bones"]),
+        .init(id: "POULTRY_NECK", name: "Szyje kurczaka", category: .poultry, allowedVariants: [.rosolLekki, .rosolBogaty, .ramenShio], bonesFlag: true, fatScore: 0.8, collagenScore: 2.3, tags: ["collagen"]),
+        .init(id: "POULTRY_WINGS", name: "Skrzydła", category: .poultry, allowedVariants: [.rosolLekki, .rosolBogaty, .ramenShio], bonesFlag: false, fatScore: 2.2, collagenScore: 1.1, tags: ["wingLike", "fat"]),
+        .init(id: "POULTRY_THIGHS", name: "Udka", category: .poultry, allowedVariants: [.rosolLekki, .rosolBogaty, .ramenShio], bonesFlag: false, fatScore: 2.4, collagenScore: 1.0, tags: ["fat"]),
+        .init(id: "POULTRY_SOUP_MIX", name: "Porcja rosołowa drobiowa", category: .poultry, allowedVariants: [.rosolLekki, .rosolBogaty], bonesFlag: true, fatScore: 1.6, collagenScore: 1.8, tags: ["mixed"]),
+        .init(id: "BEEF_SHANK", name: "Pręga", category: .beef, allowedVariants: [.rosolBogaty, .wolowyCzysty, .wolowyMocny, .ramenShio], bonesFlag: false, fatScore: 1.2, collagenScore: 1.6, tags: ["classic"]),
+        .init(id: "BEEF_SHORT_RIB", name: "Szponder", category: .beef, allowedVariants: [.rosolBogaty, .wolowyCzysty, .wolowyMocny, .ramenShio], bonesFlag: false, fatScore: 1.7, collagenScore: 1.4, tags: ["classic"]),
+        .init(id: "BEEF_OXTAIL", name: "Ogon wołowy", category: .beef, allowedVariants: [.rosolBogaty, .wolowyCzysty, .wolowyMocny], bonesFlag: true, fatScore: 1.3, collagenScore: 2.6, tags: ["collagen"]),
+        .init(id: "BEEF_JOINT_BONES", name: "Kości stawowe wołowe", category: .beef, allowedVariants: [.rosolBogaty, .wolowyCzysty, .wolowyMocny], bonesFlag: true, fatScore: 0.9, collagenScore: 2.2, tags: ["bones"]),
+        .init(id: "BEEF_MARROW_BONES", name: "Kości szpikowe", category: .beef, allowedVariants: [.rosolBogaty, .wolowyCzysty, .wolowyMocny], bonesFlag: true, fatScore: 2.1, collagenScore: 1.4, tags: ["fat"]),
+        .init(id: "BEEF_BRISKET", name: "Mostek", category: .beef, allowedVariants: [.rosolBogaty, .wolowyMocny], bonesFlag: false, fatScore: 2.0, collagenScore: 1.1, tags: ["fat"]),
+        .init(id: "PORK_JOINT_BONES", name: "Kości wieprzowe stawowe", category: .pork, allowedVariants: [.ramenTonkotsu], bonesFlag: true, fatScore: 1.6, collagenScore: 2.2, tags: ["tonkotsu", "bones"]),
+        .init(id: "PORK_TROTTERS", name: "Łapki wieprzowe", category: .pork, allowedVariants: [.ramenTonkotsu], bonesFlag: true, fatScore: 1.2, collagenScore: 2.4, tags: ["tonkotsu", "collagen"]),
+        .init(id: "PORK_SPINE", name: "Kręgi wieprzowe", category: .pork, allowedVariants: [.ramenTonkotsu], bonesFlag: true, fatScore: 1.5, collagenScore: 2.1, tags: ["tonkotsu", "bones"]),
         
-        .init(id: "OFFAL_CHICKEN_LIVER", name: "Wątróbka drobiowa", category: .offal, allowedVariants: [.rosolLekki, .rosolBogaty, .ramenShio, .wolowyCzysty, .wolowyMocny], bonesFlag: false, fatScore: 1.8, collagenScore: 0.5, tags: ["offal", "endOnly"], premiumOnly: true),
-        .init(id: "OFFAL_HEART", name: "Serca drobiowe", category: .offal, allowedVariants: [.rosolLekki, .rosolBogaty, .ramenShio, .wolowyCzysty, .wolowyMocny], bonesFlag: false, fatScore: 1.0, collagenScore: 0.4, tags: ["offal", "endOnly"], premiumOnly: false),
-        .init(id: "OFFAL_GIZZARD", name: "Żołądki drobiowe", category: .offal, allowedVariants: [.rosolLekki, .rosolBogaty], bonesFlag: false, fatScore: 0.6, collagenScore: 0.3, tags: ["offal", "endOnly"], premiumOnly: false),
-        .init(id: "POULTRY_FEET", name: "Łapki drobiowe", category: .poultry, allowedVariants: [.rosolLekki, .rosolBogaty, .ramenShio], bonesFlag: true, fatScore: 0.6, collagenScore: 3.2, tags: ["collagen"], premiumOnly: false),
-        .init(id: "FISH_WHITE_BONES", name: "Ości białych ryb", category: .fish, allowedVariants: [.rybnyDelikatny, .rybnyIntensywny], bonesFlag: true, fatScore: 0.5, collagenScore: 0.6, tags: ["fishBase"], premiumOnly: false),
-        .init(id: "FISH_HEADS", name: "Głowy białych ryb", category: .fish, allowedVariants: [.rybnyDelikatny, .rybnyIntensywny], bonesFlag: true, fatScore: 0.7, collagenScore: 0.9, tags: ["fishBase"], premiumOnly: false),
-        .init(id: "SEAFOOD_SHRIMP_SHELLS", name: "Pancerze krewetek", category: .fish, allowedVariants: [.rybnyIntensywny], bonesFlag: false, fatScore: 0.4, collagenScore: 0.4, tags: ["umami"], premiumOnly: true),
-        .init(id: "SEAFOOD_SHELLS", name: "Skorupiaki / małże", category: .fish, allowedVariants: [.rybnyIntensywny], bonesFlag: false, fatScore: 0.5, collagenScore: 0.4, tags: ["umami"], premiumOnly: true),
-        .init(id: "VEG_ONION", name: "Cebula", category: .veg, allowedVariants: [.rosolLekki, .rosolBogaty, .ramenShio, .ramenTonkotsu, .wolowyCzysty, .wolowyMocny, .warzywnyJasny, .warzywnyUmami, .rybnyDelikatny, .rybnyIntensywny], bonesFlag: false, fatScore: 0, collagenScore: 0, tags: ["onion"], premiumOnly: false),
-        .init(id: "VEG_CARROT", name: "Marchew", category: .veg, allowedVariants: [.rosolLekki, .rosolBogaty, .wolowyCzysty, .wolowyMocny, .warzywnyJasny, .warzywnyUmami, .rybnyDelikatny, .rybnyIntensywny], bonesFlag: false, fatScore: 0, collagenScore: 0, tags: ["sweetRisk"], premiumOnly: false),
-        .init(id: "VEG_CELERIAC", name: "Seler korzeniowy", category: .veg, allowedVariants: [.rosolLekki, .rosolBogaty, .wolowyCzysty, .wolowyMocny, .warzywnyJasny, .warzywnyUmami], bonesFlag: false, fatScore: 0, collagenScore: 0, tags: ["base"], premiumOnly: false),
-        .init(id: "VEG_PARSNIP_PL", name: "Pietruszka korzeń", category: .veg, allowedVariants: [.rosolLekki, .rosolBogaty, .wolowyCzysty, .wolowyMocny, .warzywnyJasny, .warzywnyUmami], bonesFlag: false, fatScore: 0, collagenScore: 0, tags: ["base"], premiumOnly: false),
-        .init(id: "VEG_LEEK", name: "Por", category: .veg, allowedVariants: [.rosolLekki, .rosolBogaty, .ramenTonkotsu, .warzywnyJasny, .warzywnyUmami, .rybnyDelikatny, .rybnyIntensywny], bonesFlag: false, fatScore: 0, collagenScore: 0, tags: ["leek"], premiumOnly: false),
-        .init(id: "VEG_CELERY_STALK", name: "Seler naciowy", category: .veg, allowedVariants: [.rybnyDelikatny, .rybnyIntensywny], bonesFlag: false, fatScore: 0, collagenScore: 0, tags: ["stalk"], premiumOnly: false),
-        .init(id: "AROMA_GINGER", name: "Imbir", category: .veg, allowedVariants: [.ramenShio, .ramenTonkotsu], bonesFlag: false, fatScore: 0, collagenScore: 0, tags: ["aroma"], premiumOnly: false),
-        .init(id: "AROMA_GARLIC", name: "Czosnek", category: .veg, allowedVariants: [.ramenShio, .ramenTonkotsu], bonesFlag: false, fatScore: 0, collagenScore: 0, tags: ["aroma"], premiumOnly: false),
-        .init(id: "AROMA_SCALLION", name: "Dymka", category: .veg, allowedVariants: [.ramenShio], bonesFlag: false, fatScore: 0, collagenScore: 0, tags: ["aroma"], premiumOnly: false)
+        .init(id: "OFFAL_CHICKEN_LIVER", name: "Wątróbka drobiowa", category: .offal, allowedVariants: [.rosolLekki, .rosolBogaty, .ramenShio, .wolowyCzysty, .wolowyMocny], bonesFlag: false, fatScore: 1.8, collagenScore: 0.5, tags: ["offal", "endOnly"]),
+        .init(id: "OFFAL_HEART", name: "Serca drobiowe", category: .offal, allowedVariants: [.rosolLekki, .rosolBogaty, .ramenShio, .wolowyCzysty, .wolowyMocny], bonesFlag: false, fatScore: 1.0, collagenScore: 0.4, tags: ["offal", "endOnly"]),
+        .init(id: "OFFAL_GIZZARD", name: "Żołądki drobiowe", category: .offal, allowedVariants: [.rosolLekki, .rosolBogaty], bonesFlag: false, fatScore: 0.6, collagenScore: 0.3, tags: ["offal", "endOnly"]),
+        .init(id: "POULTRY_FEET", name: "Łapki drobiowe", category: .poultry, allowedVariants: [.rosolLekki, .rosolBogaty, .ramenShio], bonesFlag: true, fatScore: 0.6, collagenScore: 3.2, tags: ["collagen"]),
+        .init(id: "FISH_WHITE_BONES", name: "Ości białych ryb", category: .fish, allowedVariants: [.rybnyDelikatny, .rybnyIntensywny], bonesFlag: true, fatScore: 0.5, collagenScore: 0.6, tags: ["fishBase"]),
+        .init(id: "FISH_HEADS", name: "Głowy białych ryb", category: .fish, allowedVariants: [.rybnyDelikatny, .rybnyIntensywny], bonesFlag: true, fatScore: 0.7, collagenScore: 0.9, tags: ["fishBase"]),
+        .init(id: "SEAFOOD_SHRIMP_SHELLS", name: "Pancerze krewetek", category: .fish, allowedVariants: [.rybnyIntensywny], bonesFlag: false, fatScore: 0.4, collagenScore: 0.4, tags: ["umami"]),
+        .init(id: "SEAFOOD_SHELLS", name: "Skorupiaki / małże", category: .fish, allowedVariants: [.rybnyIntensywny], bonesFlag: false, fatScore: 0.5, collagenScore: 0.4, tags: ["umami"]),
+        .init(id: "VEG_ONION", name: "Cebula", category: .veg, allowedVariants: [.rosolLekki, .rosolBogaty, .ramenShio, .ramenTonkotsu, .wolowyCzysty, .wolowyMocny, .warzywnyJasny, .warzywnyUmami, .rybnyDelikatny, .rybnyIntensywny], bonesFlag: false, fatScore: 0, collagenScore: 0, tags: ["onion"]),
+        .init(id: "VEG_CARROT", name: "Marchew", category: .veg, allowedVariants: [.rosolLekki, .rosolBogaty, .wolowyCzysty, .wolowyMocny, .warzywnyJasny, .warzywnyUmami, .rybnyDelikatny, .rybnyIntensywny], bonesFlag: false, fatScore: 0, collagenScore: 0, tags: ["sweetRisk"]),
+        .init(id: "VEG_CELERIAC", name: "Seler korzeniowy", category: .veg, allowedVariants: [.rosolLekki, .rosolBogaty, .wolowyCzysty, .wolowyMocny, .warzywnyJasny, .warzywnyUmami], bonesFlag: false, fatScore: 0, collagenScore: 0, tags: ["base"]),
+        .init(id: "VEG_PARSNIP_PL", name: "Pietruszka korzeń", category: .veg, allowedVariants: [.rosolLekki, .rosolBogaty, .wolowyCzysty, .wolowyMocny, .warzywnyJasny, .warzywnyUmami], bonesFlag: false, fatScore: 0, collagenScore: 0, tags: ["base"]),
+        .init(id: "VEG_LEEK", name: "Por", category: .veg, allowedVariants: [.rosolLekki, .rosolBogaty, .ramenTonkotsu, .warzywnyJasny, .warzywnyUmami, .rybnyDelikatny, .rybnyIntensywny], bonesFlag: false, fatScore: 0, collagenScore: 0, tags: ["leek"]),
+        .init(id: "VEG_CELERY_STALK", name: "Seler naciowy", category: .veg, allowedVariants: [.rybnyDelikatny, .rybnyIntensywny], bonesFlag: false, fatScore: 0, collagenScore: 0, tags: ["stalk"]),
+        .init(id: "AROMA_GINGER", name: "Imbir", category: .veg, allowedVariants: [.ramenShio, .ramenTonkotsu], bonesFlag: false, fatScore: 0, collagenScore: 0, tags: ["aroma"]),
+        .init(id: "AROMA_GARLIC", name: "Czosnek", category: .veg, allowedVariants: [.ramenShio, .ramenTonkotsu], bonesFlag: false, fatScore: 0, collagenScore: 0, tags: ["aroma"]),
+        .init(id: "AROMA_SCALLION", name: "Dymka", category: .veg, allowedVariants: [.ramenShio], bonesFlag: false, fatScore: 0, collagenScore: 0, tags: ["aroma"])
     ]
 }
 
 
 extension UltraSpecCatalog {
     static let warningThresholds: [UltraSpecVariantID: UltraSpecWarningThresholds] = [
-        .rosolLekki: .init(density: .init(minGL: 140, maxGL: 230), wingsMaxShare: 0.25, beefMaxShare: nil, offalMaxShare: 0.12, fatWarn: 1.6, boneMin: 0.60, collagenMin: nil, vegetableCapGL: 350, carrotMaxShare: nil),
-        .rosolBogaty: .init(density: .init(minGL: 240, maxGL: 420), wingsMaxShare: nil, beefMaxShare: 0.55, offalMaxShare: 0.12, fatWarn: 2.0, boneMin: 0.35, collagenMin: 1.2, vegetableCapGL: 350, carrotMaxShare: nil),
-        .ramenShio: .init(density: .init(minGL: 180, maxGL: 350), wingsMaxShare: nil, beefMaxShare: 0.55, offalMaxShare: 0.12, fatWarn: 2.0, boneMin: nil, collagenMin: nil, vegetableCapGL: 350, carrotMaxShare: nil),
-        .ramenTonkotsu: .init(density: .init(minGL: 450, maxGL: 1200), wingsMaxShare: nil, beefMaxShare: nil, offalMaxShare: nil, fatWarn: nil, boneMin: nil, collagenMin: nil, vegetableCapGL: 350, carrotMaxShare: nil),
-        .wolowyCzysty: .init(density: .init(minGL: 260, maxGL: 520), wingsMaxShare: nil, beefMaxShare: nil, offalMaxShare: 0.12, fatWarn: 2.0, boneMin: nil, collagenMin: nil, vegetableCapGL: 350, carrotMaxShare: nil),
-        .wolowyMocny: .init(density: .init(minGL: 380, maxGL: 700), wingsMaxShare: nil, beefMaxShare: nil, offalMaxShare: 0.12, fatWarn: 2.2, boneMin: nil, collagenMin: nil, vegetableCapGL: 350, carrotMaxShare: nil),
-        .warzywnyJasny: .init(density: .init(minGL: 220, maxGL: 320), wingsMaxShare: nil, beefMaxShare: nil, offalMaxShare: nil, fatWarn: nil, boneMin: nil, collagenMin: nil, vegetableCapGL: 420, carrotMaxShare: 0.25),
-        .warzywnyUmami: .init(density: .init(minGL: 260, maxGL: 380), wingsMaxShare: nil, beefMaxShare: nil, offalMaxShare: nil, fatWarn: nil, boneMin: nil, collagenMin: nil, vegetableCapGL: 420, carrotMaxShare: 0.30),
-        .rybnyDelikatny: .init(density: .init(minGL: 250, maxGL: 380), wingsMaxShare: nil, beefMaxShare: nil, offalMaxShare: nil, fatWarn: nil, boneMin: nil, collagenMin: nil, vegetableCapGL: 120, carrotMaxShare: 0.15),
-        .rybnyIntensywny: .init(density: .init(minGL: 320, maxGL: 480), wingsMaxShare: nil, beefMaxShare: nil, offalMaxShare: nil, fatWarn: nil, boneMin: nil, collagenMin: nil, vegetableCapGL: 120, carrotMaxShare: 0.15)
+        .rosolLekki:    .init(density: .init(minGL: 140, maxGL: 230), wingsMaxShare: 0.25, beefMaxShare: nil,  offalMaxShare: 0.12, fatWarn: 1.6, boneMin: 0.60, collagenMin: nil, vegetableCapGL: 350, carrotMaxShare: nil,  minMeatPerPotGL: 50),
+        .rosolBogaty:   .init(density: .init(minGL: 240, maxGL: 420), wingsMaxShare: nil,  beefMaxShare: 0.55, offalMaxShare: 0.12, fatWarn: 2.0, boneMin: 0.35, collagenMin: 1.2, vegetableCapGL: 350, carrotMaxShare: nil,  minMeatPerPotGL: 70),
+        .ramenShio:     .init(density: .init(minGL: 180, maxGL: 350), wingsMaxShare: nil,  beefMaxShare: 0.55, offalMaxShare: 0.12, fatWarn: 2.0, boneMin: nil,  collagenMin: nil, vegetableCapGL: 350, carrotMaxShare: nil,  minMeatPerPotGL: 60),
+        .ramenTonkotsu: .init(density: .init(minGL: 450, maxGL: 1200), wingsMaxShare: nil, beefMaxShare: nil,  offalMaxShare: nil,  fatWarn: nil, boneMin: nil,  collagenMin: nil, vegetableCapGL: 350, carrotMaxShare: nil,  minMeatPerPotGL: 150),
+        .wolowyCzysty:  .init(density: .init(minGL: 260, maxGL: 520), wingsMaxShare: nil,  beefMaxShare: nil,  offalMaxShare: 0.12, fatWarn: 2.0, boneMin: nil,  collagenMin: nil, vegetableCapGL: 350, carrotMaxShare: nil,  minMeatPerPotGL: 80),
+        .wolowyMocny:   .init(density: .init(minGL: 380, maxGL: 700), wingsMaxShare: nil,  beefMaxShare: nil,  offalMaxShare: 0.12, fatWarn: 2.2, boneMin: nil,  collagenMin: nil, vegetableCapGL: 350, carrotMaxShare: nil,  minMeatPerPotGL: 120),
+        .warzywnyJasny: .init(density: .init(minGL: 220, maxGL: 320), wingsMaxShare: nil,  beefMaxShare: nil,  offalMaxShare: nil,  fatWarn: nil, boneMin: nil,  collagenMin: nil, vegetableCapGL: 420, carrotMaxShare: 0.25, minMeatPerPotGL: nil),
+        .warzywnyUmami: .init(density: .init(minGL: 260, maxGL: 380), wingsMaxShare: nil,  beefMaxShare: nil,  offalMaxShare: nil,  fatWarn: nil, boneMin: nil,  collagenMin: nil, vegetableCapGL: 420, carrotMaxShare: 0.30, minMeatPerPotGL: nil),
+        .rybnyDelikatny:  .init(density: .init(minGL: 250, maxGL: 380), wingsMaxShare: nil, beefMaxShare: nil, offalMaxShare: nil, fatWarn: nil, boneMin: nil, collagenMin: nil, vegetableCapGL: 120, carrotMaxShare: 0.15, minMeatPerPotGL: nil),
+        .rybnyIntensywny: .init(density: .init(minGL: 320, maxGL: 480), wingsMaxShare: nil, beefMaxShare: nil, offalMaxShare: nil, fatWarn: nil, boneMin: nil, collagenMin: nil, vegetableCapGL: 120, carrotMaxShare: 0.15, minMeatPerPotGL: nil)
     ]
 
     static let vegetableBaskets: [UltraSpecVariantID: [UltraSpecVegetableBasketItem]] = [

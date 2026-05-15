@@ -45,6 +45,7 @@ enum UltraSpecEngine {
         let ingredientMap = Dictionary(uniqueKeysWithValues: UltraSpecCatalog.ingredients.map { ($0.id, $0) })
         let resolvedItems: [(UltraSpecIngredient, Int)] = request.items.compactMap { item in
             guard let ingredient = ingredientMap[item.ingredientID] else { return nil }
+            guard ingredient.allowedVariants.contains(request.variant) else { return nil }
             return (ingredient, item.grams)
         }
 
@@ -60,6 +61,7 @@ enum UltraSpecEngine {
 
         guard request.potCapacityL >= 0.25 else { throw UltraSpecEngineError.hardPotTooSmall }
         guard request.potCapacityL <= 30 else { throw UltraSpecEngineError.hardPotTooBig }
+        guard totalAnimalG <= 10_000 else { throw UltraSpecEngineError.hardTooMuchMeat }
 
         let animalRequired: Bool = {
             switch request.variant {
@@ -119,6 +121,14 @@ enum UltraSpecEngine {
             if densityGL < thresholds.density.minGL {
                 warnings.append("UNDERPOWER")
             }
+            // Density alone can't detect "too little" when waterFactor is fixed:
+            // waterStartL ∝ totalAnimalG, so densityGL = constant regardless of quantity.
+            // This absolute check catches the case of tiny amounts in a large pot.
+            if !warnings.contains("UNDERPOWER"),
+               let minPerPot = thresholds.minMeatPerPotGL,
+               Double(totalAnimalG) / request.potCapacityL < minPerPot {
+                warnings.append("UNDERPOWER_FOR_POT")
+            }
             if densityGL > thresholds.density.maxGL {
                 warnings.append("OVERPOWER")
             }
@@ -126,7 +136,7 @@ enum UltraSpecEngine {
             if vegGL > thresholds.vegetableCapGL {
                 warnings.append("VEG_TOO_MUCH")
             }
-            if let limit = thresholds.wingsMaxShare, poultryG > 0, (Double(wingsG) / Double(poultryG)) > limit {
+            if let limit = thresholds.wingsMaxShare, totalAnimalG > 0, (Double(wingsG) / Double(totalAnimalG)) > limit {
                 warnings.append("WINGS_TOO_HIGH")
             }
             if let limit = thresholds.beefMaxShare, totalAnimalG > 0, (Double(beefG) / Double(totalAnimalG)) > limit {
@@ -187,4 +197,5 @@ enum UltraSpecEngineError: Error, Equatable {
     case hardPotTooBig
     case hardNotFit
     case hardNoBase
+    case hardTooMuchMeat
 }

@@ -256,4 +256,80 @@ final class UltraSpecEdgeCaseTests: XCTestCase {
         // Only known ingredient should count
         XCTAssertEqual(result.totalAnimalG, 1000)
     }
+
+    // MARK: - TC-02: allowedVariants filtering (regression for C-6 fix)
+
+    // A fish ingredient must be rejected when used in a rosol variant.
+    // With C-6 fix: FISH_WHITE_BONES is filtered out for .rosolLekki,
+    // totalAnimalG becomes 0, which triggers hardNoBase.
+    func testAllowedVariantsRejectsCrossVariantIngredient() {
+        let request = UltraSpecCalculationRequest(
+            variant: .rosolLekki,
+            potCapacityL: 5,
+            items: [.init(ingredientID: "FISH_WHITE_BONES", grams: 500)],
+            clarityMode: .normal
+        )
+        XCTAssertThrowsError(try UltraSpecEngine.calculate(request: request)) { error in
+            XCTAssertEqual(error as? UltraSpecEngineError, .hardNoBase,
+                "FISH_WHITE_BONES should be rejected for .rosolLekki, leaving totalAnimalG=0")
+        }
+    }
+
+    // A valid poultry ingredient is accepted; adding a cross-variant fish
+    // ingredient must NOT inflate totalAnimalG.
+    func testAllowedVariantsDoesNotInflateTotalAnimalG() throws {
+        let request = UltraSpecCalculationRequest(
+            variant: .rosolLekki,
+            potCapacityL: 7,
+            items: [
+                .init(ingredientID: "POULTRY_OLD_HEN", grams: 1000),
+                .init(ingredientID: "FISH_WHITE_BONES", grams: 500)
+            ],
+            clarityMode: .normal
+        )
+        let result = try UltraSpecEngine.calculate(request: request)
+        XCTAssertEqual(result.totalAnimalG, 1000,
+            "FISH_WHITE_BONES must be excluded for .rosolLekki — only POULTRY_OLD_HEN should count")
+    }
+
+    // MARK: - TC-03: Bridge vegetable names (regression for C-5 fix)
+
+    // UltraSpecBridge.makeBrothResult() must return display names from the catalog,
+    // not raw ingredientIDs like "VEG_CARROT".
+    func testBridgeVegetableNamesArePretty() throws {
+        let request = UltraSpecCalculationRequest(
+            variant: .rosolLekki,
+            potCapacityL: 7,
+            items: [.init(ingredientID: "POULTRY_OLD_HEN", grams: 1200)],
+            clarityMode: .normal
+        )
+        let ultraResult = try UltraSpecEngine.calculate(request: request)
+
+        // rosolLekki basket always includes VEG_CARROT
+        XCTAssertTrue(ultraResult.vegetables.contains { $0.ingredientID == "VEG_CARROT" },
+                      "Expected VEG_CARROT in ultra result vegetables")
+
+        let selections = [BrothIngredientSelection(
+            ingredientID: "POULTRY_OLD_HEN",
+            ingredientName: "Kura stara",
+            category: .poultry,
+            grams: 1200
+        )]
+        let brothResult = UltraSpecBridge.makeBrothResult(
+            from: ultraResult,
+            variant: .rosolLekki,
+            selections: selections,
+            clarityMode: .normal,
+            useVinegar: false
+        )
+
+        // No vegetable name should look like a raw ID (uppercase with underscores)
+        for veg in brothResult.vegetables {
+            XCTAssertFalse(veg.name.contains("_") && veg.name == veg.name.uppercased(),
+                           "Vegetable name '\(veg.name)' appears to be a raw ingredient ID")
+        }
+
+        let carrot = brothResult.vegetables.first { $0.name == "Marchew" }
+        XCTAssertNotNil(carrot, "Expected 'Marchew' in bridge result, got: \(brothResult.vegetables.map(\.name))")
+    }
 }

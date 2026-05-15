@@ -25,6 +25,7 @@ final class BatchStore: ObservableObject {
         totalMinutes: Int,
         warningCount: Int,
         hasThermometer: Bool,
+        potSizeLitersAtCooking: Int = 7,
         selectedIngredientIDs: [String]? = nil,
         customTitle: String? = nil,
         modeRawValue: String = "legacy",
@@ -58,6 +59,7 @@ final class BatchStore: ObservableObject {
             activeCookingMinutes: activeCookingMinutes,
             warningCount: warningCount,
             hasThermometer: hasThermometer,
+            potSizeLitersAtCooking: potSizeLitersAtCooking,
             selectedIngredientIDs: selectedIngredientIDs,
             selectedIngredientsSnapshot: selectedIngredientsSnapshot,
             meatOverrides: meatOverrides,
@@ -90,6 +92,7 @@ final class BatchStore: ObservableObject {
         activeCookingMinutes: Int,
         warningCount: Int,
         hasThermometer: Bool,
+        potSizeLitersAtCooking: Int = 7,
         selectedIngredientIDs: [String]? = nil,
         selectedIngredientsSnapshot: [BatchIngredientSnapshot]? = nil,
         meatOverrides: [String: Int]? = nil,
@@ -106,6 +109,7 @@ final class BatchStore: ObservableObject {
             totalMinutes: totalMinutes,
             warningCount: warningCount,
             hasThermometer: hasThermometer,
+            potSizeLitersAtCooking: potSizeLitersAtCooking,
             selectedIngredientIDs: selectedIngredientIDs,
             customTitle: customTitle,
             modeRawValue: modeRawValue,
@@ -151,6 +155,13 @@ final class BatchStore: ObservableObject {
         guard let index = batches.firstIndex(where: { $0.id == batchID }) else { return }
 
         batches[index].customTitle = normalizedTitle(customTitle)
+        save()
+    }
+
+    func markBatchCompleted(batchID: UUID) {
+        guard let index = batches.firstIndex(where: { $0.id == batchID }) else { return }
+        guard batches[index].cookingOutcome != .interruptedByNewCooking else { return }
+        batches[index].cookingOutcomeRawValue = CookingOutcome.completed.rawValue
         save()
     }
 

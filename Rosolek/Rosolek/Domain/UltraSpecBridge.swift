@@ -63,8 +63,12 @@ enum UltraSpecBridge {
             peppercornCount: ultra.spices.peppercornCount,
             allspiceCount: ultra.spices.allspiceCount,
             bayLeafCount: ultra.spices.bayLeafCount,
-            vegetables: ultra.vegetables.map {
-                VegetableAmount(name: $0.ingredientID, amount: "\($0.grams) g", note: nil)
+            vegetables: ultra.vegetables.map { veg in
+                VegetableAmount(
+                    name: UltraSpecCatalog.ingredients.first(where: { $0.id == veg.ingredientID })?.name ?? veg.ingredientID,
+                    amount: "\(veg.grams) g",
+                    note: nil
+                )
             },
             meatParts: selections.map { MeatAmount(name: $0.name, grams: $0.grams, note: nil) },
             timeline: UltraSpecTimelineCatalog.steps(for: variant).map {

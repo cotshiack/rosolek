@@ -80,6 +80,9 @@ enum BrothWarningCode: String, Hashable {
     case waterReducedToFit
     case baseTooLowForWater
     case baseTooHighForWater
+    case baseTooLittleForPot
+    case vegTooMuch
+    case vegSweetRisk
 }
 
 struct BrothWarningParameter: Hashable {
@@ -226,6 +229,13 @@ enum BrothPreset: String, CaseIterable, Identifiable, Hashable {
             return ["kregoslup_rybny", "glowy_rybne"]
         case .collagenPoultryReady:
             return ["szyje_kurczaka", "korpus_kurczaka", "lapki", "skrzydla_kurczaka", "udka_kurczaka"]
+        }
+    }
+
+    var ultraVariant: UltraSpecVariantID? {
+        switch self {
+        case .fishReady: return .rybnyDelikatny
+        default:         return nil
         }
     }
 

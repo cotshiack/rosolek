@@ -1,5 +1,5 @@
 import SwiftUI
-import Combine
+import Combine // required for Timer.publish
 import AudioToolbox
 import UIKit
 import UserNotifications
@@ -98,7 +98,7 @@ struct CookingModeView: View {
     @State private var finalStepCompleted = false
     @State private var showFinishAlert = false
     @State private var activeSheet: LiveSheet?
-    @State private var isTimelineExpanded = false
+    @SceneStorage("cookingMode.isTimelineExpanded") private var isTimelineExpanded = false
 
     @State private var prepMeatReady = false
     @State private var prepWaterReady = false
@@ -107,7 +107,12 @@ struct CookingModeView: View {
     @State private var prepVinegarReady = false
 
     @State private var liveActivity: Activity<CookingActivityAttributes>?
-    @State private var timerPublisher = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
+
+    private let timerPublisher = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
+    @State private var phaseStartDate: Date? = nil
+
+    @State private var _cachedPhaseBuilder: CookingPhaseBuilder? = nil
+    @State private var _cachedPhases: [LivePhase] = []
 
     private var liveControlsOverlayHeight: CGFloat { 238 }
     private var finishButtonOverlayHeight: CGFloat { 92 }
@@ -119,7 +124,7 @@ struct CookingModeView: View {
     // MARK: - Phase builder (domain logic delegated to CookingPhaseBuilder)
 
     private var phaseBuilder: CookingPhaseBuilder {
-        CookingPhaseBuilder(batch: currentBatch, result: result, hasThermometer: hasThermometer)
+        _cachedPhaseBuilder ?? CookingPhaseBuilder(batch: currentBatch, result: result, hasThermometer: hasThermometer)
     }
 
     private var activeUltraVariant: UltraSpecVariantID? { phaseBuilder.activeUltraVariant }
@@ -135,7 +140,17 @@ struct CookingModeView: View {
     private var vegetableReminderRows: [LiveIngredientReminderRowData] { phaseBuilder.vegetableReminderRows }
     private var spiceReminderRows: [LiveIngredientReminderRowData] { phaseBuilder.spiceReminderRows }
 
-    private var phases: [LivePhase] { phaseBuilder.buildPhases() }
+    private var phases: [LivePhase] {
+        _cachedPhases.isEmpty
+            ? CookingPhaseBuilder(batch: currentBatch, result: result, hasThermometer: hasThermometer).buildPhases()
+            : _cachedPhases
+    }
+
+    private func rebuildPhaseCache() {
+        let builder = CookingPhaseBuilder(batch: currentBatch, result: result, hasThermometer: hasThermometer)
+        _cachedPhaseBuilder = builder
+        _cachedPhases = builder.buildPhases()
+    }
 
     private var currentPhase: LivePhase {
         phases[min(phaseIndex, phases.count - 1)]
@@ -271,27 +286,24 @@ struct CookingModeView: View {
     }
 
     var body: some View {
-        GeometryReader { _ in
-            ScrollView(.vertical, showsIndicators: false) {
-                VStack(alignment: .leading, spacing: 14) {
-                    if !sessionStarted {
-                        prepStepCard
-                    } else {
-                        activeStepCard
-                    }
-
-                    timelineSection
+        ScrollView(.vertical, showsIndicators: false) {
+            VStack(alignment: .leading, spacing: 14) {
+                if !sessionStarted {
+                    prepStepCard
+                } else {
+                    activeStepCard
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, AppSpacing.screen)
-                .padding(.top, 2)
-                .padding(.bottom, isFinished ? (finishButtonOverlayHeight + 20) : (liveControlsOverlayHeight + 20))
+
+                timelineSection
             }
-            .scrollBounceBehavior(.basedOnSize, axes: .vertical)
-            .background(AppTheme.background)
-            .clipped()
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, AppSpacing.screen)
+            .padding(.top, 2)
+            .padding(.bottom, isFinished ? (finishButtonOverlayHeight + 20) : (liveControlsOverlayHeight + 20))
         }
+        .scrollBounceBehavior(.basedOnSize, axes: .vertical)
+        .background(AppTheme.background)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .navigationTitle("Gotowanie na żywo")
         .navigationBarTitleDisplayMode(.inline)
         .toolbarBackground(AppTheme.background, for: .navigationBar)
@@ -353,6 +365,7 @@ struct CookingModeView: View {
             Button("Zakończ gotowanie") {
                 finalStepCompleted = true
                 isStageRunning = false
+                batchStore.markBatchCompleted(batchID: batch.id)
                 CookingSession.clear()
                 CookingNotificationService.shared.cancelAll()
                 endLiveActivity()
@@ -364,6 +377,8 @@ struct CookingModeView: View {
         }
         .onAppear {
             UIApplication.shared.isIdleTimerDisabled = true
+            CookingNotificationService.shared.requestPermission()
+            rebuildPhaseCache()
             prepThermometerReady = !hasThermometer
             prepVinegarReady = !batchUsesVinegar
             restoreSessionIfNeeded()
@@ -383,6 +398,9 @@ struct CookingModeView: View {
                 attachToExistingLiveActivityIfNeeded()
                 updateLiveActivity()
             }
+        }
+        .onChange(of: currentBatch.id) { _, _ in
+            rebuildPhaseCache()
         }
         .onReceive(timerPublisher) { _ in
             handleTick()
@@ -1027,11 +1045,10 @@ struct CookingModeView: View {
 
         processElapsedSeconds += 1
 
-        if currentPhaseHasTimer {
-            phaseElapsedSeconds += 1
+        if currentPhaseHasTimer, let start = phaseStartDate {
+            phaseElapsedSeconds = min(Int(Date().timeIntervalSince(start)), currentPhaseTotalSeconds)
 
             if phaseElapsedSeconds >= currentPhaseTotalSeconds {
-                phaseElapsedSeconds = currentPhaseTotalSeconds
                 playTimedStageFinishedSignal()
                 if phaseIndex >= phases.count - 1 {
                     isStageRunning = false
@@ -1050,7 +1067,8 @@ struct CookingModeView: View {
         }
         CookingNotificationService.shared.schedulePhaseEnd(
             stepTitle: currentPhase.title,
-            inSeconds: currentPhaseRemainingSeconds
+            inSeconds: currentPhaseRemainingSeconds,
+            brothKindTitle: currentBatch.defaultTitle
         )
     }
 
@@ -1075,8 +1093,7 @@ struct CookingModeView: View {
 
     private func startCookingFromPrep() {
         guard canStartCooking else { return }
-
-        CookingNotificationService.shared.requestPermission()
+        guard phases.count > 1 else { return }
 
         withAnimation(.easeInOut(duration: 0.3)) {
             sessionStarted = true
@@ -1084,6 +1101,7 @@ struct CookingModeView: View {
             phaseElapsedSeconds = 0
             isStageRunning = true
         }
+        phaseStartDate = Date()
         schedulePhaseNotification()
         startLiveActivity()
         playStartSignal()
@@ -1115,6 +1133,7 @@ struct CookingModeView: View {
             phaseIndex += 1
             phaseElapsedSeconds = 0
         }
+        phaseStartDate = Date()
         schedulePhaseNotification()
         updateLiveActivity()
         UINotificationFeedbackGenerator().notificationOccurred(haptic)
@@ -1126,7 +1145,9 @@ struct CookingModeView: View {
         withAnimation(.easeInOut(duration: 0.25)) {
             phaseIndex -= 1
             phaseElapsedSeconds = 0
+
         }
+        phaseStartDate = Date()
         schedulePhaseNotification()
         updateLiveActivity()
         UIImpactFeedbackGenerator(style: .light).impactOccurred()
@@ -1150,7 +1171,7 @@ struct CookingModeView: View {
     }
 
     private func playFinishSignal() {
-        AudioServicesPlaySystemSound(1005)
+        AudioServicesPlaySystemSound(1009)
     }
 
     private func countdownString(_ seconds: Int) -> String {
@@ -1270,6 +1291,9 @@ struct CookingModeView: View {
             let remaining = max(0, Int(stepEndDate.timeIntervalSinceNow))
             phaseElapsedSeconds = max(0, currentDuration - remaining)
         }
+        if state.isRunning {
+            phaseStartDate = Date().addingTimeInterval(-Double(phaseElapsedSeconds))
+        }
     }
 
     private func saveSession(backgrounded: Bool) {
@@ -1300,7 +1324,11 @@ struct CookingModeView: View {
         var remaining = elapsed
         processElapsedSeconds += elapsed
         while remaining > 0 && phaseIndex < phases.count - 1 {
-            guard currentPhaseHasTimer else { break }
+            if !currentPhaseHasTimer {
+                phaseIndex += 1
+                phaseElapsedSeconds = 0
+                continue
+            }
             let timeLeft = currentPhaseTotalSeconds - phaseElapsedSeconds
             if remaining >= timeLeft {
                 remaining -= timeLeft
@@ -1343,6 +1371,10 @@ struct CookingModeView: View {
                 advanceElapsedThroughPhases(elapsed)
             }
         }
+
+        if isStageRunning {
+            phaseStartDate = Date().addingTimeInterval(-Double(phaseElapsedSeconds))
+        }
     }
 
     private func resumeFromBackground() {
@@ -1357,6 +1389,7 @@ struct CookingModeView: View {
         guard elapsed > 0 else { return }
 
         advanceElapsedThroughPhases(elapsed)
+        phaseStartDate = Date().addingTimeInterval(-Double(phaseElapsedSeconds))
         saveSession(backgrounded: false)
     }
 }

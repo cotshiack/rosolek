@@ -60,10 +60,11 @@ enum UltraSpecTimelineCatalog {
             ]
         case .ramenTonkotsu:
             return [
-                .init(stepID: "prep", timeLabel: "0 min", title: "Przygotuj stanowisko", subtitle: "Kości i narzędzia gotowe.", minuteOffset: 0),
-                .init(stepID: "tonkotsu_boil_emulsify", timeLabel: "360 min", title: "Gotuj na mocnym wrzeniu", subtitle: "Wrzenie jest zamierzone — tak ma być.", minuteOffset: 360),
-                .init(stepID: "tonkotsu_aromatics_end", timeLabel: "420 min", title: "Dodaj aromaty na końcu", subtitle: "Krótko przed cedzeniem.", minuteOffset: 420, isManual: true),
-                .init(stepID: "strain_season", timeLabel: "480+ min", title: "Przecedź i dopraw", subtitle: "Słoność ustawiaj przez tare.", minuteOffset: 480, isManual: true)
+                .init(stepID: "prep",                     timeLabel: "0 min",    title: "Przygotuj stanowisko",    subtitle: "Kości i narzędzia gotowe.", minuteOffset: 0),
+                .init(stepID: "tonkotsu_boil_emulsify",   timeLabel: "420 min",  title: "Gotuj na mocnym wrzeniu", subtitle: "Wrzenie jest zamierzone — tak ma być. Kości muszą być stale przykryte.", minuteOffset: 420),
+                .init(stepID: "tonkotsu_aromatics_end",   timeLabel: "—",        title: "Dodaj aromaty na końcu",  subtitle: "Dodaj imbir, czosnek i szczypior — 60 minut przed cedzeniem.", minuteOffset: 420, isManual: true),
+                .init(stepID: "tonkotsu_aroma_simmer",    timeLabel: "60 min",   title: "Gotuj z aromatami",       subtitle: "Ostatnie 60 minut — aromaty budują finisz bulionu.", minuteOffset: 480),
+                .init(stepID: "strain_season",            timeLabel: "480+ min", title: "Przecedź i dopraw",       subtitle: "Słoność ustawiaj przez tare.", minuteOffset: 480, isManual: true)
             ]
         case .wolowyCzysty:
             return [

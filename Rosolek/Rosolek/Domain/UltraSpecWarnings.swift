@@ -5,6 +5,7 @@ enum UltraSpecWarningCode: String, Hashable {
     case hardPotTooBig = "HARD_POT_TOO_BIG"
     case hardNotFit = "HARD_NOT_FIT"
     case underpower = "UNDERPOWER"
+    case underpowerForPot = "UNDERPOWER_FOR_POT"
     case overpower = "OVERPOWER"
     case vegTooMuch = "VEG_TOO_MUCH"
     case paperFilterLowerIntensity = "PAPER_FILTER_LOWER_INTENSITY"
@@ -48,20 +49,25 @@ enum UltraSpecWarnings {
         if let thresholds {
             if densityGL < thresholds.density.minGL {
                 let deltaMeat = Int((thresholds.density.minGL * waterStartL - Double(totalAnimalG)).rounded(.up))
-                let deltaWater = max(0, waterStartL - (Double(totalAnimalG) / thresholds.density.minGL))
-                warnings.append(.init(code: .underpower, severity: .warn, title: "Bulion może wyjść zbyt delikatny", message: "Baza jest zbyt mała względem ilości wody dla wybranego wariantu.", fixNow: "Dodaj więcej bazy albo zmniejsz ilość wody.", suggestion: .init(text: "Dodaj około \(max(0, deltaMeat)) g bazy albo zmniejsz wodę o \(format(deltaWater)) L.", deltaMeatG: max(0, deltaMeat), deltaWaterL: deltaWater, deltaVegetablesG: nil)))
+                warnings.append(.init(code: .underpower, severity: .warn, title: "Bulion może wyjść zbyt delikatny", message: "Baza jest zbyt mała względem ilości wody dla wybranego wariantu.", fixNow: "Dodaj więcej bazy.", suggestion: .init(text: "Dodaj około \(max(0, deltaMeat)) g bazy.", deltaMeatG: max(0, deltaMeat), deltaWaterL: nil, deltaVegetablesG: nil)))
+            } else if let minPerPot = thresholds.minMeatPerPotGL,
+                      Double(totalAnimalG) / request.potCapacityL < minPerPot {
+                let minGrams = Int((minPerPot * request.potCapacityL).rounded(.up))
+                let deltaMeat = max(0, minGrams - totalAnimalG)
+                warnings.append(.init(code: .underpowerForPot, severity: .info, title: "Mała porcja jak na ten garnek", message: "Proporcje bulionu są zachowane — woda dobrana automatycznie do ilości bazy. Uzysk będzie mniejszy niż przy pełnym wsadzie.", fixNow: "Możesz dodać więcej bazy, żeby zwiększyć uzysk — proporcje dobiorą się automatycznie.", suggestion: .init(text: "Dodaj około \(deltaMeat) g bazy, żeby zwiększyć uzysk.", deltaMeatG: deltaMeat, deltaWaterL: nil, deltaVegetablesG: nil)))
             }
 
             if densityGL > thresholds.density.maxGL {
-                let deltaWater = max(0, (Double(totalAnimalG) / thresholds.density.maxGL) - waterStartL)
-                warnings.append(.init(code: .overpower, severity: .warn, title: "Bulion może wyjść zbyt ciężki", message: "Baza jest bardzo gęsta względem ilości wody.", fixNow: "Dodaj wody lub zmniejsz ilość bazy.", suggestion: .init(text: "Dodaj około \(format(deltaWater)) L wody.", deltaMeatG: nil, deltaWaterL: deltaWater, deltaVegetablesG: nil)))
+                let targetMeatG = Int((thresholds.density.maxGL * waterStartL).rounded(.down))
+                let deltaMeat = max(0, totalAnimalG - targetMeatG)
+                warnings.append(.init(code: .overpower, severity: .warn, title: "Bulion może wyjść zbyt ciężki", message: "Baza jest bardzo gęsta względem ilości wody.", fixNow: "Zmniejsz bazę.", suggestion: .init(text: "Usuń około \(deltaMeat) g bazy.", deltaMeatG: -deltaMeat, deltaWaterL: nil, deltaVegetablesG: nil)))
             }
 
             let vegGL = waterStartL > 0 ? Double(vegetableTotalG) / waterStartL : 0
             if vegGL > thresholds.vegetableCapGL {
                 let targetVegG = Int((thresholds.vegetableCapGL * waterStartL).rounded(.down))
                 let deltaVeg = max(0, vegetableTotalG - targetVegG)
-                warnings.append(.init(code: .vegTooMuch, severity: .warn, title: "Za dużo warzyw na litr", message: "Bulion może wyjść zbyt słodki i mniej klarowny.", fixNow: "Zmniejsz warzywa lub zwiększ wodę, jeśli garnek pozwala.", suggestion: .init(text: "Usuń około \(deltaVeg) g warzyw, aby wrócić do limitu.", deltaMeatG: nil, deltaWaterL: nil, deltaVegetablesG: deltaVeg)))
+                warnings.append(.init(code: .vegTooMuch, severity: .warn, title: "Za dużo warzyw na litr", message: "Bulion może wyjść zbyt słodki i mniej klarowny.", fixNow: "Zmniejsz warzywa do wskazanej ilości.", suggestion: .init(text: "Usuń około \(deltaVeg) g warzyw, aby wrócić do limitu.", deltaMeatG: nil, deltaWaterL: nil, deltaVegetablesG: deltaVeg)))
             }
 
             // Show at most one composition warning from this group — the highest-priority hit.

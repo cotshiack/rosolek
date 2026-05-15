@@ -3,7 +3,7 @@ import UIKit
 
 struct ContentView: View {
     @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
-    @AppStorage("userFirstName") private var userFirstName = "Paweł"
+    @AppStorage("userFirstName") private var userFirstName = ""
     @AppStorage("potSizeLiters") private var potSizeLiters = 7
     @AppStorage("hasThermometer") private var hasThermometer = true
 
@@ -37,7 +37,7 @@ private struct HomeView: View {
     @EnvironmentObject private var batchStore: BatchStore
     @EnvironmentObject private var router: AppRouter
 
-    @AppStorage("userFirstName") private var userFirstName = "Paweł"
+    @AppStorage("userFirstName") private var userFirstName = ""
     @AppStorage("potSizeLiters") private var potSizeLiters = 7
     @AppStorage("hasThermometer") private var hasThermometer = true
 
@@ -55,7 +55,7 @@ private struct HomeView: View {
 
     private var displayName: String {
         let trimmed = userFirstName.trimmingCharacters(in: .whitespacesAndNewlines)
-        return trimmed.isEmpty ? "Paweł" : trimmed
+        return trimmed.isEmpty ? "Kucharz" : trimmed
     }
 
     private var filteredPresetItems: [HomePresetItem] {
@@ -152,7 +152,7 @@ private struct HomeView: View {
             if let deepLinkBatch {
                 CookingModeView(
                     batch: deepLinkBatch,
-                    result: deepLinkBatch.calculationResult(potSizeLiters: potSizeLiters),
+                    result: deepLinkBatch.calculationResult(),
                     totalWeightGrams: deepLinkBatch.totalWeightGrams,
                     selectedIngredientCount: deepLinkBatch.selectedIngredientCount,
                     hasThermometer: deepLinkBatch.hasThermometer
@@ -203,7 +203,7 @@ private struct HomeView: View {
     private var activeCookingBanner: some View {
         if let session = activeCookingSession,
            let batch = batchStore.batch(for: session.batchID) {
-            let result = batch.calculationResult(potSizeLiters: potSizeLiters)
+            let result = batch.calculationResult()
 
             NavigationLink {
                 CookingModeView(

@@ -1608,10 +1608,17 @@ private func buildBasicSummaryTimeline(profile: BrothProfile, hasLiver: Bool) ->
     let heatUp = 45
     let stabilizeEnd = heatUp + 60
 
-    let poultryOut = stabilizeEnd + 105
-    let vegetablesOut = stabilizeEnd + (profile == .cleaner ? 135 : 165)
-    let finishEnd = vegetablesOut + (profile == .cleaner ? 35 : 75)
-    let restEnd = finishEnd + 20
+    // Mirror CookingPhaseBuilder timing constants exactly
+    let poultrySimmer = profile == .cleaner ? 135 : 165   // poultrySimmerSeconds
+    let vegetableTotal = profile == .cleaner ? 155 : 195  // vegetablesTotalSeconds
+    let finishTotal = profile == .cleaner ? 35 : 75       // finishTotalSeconds
+    let hasBeef = profile == .richer
+    let showFinishPhase = hasBeef || hasLiver
+
+    let poultryOut = stabilizeEnd + poultrySimmer
+    let vegetablesOut = stabilizeEnd + vegetableTotal
+    let shutdownAt = vegetablesOut + (showFinishPhase ? finishTotal : 0)
+    let restEnd = shutdownAt + 20
     let seasonEnd = restEnd + 10
 
     var items: [CookingTimelineItem] = [
@@ -1637,12 +1644,14 @@ private func buildBasicSummaryTimeline(profile: BrothProfile, hasLiver: Bool) ->
             minuteOffset: poultryOut,
             timeLabel: minutesLabel(poultryOut),
             title: "Wyjmij drób",
-            subtitle: "Po 90–120 minutach od dodania warzyw."
+            subtitle: hasBeef
+                ? "Po 165 minutach od dodania warzyw — wołowina zostaje."
+                : "Po 135 minutach od dodania warzyw."
         )
     ]
 
     if hasLiver {
-        let liverIn = max(vegetablesOut, finishEnd - 30)
+        let liverIn = max(vegetablesOut, shutdownAt - 25)
         items.append(
             CookingTimelineItem(
                 minuteOffset: liverIn,
@@ -1653,21 +1662,23 @@ private func buildBasicSummaryTimeline(profile: BrothProfile, hasLiver: Bool) ->
         )
     }
 
+    items.append(CookingTimelineItem(
+        minuteOffset: vegetablesOut,
+        timeLabel: minutesLabel(vegetablesOut),
+        title: "Wyjmij warzywa",
+        subtitle: hasBeef
+            ? "Wołowina dochodzi jeszcze \(finishTotal) minut — zostaje w garnku."
+            : "Zwykle po \(vegetableTotal - poultrySimmer)–\(vegetableTotal - poultrySimmer + 10) minutach od wyjęcia drobiu."
+    ))
+
+    items.append(CookingTimelineItem(
+        minuteOffset: shutdownAt,
+        timeLabel: minutesLabel(shutdownAt),
+        title: "Wyłącz i odstaw",
+        subtitle: "Pozwól osadom opaść przez 15–20 minut."
+    ))
+
     items.append(contentsOf: [
-        CookingTimelineItem(
-            minuteOffset: vegetablesOut,
-            timeLabel: minutesLabel(vegetablesOut),
-            title: "Wyjmij warzywa",
-            subtitle: profile == .cleaner
-                ? "Zwykle po 120–150 minutach od dodania."
-                : "Zwykle po 150–180 minutach od dodania."
-        ),
-        CookingTimelineItem(
-            minuteOffset: finishEnd,
-            timeLabel: minutesLabel(finishEnd),
-            title: "Wyłącz i odstaw",
-            subtitle: "Pozwól osadom opaść przez 15–20 minut."
-        ),
         CookingTimelineItem(
             minuteOffset: restEnd,
             timeLabel: minutesLabel(restEnd),
@@ -1706,25 +1717,25 @@ private func buildGrandmaSummaryTimeline() -> [CookingTimelineItem] {
             subtitle: "Cebula opalana, pieprz, ziele, liść laurowy."
         ),
         CookingTimelineItem(
-            minuteOffset: 105,
-            timeLabel: "1 h 45 min",
+            minuteOffset: 100,
+            timeLabel: "1 h 40 min",
             title: "Wyłącz ogień i odstaw",
             subtitle: "Nie mieszaj. Pozwól opaść osadom przez 10 minut."
         ),
         CookingTimelineItem(
-            minuteOffset: 115,
-            timeLabel: "1 h 55 min",
+            minuteOffset: 110,
+            timeLabel: "1 h 50 min",
             title: "Przecedź rosół",
             subtitle: "Przelewaj spokojnie i nie wyciskaj składników."
         ),
         CookingTimelineItem(
-            minuteOffset: 120,
-            timeLabel: "2 h",
+            minuteOffset: 115,
+            timeLabel: "1 h 55 min",
             title: "Dopraw po cedzeniu",
             subtitle: "Sól dodawaj stopniowo już w czystym płynie."
         ),
         CookingTimelineItem(
-            minuteOffset: 122,
+            minuteOffset: 117,
             timeLabel: "Opcjonalnie",
             title: "Zostaw końcówkę z osadem",
             subtitle: "Nie przelewaj ostatnich 200–300 ml z dna garnka."
@@ -2004,9 +2015,15 @@ private func warningText(for warning: BrothWarning) -> String {
     case .waterReducedToFit:
         return "Dla tego zestawu i tego garnka klasyczna ilość wody byłaby za duża, więc policzyliśmy jej mniej. Rosół wyjdzie trochę mocniejszy i będzie go mniej."
     case .baseTooLowForWater:
-        return "Baza jest lekka względem ilości wody. Dla pełniejszego efektu dodaj więcej bazy albo zmniejsz wodę."
+        return "Baza jest lekka względem ilości wody. Dodaj więcej bazy dla pełniejszego efektu."
     case .baseTooHighForWater:
-        return "Baza jest bardzo gęsta względem ilości wody. Bulion może wyjść ciężki — rozważ dodanie wody."
+        return "Baza jest bardzo gęsta względem ilości wody. Bulion może wyjść ciężki — zmniejsz bazę."
+    case .baseTooLittleForPot:
+        return "Mniejsza porcja jak na ten garnek. Proporcje bulionu są zachowane — woda dobrana do ilości bazy."
+    case .vegTooMuch:
+        return "Warzywa przekraczają zalecany limit na litr wody. Bulion może wyjść zbyt słodki i mniej klarowny."
+    case .vegSweetRisk:
+        return "Udział marchewki jest za wysoki dla tego wariantu. Zmniejsz marchew i zwiększ seler lub pietruszkę."
     }
 }
 

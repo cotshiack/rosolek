@@ -1,4 +1,5 @@
 import Foundation
+import os
 
 enum CookingOutcome: String, Codable {
     case unknown
@@ -76,6 +77,7 @@ struct BatchRecord: Identifiable, Codable, Hashable {
 
     let warningCount: Int
     let hasThermometer: Bool
+    let potSizeLitersAtCooking: Int
 
     var selectedIngredientIDs: [String]?
     var selectedIngredientsSnapshot: [BatchIngredientSnapshot]?
@@ -112,13 +114,14 @@ struct BatchRecord: Identifiable, Codable, Hashable {
         activeCookingMinutes: Int? = nil,
         warningCount: Int,
         hasThermometer: Bool,
+        potSizeLitersAtCooking: Int = 7,
         selectedIngredientIDs: [String]? = nil,
         selectedIngredientsSnapshot: [BatchIngredientSnapshot]? = nil,
         meatOverrides: [String: Int]? = nil,
         vegetableOverrides: [String: Int]? = nil,
         spiceOverrides: [String: Int]? = nil,
         customTitle: String? = nil,
-        cookingOutcomeRawValue: String = CookingOutcome.completed.rawValue,
+        cookingOutcomeRawValue: String = CookingOutcome.unknown.rawValue,
         interruptedAt: Date? = nil,
         overallRating: Int? = nil,
         strengthFeedbackRawValue: String? = nil,
@@ -145,6 +148,7 @@ struct BatchRecord: Identifiable, Codable, Hashable {
         self.activeCookingMinutes = activeCookingMinutes ?? totalMinutes
         self.warningCount = warningCount
         self.hasThermometer = hasThermometer
+        self.potSizeLitersAtCooking = potSizeLitersAtCooking
         self.selectedIngredientIDs = selectedIngredientIDs
         self.selectedIngredientsSnapshot = selectedIngredientsSnapshot
         self.meatOverrides = meatOverrides
@@ -180,6 +184,7 @@ struct BatchRecord: Identifiable, Codable, Hashable {
         case activeCookingMinutes
         case warningCount
         case hasThermometer
+        case potSizeLitersAtCooking
         case selectedIngredientIDs
         case selectedIngredientsSnapshot
         case meatOverrides
@@ -220,7 +225,8 @@ struct BatchRecord: Identifiable, Codable, Hashable {
         self.modeRawValue = try container.decodeIfPresent(String.self, forKey: .modeRawValue) ?? fallbackModeRawValue
         self.presetRawValue = try container.decodeIfPresent(String.self, forKey: .presetRawValue)
         self.profileRawValue = try container.decodeIfPresent(String.self, forKey: .profileRawValue) ?? fallbackProfileRawValue
-        self.brothKindRawValue = try container.decodeIfPresent(String.self, forKey: .brothKindRawValue)
+        let rawBrothKind = try container.decodeIfPresent(String.self, forKey: .brothKindRawValue)
+        self.brothKindRawValue = Self.migrateBrothKindRawValue(rawBrothKind)
         self.selectedStyleName = try container.decodeIfPresent(String.self, forKey: .selectedStyleName)
         self.clarityModeRawValue = try container.decodeIfPresent(String.self, forKey: .clarityModeRawValue) ?? BrothClarityMode.normal.rawValue
         self.useVinegar = try container.decodeIfPresent(Bool.self, forKey: .useVinegar) ?? false
@@ -233,6 +239,7 @@ struct BatchRecord: Identifiable, Codable, Hashable {
         self.activeCookingMinutes = try container.decodeIfPresent(Int.self, forKey: .activeCookingMinutes) ?? decodedTotalMinutes
         self.warningCount = try container.decodeIfPresent(Int.self, forKey: .warningCount) ?? 0
         self.hasThermometer = try container.decodeIfPresent(Bool.self, forKey: .hasThermometer) ?? false
+        self.potSizeLitersAtCooking = try container.decodeIfPresent(Int.self, forKey: .potSizeLitersAtCooking) ?? 7
         self.selectedIngredientIDs = decodedSelectedIngredientIDs
         self.selectedIngredientsSnapshot = try container.decodeIfPresent([BatchIngredientSnapshot].self, forKey: .selectedIngredientsSnapshot)
         self.meatOverrides = try container.decodeIfPresent([String: Int].self, forKey: .meatOverrides)
@@ -270,6 +277,7 @@ struct BatchRecord: Identifiable, Codable, Hashable {
         try container.encode(activeCookingMinutes, forKey: .activeCookingMinutes)
         try container.encode(warningCount, forKey: .warningCount)
         try container.encode(hasThermometer, forKey: .hasThermometer)
+        try container.encode(potSizeLitersAtCooking, forKey: .potSizeLitersAtCooking)
         try container.encodeIfPresent(selectedIngredientIDs, forKey: .selectedIngredientIDs)
         try container.encodeIfPresent(selectedIngredientsSnapshot, forKey: .selectedIngredientsSnapshot)
         try container.encodeIfPresent(meatOverrides, forKey: .meatOverrides)
@@ -394,6 +402,8 @@ extension BatchRecord {
             return "Preset"
         case "custom":
             return "Własny"
+        case "legacy":
+            return "Klasyczny"
         default:
             return "Batch"
         }
@@ -457,7 +467,7 @@ extension BatchRecord {
 
     private static let historyDateFormatter: DateFormatter = {
         let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "pl_PL")
+        formatter.locale = Locale.autoupdatingCurrent
         formatter.dateFormat = "d MMM yyyy, HH:mm"
         return formatter
     }()
@@ -507,6 +517,17 @@ extension BatchRecord {
         }
     }
 
+    private static func migrateBrothKindRawValue(_ raw: String?) -> String? {
+        switch raw {
+        case "Rosół":    return "rosol"
+        case "Ramen":    return "ramen"
+        case "Wołowy":   return "wolowy"
+        case "Warzywny": return "warzywny"
+        case "Rybny":    return "rybny"
+        default:         return raw
+        }
+    }
+
     private static func legacyModeRawValue(
         styleRawValue: String,
         selectedIngredientIDs: [String]?,
@@ -539,7 +560,9 @@ extension BatchRecord {
         return "custom"
     }
 
-    func calculationResult(potSizeLiters: Int) -> BrothCalculationResult {
+    func calculationResult() -> BrothCalculationResult {
+        let pot = potSizeLitersAtCooking
+
         // UltraSpec path: batch created through the new flow with a known BrothKind
         if let kindRaw = brothKindRawValue,
            let kind = BrothKind(rawValue: kindRaw),
@@ -553,13 +576,21 @@ extension BatchRecord {
                 )
             }
             let mode = clarityMode
-            if let ultra = try? UltraSpecBridge.calculateFromCurrentFlow(
-                kind: kind,
-                styleName: selectedStyleName,
-                potCapacityL: Double(potSizeLiters),
-                selections: selections,
-                clarityMode: mode
-            ) {
+            let ultra: UltraSpecCalculationResult?
+            do {
+                ultra = try UltraSpecBridge.calculateFromCurrentFlow(
+                    kind: kind,
+                    styleName: selectedStyleName,
+                    potCapacityL: Double(pot),
+                    selections: selections,
+                    clarityMode: mode
+                )
+            } catch {
+                os_log(.error, "UltraSpec engine failed for batch %{public}@: %{public}@",
+                       id.uuidString, String(describing: error))
+                ultra = nil
+            }
+            if let ultra {
                 let key = UltraSpecStyleKeyResolver.resolve(kind: kind, styleName: selectedStyleName)
                 let variant = UltraSpecVariantResolver.resolve(kind: kind, styleKey: key)
                 return UltraSpecBridge.makeBrothResult(
@@ -585,7 +616,7 @@ extension BatchRecord {
             return BrothCalculator.calculate(
                 profile: brothProfile,
                 meatItems: selections,
-                potSizeLiters: Double(potSizeLiters),
+                potSizeLiters: Double(pot),
                 clarityMode: clarityMode,
                 useVinegar: useVinegar
             )
@@ -595,7 +626,7 @@ extension BatchRecord {
             style: BrothStyle(rawValue: styleRawValue) ?? .light,
             totalWeightGrams: totalWeightGrams,
             selectedIDs: selectedIngredientIDs ?? [],
-            potSizeLiters: potSizeLiters
+            potSizeLiters: pot
         )
     }
 }

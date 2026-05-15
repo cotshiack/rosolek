@@ -1,435 +1,755 @@
-# Audit aplikacji iOS — Rosolek
-
-**Data audytu:** 2026-05-08  
-**Audytor:** Senior iOS Engineer / Swift Architect  
-**Branch:** `claude/ios-audit-fixes-QMwxc`  
-**Status:** Etap 1 zakończony — CRITICAL naprawione
+# Audyt aplikacji iOS — Rosolek
+**Data audytu:** 2026-05-14  
+**Audytor:** Claude (statyczna analiza kodu)  
+**Gałąź:** `claude/ios-security-audit-ostvJ`
 
 ---
 
-## 1. Executive summary
+## 1. Executive Summary
 
-Aplikacja Rosolek jest solidnie zaprojektowana i widać dbałość o szczegóły UI.
-Architektura MVVM jest stosowana konsekwentnie, a nowy silnik UltraSpec jest
-znacznie czystszy niż legacy `BrothCalculator`.
+Aplikacja Rosolek to dobrze zorganizowany, rozbudowany kalkulator rosołu z live cooking, historią i systemem UltraSpec. Ogólna jakość kodu jest **ponadprzeciętna** — widać świadomą architekturę, dobre pokrycie testami domenowymi i przemyślane podejście do migracji danych.
 
-**Trzy obszary wymagające natychmiastowej uwagi:**
+**Największe ryzyko:** timer w live cooking jest oparty na zliczaniu ticków zamiast na porównaniu dat, a fazy obliczane są od nowa co sekundę — to kombinacja prowadząca do dryftu i zużycia procesora. Osobno: nazwy warzyw w trybie gotowania z historii wyświetlają surowe klucze katalogowe (np. `VEG_CARROT`) zamiast polskich nazw. Oba problemy dotykają kluczowego flow użytkownika.
 
-1. **[CRITICAL — NAPRAWIONY]** `BatchStore.load()` po błędzie decode ustawia
-   `batches = []` — cała historia gotowania jest trwale tracona bez informacji
-   dla użytkownika. Naprawione przez fallback per-element decode.
+**Liczba znalezionych problemów:**
+- 🔴 **CRITICAL:** 6
+- 🟠 **HIGH:** 8
+- 🟡 **MEDIUM:** 15
+- 🔵 **LOW:** 10
 
-2. **[CRITICAL — NAPRAWIONY]** `assertionFailure()` w `CookingModeView.livePhaseKind()`
-   crashuje debug buildy przy każdym nowym `stepID` dodanym do UltraSpec timeline.
-   Naprawione przez zamianę na log + safe fallback.
-
-3. **[HIGH]** `result` w `BrothResultView` to computed property bez memoizacji —
-   pełen kalkulator UltraSpec uruchamia się 5+ razy na render. Do naprawy w Etapie 2.
-
-Pozostałe problemy opisane w sekcji 9 są HIGH/MEDIUM/LOW i nie blokują
-działania aplikacji w trybie release.
+**Ogólna ocena jakości kodu: 7/10**  
+Solidna architektura z jasnym podziałem odpowiedzialności, dobra obsługa migracji danych (decodeIfPresent z fallbackami), świadome użycie UltraSpec jako osobnej domeny. Utrudnia ocenę: timer bazujący na tickach zamiast datach, computed properties nadużywane w gorącej ścieżce renderowania, brak izolacji nazw wyświetlanych od kluczy serializacji.
 
 ---
 
-## 2. Jak analizowałem repo
+## 2. Jak przeprowadzono audyt
 
-**Pliki przejrzane (39 Swift + dokumentacja):**
-- Wszystkie pliki Domain/ (UltraSpecEngine, Catalog, Warnings, Timeline, StepLibrary,
-  VariantMapping, Models, Bridge, LiveBanners)
-- BrothCalculator.swift (2568 L)
-- BatchStore.swift, BatchRecord.swift, CookingSession.swift
-- BrothResultView.swift, CookingModeView.swift, ContentView.swift (widoki główne)
-- IngredientSelectionView.swift, BrothStyleSelectionView.swift
-- HistoryView.swift, SettingsView.swift, LastBatchDetailView.swift
-- BatchFeedbackView.swift, RecipesHubView.swift
-- FloatingHomeMenuBar.swift, NavigationHelpers.swift
-- RosolekApp.swift, Item.swift, KeyboardObserver.swift
-- Wszystkie pliki testowe (4 pliki)
-- ultra_spec_bulion_engine_v2_2_full.md (spec dokumentacja)
-- docs/ultra-spec-implementation-plan.md
-- docs/ultra-spec-xcode-validation-checklist.md
+### Pliki przejrzane
+Wszystkie pliki `.swift` projektu (47 plików):
+- Główna aplikacja: `RosolekApp.swift`, `ContentView.swift`
+- Domena: `BrothCalculator.swift`, `BrothModels.swift`, `CookingModeTypes.swift`, `CookingSession.swift`
+- UltraSpec: `UltraSpecEngine.swift`, `UltraSpecCatalog.swift`, `UltraSpecBridge.swift`, `UltraSpecTimeline.swift`, `UltraSpecStepLibrary.swift`, `UltraSpecWarnings.swift`, `UltraSpecLiveBanners.swift`, `UltraSpecVariantMapping.swift`, `UltraSpecModels.swift`
+- Store: `BatchStore.swift`, `BatchRecord.swift`
+- Widoki: `CookingModeView.swift`, `BrothResultView.swift`, `IngredientSelectionView.swift`, `HistoryView.swift`, `LastBatchDetailView.swift`, `SettingsView.swift`, `OnboardingFlowView.swift`, `BrothStyleSelectionView.swift`, `BatchFeedbackView.swift`, `RecipesHubView.swift`, `FloatingHomeMenuBar.swift`
+- Helpery: `CookingPhaseBuilder.swift`, `CookingNotificationService.swift`, `CookingActivityAttributes.swift`, `NavigationHelpers.swift`, `KeyboardObserver.swift`, `RosolDesignSystem.swift`, `String+Rosolek.swift`
+- Testy: 10 plików testowych
 
-**Komendy wykonane:** Przeglądanie kodu statycznie (Linux — brak xcodebuild).  
-**Build status:** Nie można uruchomić w środowisku Linux. Analiza oparta na
-statycznym audycie kodu. Każda zmiana jest weryfikowana przez analizę Swift syntax
-i sprawdzenie interfejsów.
+### Komendy wykonane
+```bash
+find . -name "*.swift" | sort
+find . -name "*.json" | sort  
+find . -name "*.md" | sort
+grep -rn "enum BrothStyle|enum BrothKind" ...
+grep -n "handleTick|restoreSession|saveSession|phaseElapsedSeconds..." ...
+sed -n 'NNN,MMMp' BrothCalculator.swift
+# + wiele grep/sed do szukania konkretnych wzorców
+```
+
+### Wynik buildu i testów
+**Brak środowiska Xcode** — analiza wykonana statycznie. Kod wygląda kompilatorowo poprawnie, brak widocznych błędów składniowych.
+
+### Co nie było dostępne
+- Środowisko uruchomieniowe iOS (brak Xcode/symulatora)
+- Dostęp do backendu (brak — aplikacja lokalna)
+- Analiza runtime (crashlytyki, profiler)
 
 ---
 
 ## 3. Mapa aplikacji
 
-### Ekrany i flow
-```
-RosolekApp
-└── ContentView
-    ├── OnboardingFlowView (pierwsze uruchomienie)
-    │   └── kroki: welcome → pot → thermometer → name
-    └── HomeView (po onboardingu)
-        ├── FloatingHomeMenuBar (home / recipes / live / history / settings)
-        ├── Tab: Home
-        │   ├── ActiveCookingBanner (jeśli trwa gotowanie)
-        │   ├── CalculatorEntryCard → BrothStyleSelectionView
-        │   │   └── BrothKindCard → IngredientSelectionView / BrothResultView (veggie)
-        │   │       └── BrothResultView
-        │   │           └── CookingModeView
-        │   │               └── BatchFeedbackView
-        │   └── ReadyRecipesSection → BrothResultView (preset)
-        ├── Tab: Recipes → RecipesHubView
-        ├── Tab: Live → CookingModeView (aktywna sesja)
-        ├── Tab: History → HistoryView → LastBatchDetailView
-        └── Tab: Settings → SettingsView
-```
+### Ekrany i odpowiedzialności
+| Ekran | Plik | Odpowiedzialność |
+|---|---|---|
+| Root / Onboarding | `ContentView.swift` | Routing onboarding / home, deep link handling |
+| Home | `ContentView.swift` (HomeView) | Lista presetów, aktywne gotowanie, nawigacja |
+| Wybór stylu | `BrothStyleSelectionView.swift` | Wybór BrothKind + BrothStyle |
+| Wybór składników | `IngredientSelectionView.swift` | Selekcja składników, podgląd insightów |
+| Wyniki kalkulacji | `BrothResultView.swift` | Wyświetlanie wyników, edytory warzyw/przypraw, start gotowania |
+| Live cooking | `CookingModeView.swift` | Timer, fazy gotowania, Live Activity |
+| Historia | `HistoryView.swift` | Lista batch'y |
+| Szczegóły batcha | `LastBatchDetailView.swift` | Widok historyczny, replay |
+| Ocena batcha | `BatchFeedbackView.swift` | Formularz oceny po gotowaniu |
+| Ustawienia | `SettingsView.swift` | Garnek, termometr, imię |
 
-### Modele
-- `BatchRecord` — główny model historii gotowania (Codable, UserDefaults)
-- `CookingSession` — aktywna sesja (Codable, UserDefaults)
-- `UltraSpecVariantConfig` — konfiguracja wariantu bulionu (10 wariantów)
-- `UltraSpecIngredient` — składnik z katalogiem (29 składników)
-- `BrothCalculationResult` — wynik kalkulatora (legacy + UltraSpec)
+### Modele danych
+```
+BatchRecord (Codable)
+  ├── id: UUID
+  ├── createdAt: Date
+  ├── styleRawValue: String (legacy)
+  ├── modeRawValue: String ("preset"|"custom"|"legacy")
+  ├── presetRawValue: String? (BrothPreset.rawValue)
+  ├── profileRawValue: String (BrothProfile.rawValue)
+  ├── brothKindRawValue: String? (BrothKind.rawValue — PROBLEM: Polish display string!)
+  ├── clarityModeRawValue: String
+  ├── selectedIngredientsSnapshot: [BatchIngredientSnapshot]?
+  ├── meatOverrides/vegetableOverrides/spiceOverrides: [String:Int]?
+  └── feedback fields...
+
+CookingSession (Codable) — w UserDefaults
+  ├── batchID: UUID
+  ├── phaseIndex: Int
+  ├── phaseElapsedSeconds: Int   ← tick-counted, not Date-based!
+  ├── processElapsedSeconds: Int ← tick-counted, not Date-based!
+  ├── isStageRunning: Bool
+  └── backgroundedAt: Date?      ← Date-based dla background recovery
+```
 
 ### Store'y
-- `BatchStore: ObservableObject` — CRUD historii, persystencja UserDefaults
-- `AppRouter: ObservableObject` — kolejkowanie deep linków
+| Store | Typ | Odpowiedzialność |
+|---|---|---|
+| `BatchStore` | `@StateObject ObservableObject` | Historia gotowań, zapis w UserDefaults |
+| `AppRouter` | `@StateObject ObservableObject` | Routing deep link / return to home |
 
-### Kalkulator — dwa systemy
-- **UltraSpec** (nowy): `UltraSpecEngine` → `UltraSpecBridge` → `BrothResultView`
-  Używany dla wszystkich custom flows (10 wariantów)
-- **BrothCalculator** (legacy): używany dla presetów (5 presetów) i jako fallback
+### Kalkulator
+**Dwa silniki działające równolegle:**
+1. **BrothCalculator** (legacy): dla presetów i starych flow. Wejście: `BrothCalculationRequest`. Wyjście: `BrothCalculationResult`.
+2. **UltraSpecEngine** (nowy): dla custom flow z BrothKind. Wejście: `UltraSpecCalculationRequest`. Wyjście: `UltraSpecCalculationResult`. Mostek: `UltraSpecBridge`.
 
 ### Flow danych
 ```
-Użytkownik wybiera składniki
-→ IngredientSelectionView (amounts: [String: String])
-→ BrothResultView (initialSelections: [BrothIngredientSelection])
-  → UltraSpecBridge.calculateFromCurrentFlow() → UltraSpecCalculationResult
-  → BrothCalculationResult (bridge output)
-→ startCooking() → batchStore.createBatch() → BatchRecord (UserDefaults)
-→ CookingModeView (result: BrothCalculationResult jako `let`)
-→ BatchFeedbackView → batchStore.updateFeedback()
+AppStorage (UserDefaults)
+  potSizeLiters, hasThermometer, userFirstName
+      ↓
+BrothStyleSelectionView → IngredientSelectionView → BrothResultView
+      ↓ (tworzy BatchRecord)
+BatchStore (UserDefaults)
+      ↓
+CookingModeView ← BatchRecord + BrothCalculationResult
+      ↓ (zapisuje CookingSession)
+UserDefaults (cooking_session_active_v1)
 ```
 
 ---
 
-## 4. Wynik build i testów
+## 4. Wynik buildu i testów
 
-**Build:** Nie uruchomiono — brak `xcodebuild` w środowisku Linux.
+| | Status |
+|---|---|
+| Build | Nie uruchomiono (brak Xcode) — kod wygląda poprawnie składniowo |
+| Testy unit | 10 klas testowych, szacunkowo ~80 test case'ów |
+| Pokrycie UI | 2 pliki UI testów (RosolekUITests, LaunchTests) |
+| Testy snapshot | Brak |
 
-**Testy (analiza statyczna):**
-
-| Plik testowy | Liczba testów | Ocena |
-|---|---|---|
-| `UltraSpecEngineTests.swift` | 7 | Dobre — pokrycie ostrzeżeń, error throws |
-| `UltraSpecTimelineTests.swift` | 3 | Podstawowe — brak edge case'ów |
-| `UltraSpecVariantMappingTests.swift` | 4 | Dobre — resolvery i mapowania |
-| `RosolekTests.swift` | 2 | Codable roundtrip — poprawne |
-
-Łącznie: 16 testów. Brak testów dla: edge case'ów kalkulatora, persystencji
-z uszkodzonymi danymi, locale, session restore, NaN/infinity guard.
+**Klasy testowe:**
+- `UltraSpecEngineTests` — dobre pokrycie warningstów
+- `UltraSpecEdgeCaseTests` — dobre pokrycie edge case'ów (pot too small, no meat, paper filter)
+- `UltraSpecTimelineTests` — timeline steps
+- `UltraSpecVariantMappingTests` — mapowanie ID
+- `UltraSpecStepLibraryTests` — biblioteka kroków
+- `BrothCalculatorTests` — smoke testy legacy engine
+- `CookingSessionTests` — save/load/clear/corruptedData
+- `BatchStoreTests` — store operations
+- `BatchRecordEngineRoutingTests` — routing kalkulatora
+- `RosolekTests` — placeholder (1 pusty test, brak asercji)
 
 ---
 
 ## 5. Audyt kalkulatora
 
-### UltraSpecEngine — analiza dokładna
+### BrothCalculator (legacy)
 
-**Wejścia:** `UltraSpecCalculationRequest` (variant, potCapacityL, items, clarityMode)  
-**Wyjścia:** `UltraSpecCalculationResult` (waterRecipeL, waterStartL, estimatedYieldL,
-startSaltG, targetSaltG, vegetables, spices, densityGL, warnings, warningMessages)
+**Wejście:** `BrothCalculationRequest` (mode, potSizeLiters, meatItems, clarityMode, useVinegar, targetYieldLiters, premiumEnabled)
 
-**Wzór obliczania wody:**
-```
-displacementL = totalAnimalG / 1000 * 0.55
-foamReserveL  = potCapacityL * 0.12
-safetyReserveL = max(0.25, potCapacityL * 0.08)
-waterSafeL = potCapacityL - displacement - foam - safety
+**Walidacja wejść:**
+- `potSizeLiters < 0.25` → `hardPotTooSmall`
+- `potSizeLiters > 30` → `hardPotTooBig`
+- Custom mode: `totalWeight == 0` → `hardNoMeat`
+- Custom mode: `totalWeight > 10_000` → `hardTooMuchMeat`
+- Custom mode: `item.grams > 6_000` → `hardItemTooBig`
+- Preset mode: **brak walidacji wagi** — preset sam definiuje składniki
 
-waterRecipeL:
-  - jeśli waterFactor istnieje: (totalAnimalG / 1000) * waterFactor
-  - jeśli nil (warzywny, rybny): min(waterSafeL, potCapacityL * 0.72)
-
-waterStartL = max(0.1, min(waterRecipeL, waterSafeL))
-```
-
-**Walidacja:**
-- `potCapacityL < 0.25` → `.hardPotTooSmall`
-- `potCapacityL > 30` → `.hardPotTooBig`
-- `waterSafeL <= 0` → `.hardNotFit`
-- `totalAnimalG == 0` (non-warzywny) → `.hardNoBase`
-
-⚠️ **Uwaga:** Guardy `potCapacityL` są sprawdzane PO obliczeniu `waterSafeL`
-(choć logicznie poprawne — `potTooSmall` jest przed `waterSafeL > 0`). Semantycznie
-guardy powinny być na początku (patrz L-1).
-
-**Edge case'y — wyniki:**
-
+**Edge case'y kalkulatora (logicznie przetestowane):**
 | Przypadek | Zachowanie | Ocena |
 |---|---|---|
-| garnek 0 L | `hardPotTooSmall` ✓ | OK |
-| garnek < 0.25 L | `hardPotTooSmall` ✓ | OK |
-| garnek 0.3 L, mięso = 0, wariant non-warzywny | `hardNoBase` ✓ | OK |
-| garnek 0.3 L, mięso = 0, wariant warzywny | wynik: ~3g warzyw ✓ | OK |
-| mięso 10 000 g, garnek 5 L | duże displacement → `hardNotFit` lub duża gęstość | OK |
-| mięso > pojemność garnka | displacement > waterSafeL → `hardNotFit` ✓ | OK |
-| sama wątróbka 200 g, garnek 7 L | totalAnimalG=200, gęstość ~28 g/L → UNDERPOWER | OK |
-| warzywny bez składników, garnek 5 L | waterRecipeL obliczone z waterSafeL, warzywa auto | OK |
-| clarityMode = paperFilter | yieldL *= 0.96, warning `PAPER_FILTER_LOWER_INTENSITY` | OK |
-| NaN/infinity | `max(0, ...)` i `min(...)` guards chronią przed > 0 | OK (praktycznie) |
+| 0 g mięsa (custom) | Zwraca `hardNoMeat` z waterLiters=0 | ✅ OK |
+| 10 g mięsa | Kalkuluje normalnie, może dać UNDERPOWER warning | ✅ OK |
+| 10 000 g mięsa | Limit walidacji — `hardTooMuchMeat` | ✅ OK |
+| Tylko jeden typ składnika | Kalkuluje normalnie, możliwy warning singleIngredientRisk | ✅ OK |
+| Garnek 0 L | `hardPotTooSmall` | ✅ OK |
+| Garnek < 0.25 L | `hardPotTooSmall` | ✅ OK |
+| Garnek 30 L | OK, przy pełnym obciążeniu może wygenerować `hardNotFit` | ✅ OK |
+| Garnek 100 L | `hardPotTooBig` (limit 30) | ✅ OK |
+| Łączna waga > pojemność | `hardNotFit` lub `waterWasReducedToFit` | ✅ OK |
+| Wyjście NaN/infinity | Chronione przez logikę w BrothStyleConfig | ✅ OK |
 
-**Ostrzeżenia — kompletność:**
-- `UNDERPOWER` / `OVERPOWER` — z deltami (liczba gramów do dodania) ✓
-- `VEG_TOO_MUCH` — z deltą (gramy warzyw do usunięcia) ✓
-- `WINGS_TOO_HIGH`, `BEEF_TOO_HIGH`, `OFFAL_TOO_HIGH` — bez delty ✓
-- `VEG_SWEET_RISK` — bez delty ✓
-- `PAPER_FILTER_LOWER_INTENSITY` — info ✓
+**Problem znaleziony:**
+- `BrothCalculator.calculate(style:totalWeightGrams:selectedIDs:potSizeLiters:)` (legacy sygnatura z Int) — jeśli wywołany z `totalWeightGrams = 0` i pustymi `selectedIDs`, nie przechodzi przez walidację (walidacja jest tylko w `validateRequest` na nowej ścieżce). Legacy path może zwrócić `waterLiters = 0` bez validationFailure ustawionego — użytkownik nie dostaje komunikatu błędu.
 
-**Zaokrąglenia:**
-- Warzywa: `.rounded()` → OK
-- Sól: `saltStartCoef * waterStartL` — bez zaokrąglenia (wyświetlane po rounded() w View)
-- Przyprawy: `max(0, Int((coef * waterStartL).rounded()))` — OK
+### UltraSpecEngine
 
-### BrothCalculator (legacy) — analiza
+**Wejście:** `UltraSpecCalculationRequest` (variant, potCapacityL, items, clarityMode)
 
-Kalkulator legacy obsługuje 5 presetów plus custom flow. Kluczowe cechy:
-- Interpolacja liniowa z tabel dla presetów (potSize → water/meat/veg)
-- `safeWaterUpperBoundV2` z dwoma buforami piany (heat vs mild mode)
-- Paper filter loss: `clamp(0.12 * waterL + 0.10 * fatIndex, 0.20, 0.80)` — może
-  przeceniać uzysk dla bardzo tłustych wywarów
-- `recommendedMeatRange()`: iteracja 0–10 000 g co 10 g = 1000 kroków → performance
-- Formuła soli: `microMode` redukuje o 0.5 — spójne
+**Walidacja wejść:**
+- `potCapacityL < 0.25` → throws `hardPotTooSmall`
+- `potCapacityL > 30` → throws `hardPotTooBig`
+- Dla non-veg wariantów: `totalAnimalG == 0` → throws `hardNoBase`
+- `waterSafeL <= 0` → throws `hardNotFit`
 
----
+**Brak limitu 10kg dla UltraSpec:**
+- BrothCalculator waliduje `totalWeight > 10_000 g` → `hardTooMuchMeat`
+- UltraSpecEngine: **brak analogicznego limitu** — 50kg mięsa przejdzie bez błędu jeśli garnek jest wystarczająco duży
 
-## 6. Audyt flow użytkownika
-
-### Onboarding
-- **Stan pusty (pierwsze uruchomienie):** `@AppStorage("hasCompletedOnboarding") = false` →
-  wyświetla `OnboardingFlowView` ✓
-- **Walidacja garnka:** alert dla <3L (ostrzeżenie) i >30L (blokada zapisu) ✓
-- **Restart aplikacji:** dane zachowane w AppStorage ✓
-- **Reset onboardingu:** dostępny w Settings — ustawia `hasCompletedOnboarding = false`,
-  `returnToHomeTrigger += 1` → reset NavigationStack ✓
-
-### Wybór składników → kalkulator → wynik
-- **Puste składniki:** IngredientSelectionView nie pozwala przejść dalej jeśli
-  wszystkie pola = 0 (brak walidacji widocznej w kodzie — wymaga weryfikacji na urządzeniu)
-- **Zmiana garnka w Settings podczas przeglądania wyniku:** możliwa przez
-  FloatingMenuBar → `result` computed property rekalkuje natychmiast (patrz H-1)
-- **Zmiana clarityMode/vinegar w ResultView:** rekalkuje wynik — ZAMIERZONE ✓
-- **Batch save time:** `effectiveResult` uchwycony atomicznie w `startCooking()` ✓
-
-### Live cooking
-- **Timer pause/resume:** `isStageRunning` flag + `handleTick()` ✓
-- **Tło aplikacji:** `onDisappear: saveSession(backgrounded: isStageRunning)`,
-  `onChange(scenePhase) → resumeFromBackground()` ✓
-- **Zamknięcie aplikacji podczas gotowania:** sesja zapisana w UserDefaults ✓
-- **Powrót po czasie:** `resumeFromBackground()` powinien nadrobić czas, szczegóły
-  zależą od implementacji (nie odczytałem w pełni)
-- **Przerwanie przez nowe gotowanie:** `CookingSessionCoordinator.interruptActiveCookingAndCleanup()`
-  oznacza stary batch jako `interruptedByNewCooking` ✓
-
-### Historia
-- **Brak historii:** pusty stan z CTA ✓
-- **Z historią:** lista posortowana wg daty ✓
-- **Szczegóły batcha:** pokazuje dane HISTORYCZNE (zapisane w BatchRecord) ✓
-- **Replay:** `BatchRecord.calculationResult()` używa AKTUALNEGO potSizeLiters —
-  to ZAMIERZONE (goto = gotuj z obecnym garnkiem), ale może mylić ✓
-
-### Ustawienia
-- **Zmiana garnka:** zmiana w AppStorage → natychmiastowy efekt w otwartych widokach
-  (patrz H-1)
-- **Zmiana termometru:** zmiana w AppStorage, widoki obserwują przez @AppStorage ✓
+**Znalezione problemy:**
+- Engine nie filtruje składników przez `allowedVariants` (C-6)
+- Wings share liczony jako `wingsG/poultryG` — przy samych skrzydłach zawsze 100% → zawsze warning (M-9)
 
 ---
 
-## 7. Audyt SwiftUI i stanu
+## 6. Audyt trybów gotowania
 
-### Property wrappers — poprawność
-| Wrapper | Użycie | Ocena |
-|---|---|---|
-| `@AppStorage` | userFirstName, potSizeLiters, hasThermometer, hasCompletedOnboarding | ✓ poprawne |
-| `@StateObject` | BatchStore, AppRouter w RosolekApp | ✓ — lifecycle root |
-| `@EnvironmentObject` | batchStore, router w widokach | ✓ — injected z góry |
-| `@State` | lokalne stany widoków | ✓ |
-| `@Binding` | selectedPresetFilter, overrides | ✓ |
-| `@FocusState` | focusedFieldID, focusedField | ✓ |
+### Tryby zdefiniowane
 
-**Force unwraps:** Brak wykrytych w głównych widokach. Defensywne programowanie
-konsekwentnie stosowane.
-
-### Duże widoki
-| Widok | LOC | Ocena |
-|---|---|---|
-| ContentView.swift | 2517 | Zawiera OnboardingFlowView + HomeView + wszystkie subcomponents |
-| BrothResultView.swift | 2798 | Zawiera logikę kalkulatora + 3 arkusze edytora |
-| CookingModeView.swift | 4193 | Największy — logika faz, timer, Live Activity, timeline |
-| IngredientSelectionView.swift | 1600 | Duży, ale spójny |
-
-CookingModeView jest kandydatem nr 1 do podziału na ViewModele.
-
-### Navigation
-- `NavigationStack` z `navigationDestination` — nowoczesny pattern ✓
-- `id(navigationResetID)` do wymuszenia resetu navigation stack ✓
-- Brak `NavigationLink` z deprecated `isActive` ✓
-- Deep linking przez `onOpenURL` → `AppRouter` ✓
-
-### ForEach / identyfikatory
-- `ForEach(Array(phases.enumerated()), id: \.element.id)` — ✓ stabilne UUID
-- `ForEach(batchStore.batches)` — `BatchRecord: Identifiable` przez UUID ✓
-- `ForEach(Array(spiceRows.enumerated()), id: \.offset)` — indeks jako ID,
-  akceptowalne dla statycznej listy ✓
-
-### Safe area / layout
-- `.safeAreaInset(edge: .bottom)` dla CTA buttons — nie zasłania treści ✓
-- `.padding(.bottom, isFinished ? finishButtonOverlayHeight : liveControlsOverlayHeight + 20)`
-  dla scrollView — ✓
-
----
-
-## 8. Audyt danych i historii
-
-### Persystencja
-- **Mechanizm:** UserDefaults + JSONEncoder/Decoder
-- **Klucz:** `"rosolek_batches_v1"` (wersjonowany klucz — dobry znak)
-- **Model:** `BatchRecord` z custom `init(from:)` używającym `decodeIfPresent`
-  dla WSZYSTKICH pól — bardzo dobra odporność na nowe pola ✓
-
-### Stabilność modelu
-- Wszystkie pola mają fallbacki w `init(from:)` ✓
-- Legacy fields (styleRawValue, modeRawValue) mapowane przez helper functions ✓
-- `activeCookingMinutes` fallback na `totalMinutes` ✓
-
-### Ryzyko migracji — KRYTYCZNE (naprawione)
-Jedyne realne ryzyko: `JSONDecoder().decode([BatchRecord].self, from: data)` rzuca
-błąd dla CAŁEJ tablicy. Naprawione przez fallback per-element decode w BatchStore.
-
-### Snapshot architecture
-- `selectedIngredientsSnapshot: [BatchIngredientSnapshot]?` — pełny stan składników
-  w czasie zapisu ✓
-- `meatOverrides/vegetableOverrides/spiceOverrides` — zmiany użytkownika ✓
-- Dane historyczne są NIEZMIENNE po zapisie (overallRating, notes są mutable) ✓
-
-### CookingSession — aktywna sesja
-- Zapisywana w UserDefaults na `onDisappear` i przy przejściu w tło
-- `backgroundedAt: Date?` do nadrobienia czasu po powrocie ✓
-- `clearOrphanedSessionIfNeeded()` — czyszczenie po usunięciu batcha ✓
-
----
-
-## 9. Lista wszystkich problemów
-
-| ID | Priorytet | Plik | Miejsce | Problem | Skutek | Status |
-|---|---|---|---|---|---|---|
-| C-1 | CRITICAL | BatchStore.swift:193-199 | `load()` catch | Milcząca utrata całej historii przy decode error | Trwała utrata danych użytkownika | **[FIXED]** |
-| C-2 | CRITICAL | CookingModeView.swift:777 | `livePhaseKind()` | `assertionFailure()` crashuje debug build przy nowym stepID | Crash w DEBUG, wrong phase w RELEASE | **[FIXED]** |
-| H-1 | HIGH | BrothResultView.swift:99 | `result` computed | Brak memoizacji — kalkulator uruchamia się 5+ razy na render | Lagowanie UI, potencjalna zmiana wyniku przy zmianie garnka | Otwarty |
-| H-2 | HIGH | UltraSpecVariantMapping.swift | `mapIngredientID()` | `"serca", "zoladki"` → OFFAL_CHICKEN_LIVER (serca ≠ wątróbka) | Błędny profil smakowy/gęstość w kalkulatorze | Otwarty |
-| H-3 | HIGH | BatchStore.swift | storage key | Brak formalnej strategii migracji danych | Ryzyko utraty danych przy zmianie schematu | Częściowo (C-1 naprawia) |
-| M-1 | MEDIUM | Item.swift | cały plik | Unused SwiftData model (Xcode boilerplate) | Konfuzja architektury | Otwarty |
-| M-2 | MEDIUM | BrothCalculator.swift | cały plik | 2568 linii — zbyt wiele odpowiedzialności | Trudna maintainability | Otwarty |
-| M-3 | MEDIUM | RosolekTests.swift | brak | Brak testów edge case'ów kalkulatora | Nieznane zachowanie przy granicach | Otwarty |
-| M-4 | MEDIUM | CookingModeView.swift | `phases`, `miniSteps()` | Ciężka logika domenowa w View body | Trudna testowalność i maintainability | Otwarty |
-| M-5 | MEDIUM | BatchRecord.swift:89 | `overallRating` | Brak walidacji zakresu 1–10 | Możliwe nieprawidłowe dane w historii | Otwarty |
-| L-1 | LOW | UltraSpecEngine.swift:73 | `calculate()` | Guards potCapacityL po obliczeniu waterSafeL | Semantycznie niepoprawna kolejność | Otwarty |
-| L-2 | LOW | CookingModeView.swift:291 | `vegetableReminderRows` | `Int(item.amount.filter { $0.isNumber })` — kruche parsowanie | Błędna wartość przy dziesiętnych gramach | Otwarty |
-
----
-
-## 10. Edge case matrix
-
-| Przypadek | Obecne zachowanie | Oczekiwane | Status |
-|---|---|---|---|
-| garnek 0 L (UltraSpec) | `hardPotTooSmall` | Komunikat błędu | ✅ OK |
-| garnek 0.24 L | `hardPotTooSmall` | Komunikat błędu | ✅ OK |
-| mięso 0 g, wariant non-warzywny | `hardNoBase` | Komunikat błędu | ✅ OK |
-| mięso 0 g, wariant warzywny | wynik z samymi warzywami | Wynik poprawny | ✅ OK |
-| mięso > pojemność garnka (displacement > waterSafeL) | `hardNotFit` | Komunikat błędu | ✅ OK |
-| tylko wątróbka 200 g, garnek 7 L | UNDERPOWER warning | Warning z deltą | ✅ OK |
-| tylko kości, brak mięsa | UNDERPOWER lub OVERPOWER | Warning | ✅ OK |
-| warzywa = 0 w koszyku | auto-kalkulator nie da 0 (vegPercent > 0) | Warzywa obliczone | ✅ OK |
-| sól = 0 (saltStartCoef = 0, np. tonkotsu) | 0 g soli wyświetlane | Ukryte lub info | ⚠️ Do sprawdzenia |
-| paper filter + brak mięsa | `hardNoBase` przed obliczeniem | Właściwy błąd | ✅ OK |
-| zmiana garnka w Settings podczas ResultView | `result` przelicza się | Zamrożony wynik | ⚠️ H-1 |
-| zmiana clarityMode w ResultView | `result` przelicza się | ZAMIERZONE | ✅ OK |
-| powrót po zabiciuzabraniu aplikacji podczas gotowania | sesja odczytywana z UserDefaults | Wznowienie sesji | ✅ OK |
-| uszkodzone dane UserDefaults (batches) | **PRZED FIX:** puste batches; **PO FIX:** próba per-element | Zachowanie max. danych | ✅ FIXED |
-| locale z przecinkiem jako sep. dziesiętny | `Double(inputString)` może zwracać nil | Poprawna liczba | ⚠️ Do zbadania |
-| rating > 10 w BatchFeedback | akceptowany bez walidacji | Odrzucony lub zaokrąglony | ⚠️ M-5 |
-
----
-
-## 11. Brakujące testy
-
+**Warstwa BrothMode:**
 ```swift
-// KALKULATOR
-func testCalculatorRejectsZeroLiterPot() throws
-func testCalculatorRejectsPotAbove30L() throws
-func testCalculatorMeatHeavierThanPotCapacityReturnsHardNotFit() throws
-func testCalculatorNeverReturnsNaNOrNegativeWaterValues() throws
-func testCalculatorNeverReturnsNaNOrNegativeYieldValues() throws
-func testCalculatorWarzywnyVariantSucceedsWithZeroAnimalIngredients() throws
-func testCalculatorWarzywnyVariantWithOnlyMeatThrowsHardNoBase() throws // oczekujemy: nie rzuca
-func testLiverOnlyBatchProducesValidResultWithUnderpowerWarning() throws
-func testRamenTonkotsuHighDensityDoesNotTriggerUnderpowerWarning() throws
-func testPaperFilterReducesYieldBy4Percent() throws
-
-// WALIDACJA
-func testUnderpowerDeltaMeatIsAlwaysPositive() throws
-func testOverpowerDeltaWaterIsAlwaysPositive() throws
-func testVegTooMuchDeltaIsNeverNegative() throws
-
-// PERSYSTENCJA
-func testBatchStoreSilentlyRecoversSingleCorruptRecord() throws
-func testBatchStoreReturnsEmptyArrayForCompletelyCorruptedData() throws
-func testBatchStorePreservesGoodRecordsWhenOneRecordIsCorrupt() throws
-func testHistoryPreservesOriginalBatchAfterSettingsChange() throws
-func testBatchRecordAllFieldsSurviveEncodeDecodeRoundtrip() throws
-
-// SESJA
-func testSaveAndRestoreActiveCookingSessionPreservesPhaseIndex() throws
-func testClearOrphanedSessionRemovesSessionWhenBatchDeleted() throws
-func testInterruptActiveCookingMarksOldBatchAsInterrupted() throws
-
-// ONBOARDING
-func testOnboardingFlagResetsCorrectlyToFalse() throws
-func testSettingsReturnsToOnboardingAfterReset() throws
-
-// EDGE CASE'Y PLATFORMOWE
-func testLocaleWithCommaDecimalSeparatorHandledCorrectly() throws
-func testOverallRatingIsClampedToValidRange() throws
-func testBatchRecordDisplayTitleFallsBackToDefaultTitle() throws
-
-// TIMELINE
-func testTimelineStagesMatchCalculatorTotalMinutes() throws
-func testAllVariantTimelinesHaveAtLeastTwoSteps() throws
-func testEveryTimelineStepHasNonEmptyTitle() throws
-
-// VARIANT MAPPING
-func testAllBrothKindStyleCombinationsResolveToKnownVariant() throws
-func testIngredientIDMapperHandlesUnknownIDsByPassthrough() throws
+enum BrothMode {
+    case preset(BrothPreset)  // 5 presetów
+    case custom(BrothProfile) // cleaner | richer
+}
 ```
 
+**Warstwa UltraSpecVariantID (10 wariantów):**
+- `.rosolLekki`, `.rosolBogaty`
+- `.ramenShio`, `.ramenTonkotsu`
+- `.wolowyCzysty`, `.wolowyMocny`
+- `.warzywnyJasny`, `.warzywnyUmami`
+- `.rybnyDelikatny`, `.rybnyIntensywny`
+
+### Czas gotowania per wariant
+| Wariant | totalMinutes |
+|---|---|
+| rosolLekki | 315 |
+| rosolBogaty | 350 |
+| ramenShio | 240 |
+| ramenTonkotsu | 480 |
+| wolowyCzysty | 360 |
+| wolowyMocny | 420 |
+| warzywnyJasny | 90 |
+| warzywnyUmami | 120 |
+| rybnyDelikatny | 45 |
+| rybnyIntensywny | 60 |
+
+### Problemy
+
+**Spójność domen:**
+- Czasy temperatur są spójne (wyższe warianty = wyższe temperatury) ✅
+- Ramen Tonkotsu ma `allowsBoiling: true` — jedyny wariant ze wrzeniem — poprawnie obsłużony w UI ✅
+- Wariant "bogaty" ma DŁUŻSZY czas niż "lekki" (350 vs 315 min) — celowe, ale myląca nazwa dla kogoś kto myśli "intense = szybciej"
+
+**Serialization problem (H-2):**
+- `BrothKind.rosol.rawValue = "Rosół"` — polska litera ł jako klucz serializacji
+- `BrothKind.beef.rawValue = "Wołowy"` — j.w.
+- Zmiana nazwy wyświetlanej = utrata odczytu historii
+
+**Zmiana trybu po wygenerowaniu wyniku:**
+- `BrothResultView` zamraża wynik w `frozenResult` dopiero przy zapisie batcha
+- Przed zapisem: zmiana garnka/opcji odświeża wynik na bieżąco (OK)
+- Po zapisie: `frozenResult` jest ustawiony i nie zmienia się — poprawne zachowanie ✅
+
+**Zmiana trybu w trakcie gotowania:**
+- Niemożliwa — użytkownik jest w `CookingModeView` z niezmiennym `result` ✅
+
 ---
 
-## 12. Plan napraw
+## 7. Audyt składników
 
-### Etap 1 — CRITICAL bugfixy ✅ ZROBIONE
-- [x] **C-1:** BatchStore.swift — fallback per-element decode
-- [x] **C-2:** CookingModeView.swift — usunięcie assertionFailure
+### Katalog UltraSpec (32 składniki)
 
-### Etap 2 — HIGH — niespójności logiki i UX
-- [ ] **H-1:** BrothResultView.swift — memoizacja `result` jako `@State`
-- [ ] **H-2:** UltraSpecVariantMapping.swift — poprawne mapowania serca/żołądki
+**Kategorie:**
+- `.poultry` (9): kura stara, korpus, szyje, skrzydła, udka, porcja rosołowa, łapki drobiowe + aliasy
+- `.beef` (6): pręga, szponder, ogon, kości stawowe, kości szpikowe, mostek
+- `.pork` (3): kości wieprzowe stawowe, łapki wieprzowe, kręgi wieprzowe
+- `.offal` (3): wątróbka (premium), serca, żołądki
+- `.fish` (4): ości, głowy, pancerze krewetek (premium), skorupiaki (premium)
+- `.veg` + aromatics (9): cebula, marchew, seler, pietruszka, por, seler naciowy, imbir, czosnek, dymka
 
-### Etap 3 — Testy jednostkowe kalkulatora i walidacji
-- [ ] Testy z listy powyżej dla kalkulatora, persystencji, sesji
+**Walidacja zakresów:**
+- Brak zdefiniowanego min/max per składnik w katalogu
+- Walidacja tylko na poziomie sumy (totalWeight max 10k g, singleItem max 6k g) w BrothCalculator
+- UltraSpecEngine: brak walidacji per-składnik, akceptuje dowolne gramy > 0
 
-### Etap 4 — Refaktor architektury
-- [ ] Podział CookingModeView (fazy → CookingPhaseBuilder)
-- [ ] Podział BrothCalculator.swift
-- [ ] Usunięcie Item.swift (M-1)
-- [ ] Walidacja overallRating (M-5)
+**Znalezione problemy:**
+- Składniki nie są filtrowane przez `allowedVariants` w silniku (C-6)
+- `premiumOnly: true` na `OFFAL_CHICKEN_LIVER` ale UltraSpec nie sprawdza tego pola (M-13)
+- `filet_rybny` → `FISH_WHITE_BONES` — mapowanie OK ale nazwa myląca
 
-### Etap 5 — UX polish i drobne poprawki
-- [ ] L-1: kolejność guardów w UltraSpecEngine
-- [ ] L-2: parsowanie gramów w CookingModeView
-- [ ] Sprawdzenie locale z przecinkami
+**Stabilność identyfikatorów:**
+- Stare ID (lowercase snake_case): `kura`, `szponder`, `lapki` etc.
+- Nowe ID (UPPER_SNAKE_CASE): `POULTRY_OLD_HEN`, `BEEF_SHORT_RIB`, `POULTRY_FEET` etc.
+- Mapowanie w `UltraSpecRequestBuilder.mapIngredientID()` — dobre rozwiązanie ✅
+- `BatchIngredientSnapshot` przechowuje `ingredientID` w formacie z momentu zapisu — stabilne ✅
+
+---
+
+## 8. Audyt timerów i live cooking
+
+### Implementacja timera
+
+```swift
+@State private var timerPublisher = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
+
+.onReceive(timerPublisher) { _ in
+    handleTick()
+}
+
+private func handleTick() {
+    guard sessionStarted, !isFinished, isStageRunning else { return }
+    processElapsedSeconds += 1       // TICK-BASED — może dryfować
+    if currentPhaseHasTimer {
+        phaseElapsedSeconds += 1     // TICK-BASED — może dryfować
+        ...
+    }
+}
+```
+
+**Typ timera:** `Timer.TimerPublisher` z Combine, `.autoconnect()`, trzymany jako `@State`.
+
+**Dokładność:** Timer oparty na **zliczaniu ticków** (C-2). Każdy tick to `+1` sekunda — jeśli główny wątek jest zajęty, tick może się opóźnić lub nie przyjść. Brak korekty driftu.
+
+**Niespójność:** Background recovery (poprawna) używa `Date()`:
+```swift
+let elapsed = Int(Date().timeIntervalSince(backgroundedAt))
+advanceElapsedThroughPhases(elapsed)
+```
+Ale czas bieżący jest oparty na tickach. Timer dryfuje w foreground ale koryguje się po background/foreground przejściu.
+
+**Obsługa tła:**
+| Scenariusz | Zachowanie | Ocena |
+|---|---|---|
+| Telefon w uśpienie → powrót | `scenePhase → active` → `resumeFromBackground()` koryguje czas | ✅ OK (Date-based) |
+| Wyjście z aplikacji → powrót po 10 min | `restoreSessionIfNeeded()` + `advanceElapsedThroughPhases()` | ✅ OK |
+| Force quit → restart | `CookingSession.load()` wczytuje z UserDefaults | ✅ OK |
+| Odebranie połączenia → powrót | `scenePhase → active` → recovery | ✅ OK |
+| Timer dobiega końca w tle | Push notification zaplanowany na `currentPhaseRemainingSeconds` — ale ta wartość jest wyliczona z dryfujących ticków | ⚠️ Może być niedokładne |
+| Dwa szybkie tapnięcia "Start" | Brak jawnego guard — drugie tapnięcie może przejść zanim `sessionStarted = true` dotrze | ⚠️ Ryzyko |
+| Brak Background Modes w Info.plist | Timer zatrzymuje się w tle | ⚠️ Celowe, ale warto dokumentować |
+| Zmiana strefy czasowej | `Date()` jest UTC, `backgroundedAt` absolutne — bezpieczne | ✅ OK |
+
+**Bug C-4 — zatrzymanie przy manualnym kroku:**
+```swift
+private func advanceElapsedThroughPhases(_ elapsed: Int) {
+    var remaining = elapsed
+    processElapsedSeconds += elapsed     // ← pełny elapsed doliczony
+    while remaining > 0 && phaseIndex < phases.count - 1 {
+        guard currentPhaseHasTimer else { break }  // ← STOP przy manualnym!
+        ...
+    }
+}
+```
+Gdy aplikacja jest w tle podczas MANUALNEGO kroku, `processElapsedSeconds` jest zwiększony o cały `elapsed`, ale `phaseIndex` się nie przesuwa. Użytkownik wraca i widzi ten sam krok manualny ze zbyt dużym `processElapsedSeconds`.
+
+---
+
+## 9. Audyt komunikatów
+
+### Typy komunikatów
+
+| Typ | Lokalizacja |
+|---|---|
+| Warningi kalkulatora | `BrothWarning`, `UltraSpecWarningMessage` — struktury in-memory |
+| Powiadomienia push | `CookingNotificationService.swift` — hardcoded strings |
+| Alerty UI | SwiftUI `.alert()` — hardcoded strings po polsku |
+| Toasty | np. "Zmiany zostały odrzucone" w SettingsView |
+| Inline karty | `SupportNoteCard`, `FoamInfoCard` etc. |
+| Komunikaty etapów | `UltraSpecStepLibrary` — polskie stringi |
+
+### Znalezione problemy
+
+**Powiadomienie zawsze mówi "Rosół" (H-6):**
+```swift
+content.title = "Rosół: Etap zakończony"  // hardcoded
+```
+Dla Ramen Tonkotsu, bulionu rybnego, bulionu wołowego — komunikat jest niepoprawny domenowo.
+
+**Brak lokalizacji:**
+- Wszystkie komunikaty hardcoded w języku polskim
+- Brak `Localizable.strings`, brak `String(localized:)`
+- Jeśli aplikacja kiedykolwiek ma obsłużyć inne języki — pełny refaktor będzie potrzebny
+
+**`notifyActionRequired` — dead code (H-7):**
+Metoda istnieje ale nie jest nigdzie wywoływana. Tworzy powiadomienia z UUID identifiers których nie można anulować przez `cancelAll()`.
+
+**Spójność jednostek:**
+- `l`, `g`, `kg`, `ml`, `°C`, `min`, `h` — spójne w całej aplikacji ✅
+- Formatowanie liczb: `.replacingOccurrences(of: ".", with: ",")` — polska notacja ✅
+
+---
+
+## 10. Audyt flow użytkownika
+
+### Flow: Pierwsze uruchomienie
+- Flaga `hasCompletedOnboarding` w `@AppStorage` — poprawne ✅
+- Onboarding zbiera: imię, rozmiar garnka, czy ma termometr ✅
+- Reset: zmiana `hasCompletedOnboarding = false` w SettingsView — poprawne ✅
+
+### Flow: Wybór składników → wynik → start gotowania
+1. `BrothStyleSelectionView` → `IngredientSelectionView` → `BrothResultView`
+2. Batch tworzony przy tapnięciu "Gotuj teraz" — **PRZED** wejściem do CookingModeView
+3. Sprawdzenie konfliktu aktywnego gotowania ✅
+4. `CookingModeView` otrzymuje `batch + result` jako parametry
+
+**Problem (M-4):** Batch jest tworzony i zapisywany w `BatchStore` PRZED wejściem do `CookingModeView`. Jeśli użytkownik wróci (navigate back) z gotowania bez ukończenia, batch pozostaje w historii ze statusem `completed`. Brak mechanizmu "in progress".
+
+### Flow: Live cooking → zakończenie
+- Przycisk "Zakończ" → `showFinishAlert` → `BatchFeedbackView`
+- Przy zakończeniu: `CookingSession.clear()`, `cancelAll()`, `endLiveActivity()` ✅
+
+### Flow: Wyjście z live cooking i powrót
+- `onDisappear`: `saveSession(backgrounded: isStageRunning)` ✅
+- `onAppear`: `restoreSessionIfNeeded()` ✅
+- Dane nie są tracone przy nawigacji ✅
+
+### Flow: Zamknięcie aplikacji w trakcie gotowania → ponowne uruchomienie
+- Session zapisywana w UserDefaults ✅
+- Po restarcie: `CookingSession.load()` → nawigacja przez deep link / banner ✅
+- Jeśli batch usunięty: `clearOrphanedSessionIfNeeded` ✅
+
+### Flow: Przeglądanie historii → szczegóły
+- `LastBatchDetailView` z `batchID` — odszukuje w BatchStore
+- Jeśli batch usunięty: `missingBatchState` ✅
+- **BUG:** Szczegóły przeliczają wyniki z BIEŻĄCYM garnkiem (C-1)
+
+### Puste stany
+- Brak historii: `emptyState` w HistoryView ✅
+- Brak składników snapshot: komunikat o starszej wersji + opcja nowego gotowania ✅
+- Brak batcha po ID: `missingBatchState` ✅
+
+---
+
+## 11. Audyt SwiftUI i stanu
+
+### Property wrappers
+
+| Użycie | Poprawność |
+|---|---|
+| `@StateObject` dla BatchStore, AppRouter w RosolekApp | ✅ Poprawne — root owner |
+| `@EnvironmentObject` w widokach | ✅ Poprawne |
+| `@AppStorage` w wielu widokach dla tych samych kluczy | ⚠️ Redundantne deklaracje, synchronizują się przez UserDefaults |
+| `@State private var timerPublisher = Timer.publish(...).autoconnect()` | ⚠️ Timer uruchomiony od init widoku, nawet przed startem gotowania |
+
+### Computed properties w body (problem wydajności C-3)
+
+```swift
+// CookingModeView — 11 computed properties delegujących do phaseBuilder
+private var phaseBuilder: CookingPhaseBuilder {
+    CookingPhaseBuilder(batch: currentBatch, result: result, hasThermometer: hasThermometer)
+}
+private var activeUltraVariant: UltraSpecVariantID? { phaseBuilder.activeUltraVariant }
+private var isGrandmaPreset: Bool { phaseBuilder.isGrandmaPreset }
+// ... 9 kolejnych ...
+private var phases: [LivePhase] { phaseBuilder.buildPhases() }  // ← nowe buildPhases() co render
+```
+
+Każdy dostęp do `phaseBuilder` tworzy nową instancję. Każdy dostęp do `phases` wywołuje `buildPhases()`. Timer re-renderuje widok co sekundę → ~11 tworzenia `CookingPhaseBuilder` + `buildPhases()` na sekundę przez całe gotowanie.
+
+### Force unwrap
+- Brak jawnych force unwrap (`!`) w krytycznych ścieżkach ✅
+- `try? Activity.request(...)` — silently swallows Live Activity error ⚠️
+
+### ForEach identifiers
+- `ForEach(Array(steps.enumerated()), id: \.offset)` w `CurrentMiniStepsCard` — index jako ID ⚠️
+- `ForEach(Array(phases.enumerated()), id: \.element.id)` w timeline — UUID jako ID ✅
+
+### Navigation
+- `NavigationStack` → `NavigationLink` → `NavigationDestination` — poprawny wzorzec iOS 16+ ✅
+- `id(navigationResetID)` na `NavigationStack` dla "return to home" — pragmatyczne ale kruche ⚠️
+
+### Layout
+- `fixedSize(horizontal: false, vertical: true)` na długich tekstach ✅
+- `GeometryReader { _ in` wrapping całego ScrollView — zbędne, `_` oznacza że wartość jest ignorowana (M-14)
+- `.scrollBounceBehavior(.basedOnSize)` — iOS 16.4+, sprawdzić minimum deployment target
+
+### Dark mode
+- Wszystkie kolory przez `AppTheme` (semantic colors) ✅
+- **Wyjątek:** `ReadyToStartBanner` używa hardcoded `Color(red:green:blue:)` — nie adaptuje się do dark mode (M-1)
+
+### Dynamic Type
+- `.font(.system(size: N, weight:))` bez skalowania — nie obsługuje Dynamic Type ⚠️
+- `fixedSize(horizontal: false, vertical: true)` łagodzi problem dla wieloliniowych tekstów ✅
+
+---
+
+## 12. Audyt danych i historii
+
+### Mechanizm zapisu
+
+**BatchStore:**
+- UserDefaults, klucz `rosolek_batches_v1`
+- Serializacja: `JSONEncoder().encode([BatchRecord])`
+- Deserializacja z per-element recovery ✅
+
+**CookingSession:**
+- UserDefaults, klucz `cooking_session_active_v1`
+- JSONEncoder/Decoder ✅
+
+### Wersjonowanie modeli
+
+```swift
+private static let schemaVersion = 1
+private let storageKey = "rosolek_batches_v\(BatchStore.schemaVersion)"
+```
+
+Strategia `decodeIfPresent` z fallbackami — dobra na dodawanie pól ✅  
+Komentarz wyjaśnia strategię migracji ✅  
+**Ryzyko:** Zmiana typu pola bez zmiany `schemaVersion` → crash przy decodeIfPresent które nie pasuje do typu.
+
+### Odporność na uszkodzone dane
+- `recoverBatchesFromCorruptedData()` — per-element recovery ✅
+- CookingSession: `try?` → nil przy uszkodzonych danych ✅
+
+### Historyczne vs. bieżące dane — CRITICAL BUG (C-1)
+
+```swift
+// ContentView.swift:155 — deep link do aktywnego gotowania
+result: deepLinkBatch.calculationResult(potSizeLiters: potSizeLiters)  // BIEŻĄCY garnek
+
+// ContentView.swift:206 — banner aktywnego gotowania  
+let result = batch.calculationResult(potSizeLiters: potSizeLiters)  // BIEŻĄCY garnek
+```
+
+`BatchRecord` przechowuje `waterLiters` historyczne, ale `calculationResult()` przelicza wszystko od nowa z BIEŻĄCYM `potSizeLiters`. Jeśli użytkownik zmienił garnek między początkiem gotowania a powrotem do aplikacji — widzi inne dane w live cooking niż faktycznie gotuje.
+
+---
+
+## 13. Spójność domenowa
+
+### Miejsca definicji kluczowych wartości
+
+| Wartość | Definicja | Duplikaty? |
+|---|---|---|
+| Czasy gotowania per wariant | `UltraSpecCatalog.variants[].totalMinutes` | Jedyne źródło dla UltraSpec ✅ |
+| Temperatury | `UltraSpecCatalog.variants[].temperature` | Jedyne źródło ✅ |
+| Mapowanie wariantu | `UltraSpecVariantResolver.resolve()` | Jedyne miejsce ✅ |
+| Progi warningstów | `UltraSpecCatalog.warningThresholds` | Jedyne miejsce ✅ |
+| Profile składników | `UltraSpecCatalog.ingredients` | Jedyne miejsce ✅ |
+| Koszyki warzyw | `UltraSpecCatalog.vegetableBaskets` | Jedyne miejsce ✅ |
+| Fazy gotowania | `UltraSpecTimelineCatalog` (Ultra), `CookingPhaseBuilder.buildStandardPhases()` (legacy) | **DWIE IMPLEMENTACJE** |
+| Nazwy warzyw wyświetlane | `BrothResultView.prettyIngredientName()` vs `UltraSpecBridge.makeBrothResult()` (bez pretty) | **NIESPÓJNOŚĆ** → C-5 |
+
+### Niespójności nazw warzyw — CRITICAL (C-5)
+
+```swift
+// BrothResultView.makeBrothResultFromUltraSpec() — DOBRZE:
+VegetableAmount(name: prettyIngredientName($0.ingredientID), ...)  // "Marchew"
+
+// UltraSpecBridge.makeBrothResult() — ŹLE:
+VegetableAmount(name: $0.ingredientID, ...)  // "VEG_CARROT"
+```
+
+`UltraSpecBridge.makeBrothResult()` jest używane przez `BatchRecord.calculationResult()` → przez `ContentView` dla aktywnego gotowania i deep linków → przez `CookingModeView` → przez `CookingPhaseBuilder.vegetableReminderRows` → przez sheet "Lista składników do dodania".
+
+Użytkownik w live cooking z historii widzi "VEG_CARROT", "VEG_CELERIAC" etc. zamiast "Marchew", "Seler korzeniowy". Dodatkowo `ingredientIconKind()` i `vegetableSubtitle()` szukają polskich słów kluczowych i nie dopasowują ID-ów, więc ikony i opisy są generyczne.
+
+---
+
+## 14. Pełna lista problemów
+
+| ID | Priorytet | Obszar | Plik:Linia | Opis problemu | Skutek | Rekomendacja |
+|---|---|---|---|---|---|---|
+| C-1 | 🔴 CRITICAL | Dane/Historia | ContentView.swift:155, 206 | `batch.calculationResult(potSizeLiters: potSizeLiters)` używa BIEŻĄCEGO garnka z AppStorage zamiast garnka z momentu gotowania | Ilość wody i wyniki dla aktywnej sesji zmieniają się gdy użytkownik zmieni garnek w ustawieniach | Dodać `potSizeLitersAtCooking: Int` do `BatchRecord`, zapisywać przy tworzeniu, używać w `calculationResult()` |
+| C-2 | 🔴 CRITICAL | Timery | CookingModeView.swift:1028-1031 | Timer oparty na zliczaniu ticków (`phaseElapsedSeconds += 1`) zamiast na porównaniu `Date()` | Timer dryfuje gdy main thread jest zajęty; czas może być niedokładny przez całe gotowanie | Zapisać `phaseStartDate: Date` przy starcie etapu i liczyć elapsed jako `Date().timeIntervalSince(phaseStartDate)` |
+| C-3 | 🔴 CRITICAL | Wydajność | CookingModeView.swift:121-138 | `phaseBuilder` i `phases` to computed properties tworzące nowy `CookingPhaseBuilder` + `buildPhases()` przy każdym dostępie; timer re-renderuje co sekundę | ~11 tworzenia CookingPhaseBuilder/sekundę przez całe gotowanie — CPU i bateria | Memoizować `phaseBuilder` jako `@State private var`, przebudowywać tylko przy zmianie `batch` |
+| C-4 | 🔴 CRITICAL | Timery | CookingModeView.swift:1299-1313 | `advanceElapsedThroughPhases()` przerywa pętlę przy manualnym kroku (`guard currentPhaseHasTimer else { break }`), ale `processElapsedSeconds` nadal rośnie o pełny elapsed | Powrót z tła podczas manualnego kroku: `processElapsedSeconds` jest fałszywie wysoki, `phaseIndex` nie przesuwa się | Przy manualnych krokach przemijający czas powinien być zaliczany inaczej lub pętla powinna pomijać manualne kroki |
+| C-5 | 🔴 CRITICAL | Komunikaty/UX | UltraSpecBridge.swift:makeBrothResult() | `UltraSpecBridge.makeBrothResult()` zapisuje `VegetableAmount(name: $0.ingredientID)` → "VEG_CARROT"; `BrothResultView.makeBrothResultFromUltraSpec()` używa `prettyIngredientName()` → "Marchew" | Live cooking z historii: lista składników do dodania pokazuje surowe ID zamiast polskich nazw; ikony i opisy są generyczne | Ujednolicić: `UltraSpecBridge.makeBrothResult()` powinien używać tej samej funkcji `prettyIngredientName()` |
+| C-6 | 🔴 CRITICAL | Logika domeny | UltraSpecEngine.swift:calculate():38-45 | Engine nie filtruje `resolvedItems` przez `ingredient.allowedVariants` — składnik z innego wariantu liczy się do `totalAnimalG` | Składnik rybny dodany do rosołu liczy się do gęstości; możliwe błędne warningi lub wyniki | Dodać filtr: `.filter { $0.0.allowedVariants.contains(request.variant) }` |
+| H-1 | 🟠 HIGH | Wydajność | CookingModeView.swift:109-110 | `timerPublisher` uruchomiony od init widoku (`autoconnect()`), timer bije co sekundę nawet przed startem gotowania na etapie checklist | Zbędne budzenie procesora/baterii co sekundę przed "Start" | Zarządzać subskrypcją ręcznie — startować timer dopiero przy `sessionStarted = true` |
+| H-2 | 🟠 HIGH | Serializacja | BrothStyleSelectionView.swift:13-17 | `BrothKind.rawValue` używa polskich znaków (`"Rosół"`, `"Wołowy"`) jako klucz serializacji w `BatchRecord.brothKindRawValue` | Zmiana wyświetlanej nazwy = utrata odczytu historycznych rekordów | Oddzielić klucz serializacji (np. `"rosol"`, `"wolowy"`) od tytułu wyświetlanego przez osobne property |
+| H-3 | 🟠 HIGH | Logika domeny | BatchRecord.swift:calculationResult() | `try?` cicho połyka błąd UltraSpec i fallbackuje do legacy silnika bez informowania użytkownika | Użytkownik może dostać inne wyniki niż przy pierwotnym obliczeniu bez żadnego komunikatu | Przynajmniej `os_log(.error, ...)` błąd; rozważyć wyświetlenie komunikatu |
+| H-4 | 🟠 HIGH | Testy | RosolekTests/RosolekTests.swift | Plik zawiera tylko `testExample()` bez asercji — placeholder | Fałszywe poczucie pokrycia testami | Wypełnić prawdziwymi testami lub usunąć plik |
+| H-5 | 🟠 HIGH | Architektura | CookingModeView.swift:1083 | `startCookingFromPrep()` ustawia `phaseIndex = 1` bez sprawdzenia `phases.count > 1` | Jeśli `buildPhases()` zwróci 0 lub 1 elementów, `phaseIndex = 1` przy `phases.count = 1` tworzy niespójny stan | Dodać `guard phases.count > 1 else { return }` |
+| H-6 | 🟠 HIGH | UX/Komunikaty | CookingNotificationService.swift:18 | Tytuł powiadomienia zawsze `"Rosół: Etap zakończony"` bez względu na typ bulionu | Ramen, bulion rybny, bulion wołowy — komunikat niepoprawny | Przekazać typ bulionu do `schedulePhaseEnd()` i dynamicznie generować tytuł |
+| H-7 | 🟠 HIGH | Kod martwy | CookingNotificationService.swift:29-41 | `notifyActionRequired()` tworzy powiadomienia z UUID identifiers których nie może anulować `cancelAll()`. Nigdy nie jest wywoływana. | Jeśli kiedykolwiek zostanie wywołana — nagromadzenie nieanulowanych powiadomień | Usunąć metodę |
+| H-8 | 🟠 HIGH | Live Activity | CookingModeView.swift:1189-1191 | `stepEndDate = Date().addingTimeInterval(currentPhaseRemainingSeconds)` — `currentPhaseRemainingSeconds` obliczony z dryfujących ticków | Live Activity na lock screen może pokazywać nieznacznie niedokładny czas | Trzymać `phaseStartDate: Date` i obliczać: `phaseStartDate + phaseTotalSeconds - Date.now` |
+| M-1 | 🟡 MEDIUM | UI/Dark mode | CookingModeView.swift (ReadyToStartBanner) | Hardcoded `Color(red: 0.21, green: 0.75, blue: 0.36)` i podobne kolory — nie adaptują się do dark mode | Baner "Checklista gotowa" jest zawsze jasno zielony, nawet w dark mode | Dodać semantic colors do `RosolDesignSystem` |
+| M-2 | 🟡 MEDIUM | UX/Flow | ContentView.swift, BrothResultView.swift | Batch tworzony i zapisywany w BatchStore PRZED wejściem do CookingModeView. Wycofanie zostawia batch ze statusem `completed` w historii | Historia zawiera niekompletne batche | Ustawić domyślny status `unknown` i zmieniać na `completed` dopiero po BatchFeedbackView |
+| M-3 | 🟡 MEDIUM | Architektura | CookingPhaseBuilder.swift:74 | `if activePreset == .fishReady { return .rybnyDelikatny }` — hardcoded mapowanie presetu na wariant | Jeśli dojdzie drugi preset rybny, linia musi być ręcznie zaktualizowana | Dodać `ultraVariant: UltraSpecVariantID?` jako właściwość `BrothPreset` |
+| M-4 | 🟡 MEDIUM | UX | CookingModeView.swift:1079 | `requestPermission()` wywoływane przy tapnięciu "Start" — może wywołać dialog zgody w środku animacji startu | Zakłócenie UX; jeśli user odmówi, brak informacji że gotowanie idzie bez powiadomień | Prosić o pozwolenie przy wejściu do CookingModeView; pokazać komunikat jeśli brak uprawnień |
+| M-5 | 🟡 MEDIUM | Testy | Wiele plików | Brak testów dla: `CookingPhaseBuilder.buildPhases()`, `BrothResultView` logic, `BatchFeedbackView`, `SettingsView`, live cooking flow | Brak pewności co do poprawności budowania faz gotowania | Priorytetowo: testy dla `buildPhases()` dla każdego wariantu UltraSpec |
+| M-6 | 🟡 MEDIUM | Architektura | CookingPhaseBuilder.swift:26-68 | Detekcja składników przez substring matching (np. `normalized.contains("kura")`) na starej ścieżce bez snapshot | Dodanie nowego składnika drobiu może nie zostać wykryte na legacy path | Wyraźnie oznaczyć legacy path jako `@available(*, deprecated)` |
+| M-7 | 🟡 MEDIUM | Architektura | Wiele plików | `@AppStorage("potSizeLiters")` deklarowane wielokrotnie niezależnie w różnych widokach | Brak centralnego punktu kontroli; redundancja | Rozważyć `EnvironmentValues` lub dedykowany `UserPreferencesStore` |
+| M-8 | 🟡 MEDIUM | UX | BrothResultView.swift:101 | `result: BrothCalculationResult` jest computed property wywołującą `computeCurrentResult()` bez cachowania | Przy każdym re-renderze widoku wynik jest przeliczany od nowa (UltraSpec = matematyka) | `@State private var cachedResult` aktualizowany przez `onChange` |
+| M-9 | 🟡 MEDIUM | Logika domeny | UltraSpecEngine.swift:wingsShare | Wings share = `wingsG / poultryG` — przy składzie "tylko skrzydła" wingsShare = 100% → zawsze WINGS_TOO_HIGH | Użytkownik ze składem "tylko skrzydła" zawsze dostaje warning jako błąd | Zmienić semantykę na "wings jako udział całej bazy mięsnej" lub dostosować próg |
+| M-10 | 🟡 MEDIUM | Dane | UltraSpecEngine.swift | UltraSpecEngine nie ma limitu `totalAnimalG` analogicznego do `hardTooMuchMeat` w BrothCalculator (10kg) | 50kg mięsa w dużym garnku przejdzie bez błędu | Dodać górny limit totalAnimalG w UltraSpecEngine |
+| M-11 | 🟡 MEDIUM | UI | CookingModeView.swift:273 | `GeometryReader { _ in` wrapping całego body — wartość geometrii ignorowana (`_`) | Zbędna warstwa layoutu, możliwe layout issues | Usunąć GeometryReader |
+| M-12 | 🟡 MEDIUM | UX | CookingModeView.swift:isTimelineExpanded | `@State private var isTimelineExpanded` resetowany przy każdym wejściu na ekran | User musi ponownie rozwijać timeline po każdym powrocie | Rozważyć `@SceneStorage` lub `@AppStorage` |
+| M-13 | 🟡 MEDIUM | Logika domeny | UltraSpecCatalog.swift | `OFFAL_CHICKEN_LIVER` ma `premiumOnly: true` ale UltraSpecEngine nie sprawdza tego pola | Premium składniki dostępne dla wszystkich | Dodać walidację premium lub usunąć `premiumOnly` z katalogu jeśli feature nie jest zaimplementowany |
+| M-14 | 🟡 MEDIUM | UI | CookingModeView.swift:249 | `print("⚠️ unhandled ultra timeline stepID: ...")` — debug log w produkcji | Logi debugowe wyciekają do produkcji | Zastąpić przez `os_log(.error, ...)` lub `assertionFailure` w DEBUG |
+| M-15 | 🟡 MEDIUM | UX | HistoryView.swift | Brak `lineLimit` + `truncationMode` dla `customTitle` w kartach historii | Bardzo długie nazwy batcha mogą rozciągnąć UI | Dodać `lineLimit(2).truncationMode(.tail)` |
+| L-1 | 🔵 LOW | UX | ContentView.swift:7, SettingsView.swift:3 | `@AppStorage("userFirstName") private var userFirstName = "Paweł"` — hardcoded polskie imię | Nowi użytkownicy widzą "Paweł" zamiast pustego pola | Zmienić na `= ""` i obsłużyć empty state |
+| L-2 | 🔵 LOW | i18n | BatchRecord.swift:historyDateFormatter | `Locale(identifier: "pl_PL")` hardcoded — nie respektuje locale urządzenia | Daty zawsze po polsku nawet dla użytkowników z innym locale | Użyć `Locale.autoupdatingCurrent` |
+| L-3 | 🔵 LOW | Testy | RosolekTests/RosolekTests.swift | `testExample()` bez asercji — placeholder | False positive w liczbie testów | Usunąć lub zastąpić prawdziwym testem |
+| L-4 | 🔵 LOW | UI | CookingModeView.swift | `isTimelineExpanded` resetowany przy każdym wejściu — user musi rozwijać ponownie | Drobny UX friction | `@SceneStorage("isTimelineExpanded")` |
+| L-5 | 🔵 LOW | UI | CookingModeView.swift:1136-1154 | `playStartSignal()` i `playFinishSignal()` oba używają `AudioServicesPlaySystemSound(1005)` | Start i koniec mają identyczny dźwięk | Użyć różnych ID |
+| L-6 | 🔵 LOW | Architektura | BatchRecord.swift:modeTitle | `default: return "Batch"` dla nieznanych modeRawValue | Generyczny fallback bez identyfikacji | Dodać obsługę "legacy" osobno |
+| L-7 | 🔵 LOW | Dostępność | Wiele plików | `.font(.system(size: N, weight:))` bez `relativeTo:` — nie skaluje z Dynamic Type | Użytkownicy z dużą czcionką dostępnościową nie mają powiększonego tekstu | Użyć `.font(.system(.body))` z `.fontWeight()` lub `relativeTo:` |
+| L-8 | 🔵 LOW | UX | BrothResultView.swift, ContentView.swift | `defaultUseVinegar` zapisywane w AppStorage jako preferencja użytkownika — ale nie jest prezentowane w SettingsView | Użytkownik nie widzi swojej preferencji octu w ustawieniach | Dodać ocet do SettingsView lub usunąć persystencję |
+| L-9 | 🔵 LOW | Architektura | BatchRecord.swift | Static `historyDateFormatter` z hardcoded locale nie aktualizuje się po zmianie locale | Stary format po zmianie języka | `Locale.autoupdatingCurrent` |
+| L-10 | 🔵 LOW | UX | ContentView.swift:phaseSupportNote | `switch kind` w `miniSteps()` ma `default: break` po wszystkich obsłużonych case'ach — zbędne | Kod mniej czytelny | Usunąć `default: break` i dodać `@unknown default:` jeśli enum może się rozrastać |
+
+---
+
+## 15. Edge case matrix
+
+| Przypadek | Obecne zachowanie | Oczekiwane zachowanie | Status | Rekomendacja |
+|---|---|---|---|---|
+| Garnek 0 L | `hardPotTooSmall` | Blokada startu | ✅ OK | — |
+| Garnek 0.24 L | `hardPotTooSmall` | Blokada startu | ✅ OK | — |
+| Garnek 0.25 L (minimum) | Kalkuluje, może dać `hardNotFit` | Kalkuluje | ✅ OK | — |
+| Garnek 30 L (maximum) | Kalkuluje | Kalkuluje | ✅ OK | — |
+| Garnek 100 L | `hardPotTooBig` (limit 30L) | Blokada | ✅ OK | Limit 30L może być zbyt restrykcyjny |
+| 0 g mięsa custom | `hardNoMeat` | Blokada startu | ✅ OK | — |
+| 10 g mięsa | UNDERPOWER warning, kalkuluje | Wyniki z warningstiem | ✅ OK | — |
+| 10 000 g mięsa (BrothCalc) | `hardTooMuchMeat` | Blokada | ✅ OK | — |
+| 10 000 g mięsa (UltraSpec) | Kalkuluje — brak limitu | Powinien ograniczyć | ⚠️ BRAK LIMITU | Dodać limit w UltraSpecEngine |
+| Tylko skrzydła | Kalkuluje, WINGS_TOO_HIGH=100% | Warning | ⚠️ ZAWSZE WARNING | Przemyśleć semantykę progu |
+| Tylko wątróbka | `offalDominantRisk`, kalkuluje | Warning + wyniki | ✅ OK | — |
+| Brak żadnego mięsa (custom) | `hardNoMeat` | Blokada | ✅ OK | — |
+| Tryb bez termometru | Checkbox pominięty automatycznie | Automatyczne zaznaczenie | ✅ OK | — |
+| Zmiana garnka w trakcie gotowania | Niemożliwe — wynik zamrożony w CookingModeView | Wynik z momentu startu | ✅ OK | — |
+| Dwa tapnięcia "Start" | Brak jawnego guard | Tylko jedno gotowanie | ⚠️ Ryzyko | Dodać explicit `isStartingCooking` flag |
+| Timer w tło → powrót | Date-based recovery | Poprawny czas | ✅ OK | — |
+| Force quit → restart | UserDefaults recovery | Odtworzenie sesji | ✅ OK | — |
+| Zmiana strefy czasowej | `backgroundedAt` absolutne | Czas poprawny | ✅ OK | — |
+| Uszkodzone dane UserDefaults | Per-element recovery | Odzysk sprawnych | ✅ OK | — |
+| Pusta historia | `emptyState` widok | Komunikat | ✅ OK | — |
+| Batch usunięty podczas przeglądania | `missingBatchState` | Komunikat | ✅ OK | — |
+| Brak zgody na powiadomienia | Gotowanie startuje, brak notifikacji, brak info | Powinien informować | ⚠️ Brak komunikatu | Pokazać info o braku powiadomień |
+| Locale z przecinkiem dziesiętnym | `extractGrams()` zamienia `,` na `.` | Poprawne parsowanie | ✅ OK | — |
+| Bardzo długa nazwa batcha | Brak `lineLimit` w HistoryView | Może rozciągnąć UI | ⚠️ Sprawdzić | Dodać `lineLimit(2).truncationMode(.tail)` |
+| Gotowanie z historii bez snapshot | Komunikat o starszej wersji | Czytelna informacja | ✅ OK | — |
+| Składnik nieznany w katalogu UltraSpec | Cicho ignorowany | Ignorowany | ⚠️ Może skrzywić gęstość | Dodać warning w UI |
+
+---
+
+## 16. Proponowana kolejność napraw
+
+### Blok 1 — Natychmiast (widoczne błędy UX lub logiki danych)
+
+1. **C-5** — Nazwy warzyw w live cooking. Prosta zmiana jednej linii w `UltraSpecBridge.makeBrothResult()`: zamiana `$0.ingredientID` na `prettyIngredientName($0.ingredientID)`. Wymaga przeniesienia funkcji `prettyIngredientName` do wspólnego miejsca (lub `UltraSpecCatalog`).
+
+2. **C-1** — Historyczny garnek. Dodać `potSizeLitersAtCooking: Int` do `BatchRecord` (z `decodeIfPresent` → fallback na `potSizeLiters` z AppStorage dla wstecznej kompatybilności). Każde wywołanie `batch.calculationResult(potSizeLiters:)` zamienić na `batch.calculationResult()` używające stored pot.
+
+3. **C-6** — allowedVariants filtering. Jednolinijkowa zmiana w UltraSpecEngine: dodać `.filter { $0.0.allowedVariants.contains(request.variant) }` przed reduce operations.
+
+4. **H-6** — Tytuł powiadomienia. Przekazać `brothKindTitle: String` do `schedulePhaseEnd()`.
+
+### Blok 2 — W ciągu 1-2 sprintów (wydajność i stabilność)
+
+5. **C-2 + H-8** — Timer Date-based. Dodać `@State private var currentPhaseStartDate: Date?`. Przy każdym `advanceToNextPhase()` i `startCookingFromPrep()` ustawić `currentPhaseStartDate = Date()`. `phaseElapsedSeconds = Int(Date().timeIntervalSince(currentPhaseStartDate))` obliczane w każdym ticku zamiast inkrementacji.
+
+6. **C-3 + H-1** — Memoizacja phaseBuilder + timer lifecycle. Zmienić `phaseBuilder` w `@State private var` (lub `@StateObject` jeśli `class`). Przebudowywać przez `onChange(of: batch.id)`. Timer: zarządzać subskrypcją ręcznie przez `AnyCancellable`.
+
+7. **C-4** — advance przez manualne kroki. Przy manualnym kroku w pętli: nie przerywać, lecz traktować manual krok jako "passed" jeśli elapsed > 0 i przejść do następnego.
+
+8. **H-2** — BrothKind serialization keys. Dodać `static var storageKey: String` osobno. Backward compat: `BatchRecord.init(from: decoder)` mapuje stare "Rosół" → "rosol" etc.
+
+### Blok 3 — Dług techniczny
+
+9. **M-1** — Hardcoded kolory do design systemu.
+10. **H-3, H-4, H-7** — Logging, usunięcie dead code, placeholder testu.
+11. **M-2, M-4, M-5** — Status batcha, permission UX, nowe testy.
+12. **M-13** — Premium blokada lub usunięcie.
+13. **L-1 do L-10** — Kosmetyka.
+
+---
+
+## 17. Brakujące testy
+
+**TC-01**
+- Nazwa: `HistoricalBatchUsesRecordedPotSize`
+- Co testuje: `batch.calculationResult()` używa potSizeLiters z momentu gotowania, nie bieżącego
+- Wejście: `BatchRecord` z `potSizeLitersAtCooking = 7`, wywołanie z potSizeLiters = 5
+- Oczekiwany wynik: wyniki odpowiadają 7L, nie 5L
+- Priorytet: CRITICAL
+
+**TC-02**
+- Nazwa: `UltraSpecEngineRejectsIngredientFromWrongVariant`
+- Co testuje: `allowedVariants` filtering w UltraSpecEngine
+- Wejście: `.rosolLekki` + `FISH_WHITE_BONES` (allowed only for fish variants)
+- Oczekiwany wynik: `result.totalAnimalG` = 0 (FISH_WHITE_BONES nie jest doliczany)
+- Priorytet: CRITICAL
+
+**TC-03**
+- Nazwa: `VegetableNamesInBridgeResultArePretty`
+- Co testuje: `UltraSpecBridge.makeBrothResult()` zwraca czytelne nazwy warzyw
+- Wejście: `UltraSpecCalculationResult` z `VEG_CARROT` w warzywach
+- Oczekiwany wynik: `result.vegetables[0].name == "Marchew"`, nie `"VEG_CARROT"`
+- Priorytet: CRITICAL
+
+**TC-04**
+- Nazwa: `AdvanceElapsedSkipsManualPhasesCorrectly`
+- Co testuje: Logika advance po powrocie z tła gdy bieżący krok jest manualny
+- Wejście: phases = [manual, timed(3600s), timed(1800s)], phaseIndex = 0 (manual), elapsed = 4000s
+- Oczekiwany wynik: phaseIndex = 2, phaseElapsedSeconds = 400, processElapsedSeconds = 4000
+- Priorytet: CRITICAL
+
+**TC-05**
+- Nazwa: `CookingPhaseBuilderBuildsPhasesForAllVariants`
+- Co testuje: `buildPhases()` zwraca non-empty dla każdego UltraSpecVariantID
+- Wejście: BatchRecord z każdym możliwym `brothKindRawValue` + `selectedStyleName`
+- Oczekiwany wynik: `phases.count > 1` dla każdego wariantu
+- Priorytet: HIGH
+
+**TC-06**
+- Nazwa: `BrothKindDecodesFromLegacyPolishRawValues`
+- Co testuje: Stare `BatchRecord` z `brothKindRawValue = "Rosół"` poprawnie dekodują po zmianie enum
+- Wejście: JSON z `"brothKindRawValue": "Rosół"`
+- Oczekiwany wynik: `batch.brothMode` zwraca poprawny `BrothKind.rosol`
+- Priorytet: HIGH
+
+**TC-07**
+- Nazwa: `UltraSpecEngineLargeMeatAmount`
+- Co testuje: UltraSpecEngine obsługuje duże ilości mięsa w dużym garnku
+- Wejście: 30L garnek, 10000g POULTRY_OLD_HEN dla rosolLekki
+- Oczekiwany wynik: brak crashu, `result.waterStartL.isFinite && result.waterStartL > 0`
+- Priorytet: MEDIUM
+
+**TC-08**
+- Nazwa: `CookingPhaseBuilderRosolBogatyWithoutPoultry`
+- Co testuje: `rosolBogaty` bez drobiu (tylko wołowina) generuje poprawne fazy
+- Wejście: BatchRecord z samą wołowiną, `brothKindRawValue = "Wołowy"`
+- Oczekiwany wynik: brak kroku `remove_poultry` w fazach, `hasPoultry == false`
+- Priorytet: MEDIUM
+
+**TC-09**
+- Nazwa: `StartCookingGuardsAgainstEmptyPhases`
+- Co testuje: `startCookingFromPrep()` nie crashuje gdy phases.count == 0 lub 1
+- Wejście: BatchRecord generujący 0 faz (edge case)
+- Oczekiwany wynik: brak crashu, `sessionStarted` pozostaje `false`
+- Priorytet: HIGH
+
+**TC-10**
+- Nazwa: `BatchStorePersistenceWithFullSnapshot`
+- Co testuje: Zapis i odczyt BatchRecord ze wszystkimi nowymi polami
+- Wejście: Pełny BatchRecord z `selectedIngredientsSnapshot`, `meatOverrides`, `cookingOutcome`
+- Oczekiwany wynik: identyczny rekord po encode/decode
+- Priorytet: HIGH
+
+**TC-11**
+- Nazwa: `BatchStoreRecoversPartiallyCorruptedHistory`
+- Co testuje: Jeden uszkodzony rekord nie blokuje odczytu pozostałych
+- Wejście: JSON array z 3 rekordami, środkowy uszkodzony
+- Oczekiwany wynik: 2 rekordy odzyskane, uszkodzony pominięty
+- Priorytet: HIGH
+
+**TC-12**
+- Nazwa: `NotificationTitleMatchesBrothType`
+- Co testuje: Tytuł powiadomienia jest odpowiedni dla typu bulionu
+- Wejście: `schedulePhaseEnd(stepTitle: "X", inSeconds: 60, brothKind: .ramen)`
+- Oczekiwany wynik: `content.title` zawiera "Ramen" lub podobne, nie "Rosół"
+- Priorytet: MEDIUM
+
+---
+
+## Podsumowanie
+
+**Znaleziono łącznie 39 problemów: 6 CRITICAL, 8 HIGH, 15 MEDIUM, 10 LOW.**
+
+Najważniejsze do naprawy, w kolejności:
+
+1. **C-5** — Warzywa w live cooking pokazują `VEG_CARROT` zamiast "Marchew" — natychmiast widoczny błąd UX
+2. **C-1** — Bieżący garnek zamiast historycznego — błąd logiki danych wpływający na kluczowy flow
+3. **C-6** — Brak filtrowania allowedVariants — błąd domenowy wpływający na poprawność wyników
+4. **C-2** — Timer oparty na tickach — dryfuje przez całe gotowanie
+5. **C-4** — Advance zatrzymuje się na manualnym kroku — błąd stanu po powrocie z tła
+6. **C-3** — Przebudowa faz co sekundę — wydajność przez 3-8 godzin gotowania
