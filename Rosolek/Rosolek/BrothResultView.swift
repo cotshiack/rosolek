@@ -742,6 +742,9 @@ struct BrothResultView: View {
             defaultUseVinegar = newValue
             frozenResult = computeCurrentResult()
         }
+        .onChange(of: potSizeLiters) { _, _ in
+            frozenResult = computeCurrentResult()
+        }
 
     }
 

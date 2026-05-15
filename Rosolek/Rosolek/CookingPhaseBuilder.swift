@@ -1,4 +1,5 @@
 import Foundation
+import os
 
 struct CookingPhaseBuilder {
     let batch: BatchRecord
@@ -247,7 +248,7 @@ struct CookingPhaseBuilder {
         case "remove_poultry":      return .removePoultry
         case "remove_veg":          return .removeVegetables
         default:
-            print("⚠️ CookingPhaseBuilder: unhandled ultra timeline stepID: \(stepID) — fallback .stabilization")
+            os_log(.error, "CookingPhaseBuilder: unhandled ultra timeline stepID: %{public}@ — fallback .stabilization", stepID)
             return .stabilization
         }
     }

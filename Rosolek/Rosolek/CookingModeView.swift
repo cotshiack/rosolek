@@ -287,27 +287,24 @@ struct CookingModeView: View {
     }
 
     var body: some View {
-        GeometryReader { _ in
-            ScrollView(.vertical, showsIndicators: false) {
-                VStack(alignment: .leading, spacing: 14) {
-                    if !sessionStarted {
-                        prepStepCard
-                    } else {
-                        activeStepCard
-                    }
-
-                    timelineSection
+        ScrollView(.vertical, showsIndicators: false) {
+            VStack(alignment: .leading, spacing: 14) {
+                if !sessionStarted {
+                    prepStepCard
+                } else {
+                    activeStepCard
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, AppSpacing.screen)
-                .padding(.top, 2)
-                .padding(.bottom, isFinished ? (finishButtonOverlayHeight + 20) : (liveControlsOverlayHeight + 20))
+
+                timelineSection
             }
-            .scrollBounceBehavior(.basedOnSize, axes: .vertical)
-            .background(AppTheme.background)
-            .clipped()
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, AppSpacing.screen)
+            .padding(.top, 2)
+            .padding(.bottom, isFinished ? (finishButtonOverlayHeight + 20) : (liveControlsOverlayHeight + 20))
         }
+        .scrollBounceBehavior(.basedOnSize, axes: .vertical)
+        .background(AppTheme.background)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .navigationTitle("Gotowanie na żywo")
         .navigationBarTitleDisplayMode(.inline)
         .toolbarBackground(AppTheme.background, for: .navigationBar)
@@ -382,6 +379,7 @@ struct CookingModeView: View {
         }
         .onAppear {
             UIApplication.shared.isIdleTimerDisabled = true
+            CookingNotificationService.shared.requestPermission()
             rebuildPhaseCache()
             prepThermometerReady = !hasThermometer
             prepVinegarReady = !batchUsesVinegar
@@ -1101,8 +1099,7 @@ struct CookingModeView: View {
 
     private func startCookingFromPrep() {
         guard canStartCooking else { return }
-
-        CookingNotificationService.shared.requestPermission()
+        guard phases.count > 1 else { return }
 
         withAnimation(.easeInOut(duration: 0.3)) {
             sessionStarted = true

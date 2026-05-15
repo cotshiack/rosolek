@@ -248,6 +248,7 @@ private struct BatchHistoryCompactCard: View {
                             .font(.system(size: 18, weight: .bold))
                             .foregroundStyle(AppTheme.textPrimary)
                             .lineLimit(2)
+                            .truncationMode(.tail)
 
                         Text(batch.createdAtDisplayText)
                             .font(.system(size: 13, weight: .medium))
