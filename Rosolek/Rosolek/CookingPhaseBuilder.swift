@@ -243,7 +243,7 @@ struct CookingPhaseBuilder {
         case "heat_up_clear":       return .heatUp
         case "strain_season":       return .strainAndSeason
         case "add_veg_spices", "tonkotsu_aromatics_end": return .addVegetables
-        case "simmer_clear":        return .simmerToVegetablesOut
+        case "simmer_clear", "tonkotsu_aroma_simmer": return .simmerToVegetablesOut
         case "stabilize_base", "tonkotsu_boil_emulsify", "veg_simmer_limit", "fish_poach_limit":
                                     return .stabilization
         case "finish_clear", "rest_settle": return .rest
