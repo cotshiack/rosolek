@@ -1,5 +1,5 @@
 import SwiftUI
-import Combine
+import Combine // required for Timer.publish
 import AudioToolbox
 import UIKit
 import UserNotifications
@@ -108,8 +108,7 @@ struct CookingModeView: View {
 
     @State private var liveActivity: Activity<CookingActivityAttributes>?
 
-    private let timerPublisher = Timer.publish(every: 1, on: .main, in: .common)
-    @State private var timerConnection: AnyCancellable? = nil
+    private let timerPublisher = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
     @State private var phaseStartDate: Date? = nil
 
     @State private var _cachedPhaseBuilder: CookingPhaseBuilder? = nil
@@ -366,7 +365,6 @@ struct CookingModeView: View {
             Button("Zakończ gotowanie") {
                 finalStepCompleted = true
                 isStageRunning = false
-                stopTimer()
                 batchStore.markBatchCompleted(batchID: batch.id)
                 CookingSession.clear()
                 CookingNotificationService.shared.cancelAll()
@@ -384,16 +382,12 @@ struct CookingModeView: View {
             prepThermometerReady = !hasThermometer
             prepVinegarReady = !batchUsesVinegar
             restoreSessionIfNeeded()
-            if sessionStarted && isStageRunning {
-                startTimer()
-            }
             attachToExistingLiveActivityIfNeeded()
             updateLiveActivity()
         }
         .onDisappear {
             UIApplication.shared.isIdleTimerDisabled = false
             saveSession(backgrounded: isStageRunning)
-            stopTimer()
         }
         .onChange(of: scenePhase) { _, newPhase in
             if newPhase == .background {
@@ -1108,7 +1102,6 @@ struct CookingModeView: View {
             isStageRunning = true
         }
         phaseStartDate = Date()
-        startTimer()
         schedulePhaseNotification()
         startLiveActivity()
         playStartSignal()
@@ -1159,17 +1152,6 @@ struct CookingModeView: View {
         updateLiveActivity()
         UIImpactFeedbackGenerator(style: .light).impactOccurred()
         playTapSignal()
-    }
-
-    private func startTimer() {
-        guard timerConnection == nil else { return }
-        let connection = timerPublisher.connect()
-        timerConnection = AnyCancellable { connection.cancel() }
-    }
-
-    private func stopTimer() {
-        timerConnection?.cancel()
-        timerConnection = nil
     }
 
     private func playStartSignal() {
@@ -1409,7 +1391,6 @@ struct CookingModeView: View {
         advanceElapsedThroughPhases(elapsed)
         phaseStartDate = Date().addingTimeInterval(-Double(phaseElapsedSeconds))
         saveSession(backgrounded: false)
-        startTimer()
     }
 }
 
