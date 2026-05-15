@@ -54,7 +54,7 @@ enum UltraSpecWarnings {
                       Double(totalAnimalG) / request.potCapacityL < minPerPot {
                 let minGrams = Int((minPerPot * request.potCapacityL).rounded(.up))
                 let deltaMeat = max(0, minGrams - totalAnimalG)
-                warnings.append(.init(code: .underpowerForPot, severity: .warn, title: "Za mało bazy na ten garnek", message: "Przy garnku \(Int(request.potCapacityL)) L potrzebujesz więcej składników, żeby bulion miał dobry smak i właściwą intensywność.", fixNow: "Dodaj więcej bazy — minimum to około \(minGrams) g dla garnka \(Int(request.potCapacityL)) L.", suggestion: .init(text: "Dodaj około \(deltaMeat) g bazy.", deltaMeatG: deltaMeat, deltaWaterL: nil, deltaVegetablesG: nil)))
+                warnings.append(.init(code: .underpowerForPot, severity: .info, title: "Mała porcja jak na ten garnek", message: "Proporcje bulionu są zachowane — woda dobrana automatycznie do ilości bazy. Uzysk będzie mniejszy niż przy pełnym wsadzie.", fixNow: "Możesz dodać więcej bazy, żeby zwiększyć uzysk — proporcje dobiorą się automatycznie.", suggestion: .init(text: "Dodaj około \(deltaMeat) g bazy, żeby zwiększyć uzysk.", deltaMeatG: deltaMeat, deltaWaterL: nil, deltaVegetablesG: nil)))
             }
 
             if densityGL > thresholds.density.maxGL {

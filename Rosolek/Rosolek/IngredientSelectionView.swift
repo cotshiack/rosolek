@@ -600,13 +600,13 @@ struct IngredientSelectionView: View {
             )
         }
 
-        // Pot-based underpower — most actionable: quantity is way too small for the pot
+        // Small batch in waterFactor variant — proportions are correct, yield is smaller
         if hasWarning(.baseTooLittleForPot) {
             return QuickInsight(
-                systemImage: "exclamationmark.circle",
-                shortText: "Za mało na ten garnek",
+                systemImage: "info.circle",
+                shortText: "Mała porcja",
                 detailText: messageForWarningCode(.baseTooLittleForPot),
-                tone: .warning
+                tone: .neutral
             )
         }
 
@@ -734,7 +734,7 @@ struct IngredientSelectionView: View {
                 return "Baza jest lekka względem ilości wody. Dodaj więcej bazy dla pełniejszego smaku — ilość wody jest wyliczana automatycznie."
             }
         case .baseTooLittleForPot:
-            return "Za mało bazy jak na pojemność tego garnka. Dodaj więcej składników — woda i warzywa dopasują się automatycznie."
+            return "Proporcje bulionu są zachowane, woda dobrana do ilości bazy. Uzysk będzie mniejszy niż przy pełnym wsadzie — możesz dodać więcej bazy, żeby zwiększyć porcję."
         case .vegTooMuch:
             return "Warzywa przekraczają zalecany limit na litr wody. Bulion może wyjść zbyt słodki i mniej klarowny."
         case .vegSweetRisk:
